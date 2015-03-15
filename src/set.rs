@@ -78,7 +78,6 @@ impl TrieSet {
     /// let mut set = TrieSet::new();
     /// ```
     #[inline]
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
     pub fn new() -> TrieSet {
         TrieSet{map: TrieMap::new()}
     }
@@ -126,7 +125,6 @@ impl TrieSet {
     /// }
     /// ```
     #[inline]
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
     pub fn iter(&self) -> Iter {
         Iter { iter: self.map.iter() }
     }
@@ -188,7 +186,6 @@ impl TrieSet {
     /// let diff2: TrieSet = b.difference(&a).collect();
     /// assert_eq!(diff2, [4, 5].iter().map(|&x| x).collect());
     /// ```
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
     pub fn difference<'a>(&'a self, other: &'a TrieSet) -> Difference<'a> {
         Difference { a: self.iter().peekable(), b: other.iter().peekable() }
     }
@@ -214,7 +211,6 @@ impl TrieSet {
     /// assert_eq!(diff1, diff2);
     /// assert_eq!(diff1, [1, 2, 4, 5].iter().map(|&x| x).collect());
     /// ```
-    #[unstable = "matches collection reform specification, waiting for dust to settle."]
     pub fn symmetric_difference<'a>(&'a self, other: &'a TrieSet) -> SymmetricDifference<'a> {
         SymmetricDifference { a: self.iter().peekable(), b: other.iter().peekable() }
     }
@@ -237,7 +233,6 @@ impl TrieSet {
     /// let diff: TrieSet = a.intersection(&b).collect();
     /// assert_eq!(diff, [2, 3].iter().map(|&x| x).collect());
     /// ```
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
     pub fn intersection<'a>(&'a self, other: &'a TrieSet) -> Intersection<'a> {
         Intersection { a: self.iter().peekable(), b: other.iter().peekable() }
     }
@@ -260,7 +255,6 @@ impl TrieSet {
     /// let diff: TrieSet = a.union(&b).collect();
     /// assert_eq!(diff, [1, 2, 3, 4, 5].iter().map(|&x| x).collect());
     /// ```
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
     pub fn union<'a>(&'a self, other: &'a TrieSet) -> Union<'a> {
         Union { a: self.iter().peekable(), b: other.iter().peekable() }
     }
@@ -278,7 +272,6 @@ impl TrieSet {
     /// assert_eq!(v.len(), 1);
     /// ```
     #[inline]
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
     pub fn len(&self) -> usize { self.map.len() }
 
     /// Returns true if the set contains no elements
@@ -293,7 +286,6 @@ impl TrieSet {
     /// v.insert(1);
     /// assert!(!v.is_empty());
     /// ```
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
     pub fn is_empty(&self) -> bool { self.map.is_empty() }
 
     /// Clears the set, removing all values.
@@ -309,7 +301,6 @@ impl TrieSet {
     /// assert!(v.is_empty());
     /// ```
     #[inline]
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
     pub fn clear(&mut self) { self.map.clear() }
 
     /// Returns `true` if the set contains a value.
@@ -324,7 +315,6 @@ impl TrieSet {
     /// assert_eq!(set.contains(&4), false);
     /// ```
     #[inline]
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
     pub fn contains(&self, value: &usize) -> bool {
         self.map.contains_key(value)
     }
@@ -347,7 +337,6 @@ impl TrieSet {
     /// assert_eq!(a.is_disjoint(&b), false);
     /// ```
     #[inline]
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
     pub fn is_disjoint(&self, other: &TrieSet) -> bool {
         self.iter().all(|v| !other.contains(&v))
     }
@@ -369,7 +358,6 @@ impl TrieSet {
     /// assert_eq!(set.is_subset(&sup), false);
     /// ```
     #[inline]
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
     pub fn is_subset(&self, other: &TrieSet) -> bool {
         self.iter().all(|v| other.contains(&v))
     }
@@ -394,7 +382,6 @@ impl TrieSet {
     /// assert_eq!(set.is_superset(&sub), true);
     /// ```
     #[inline]
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
     pub fn is_superset(&self, other: &TrieSet) -> bool {
         other.is_subset(self)
     }
@@ -414,7 +401,6 @@ impl TrieSet {
     /// assert_eq!(set.len(), 1);
     /// ```
     #[inline]
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
     pub fn insert(&mut self, value: usize) -> bool {
         self.map.insert(value, ()).is_none()
     }
@@ -434,7 +420,6 @@ impl TrieSet {
     /// assert_eq!(set.remove(&2), false);
     /// ```
     #[inline]
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
     pub fn remove(&mut self, value: &usize) -> bool {
         self.map.remove(value).is_some()
     }
@@ -456,7 +441,6 @@ impl Extend<usize> for TrieSet {
     }
 }
 
-#[unstable = "matches collection reform specification, waiting for dust to settle"]
 impl<'a, 'b> ops::BitOr<&'b TrieSet> for &'a TrieSet {
     type Output = TrieSet;
 
@@ -479,7 +463,6 @@ impl<'a, 'b> ops::BitOr<&'b TrieSet> for &'a TrieSet {
     }
 }
 
-#[unstable = "matches collection reform specification, waiting for dust to settle"]
 impl<'a, 'b> ops::BitAnd<&'b TrieSet> for &'a TrieSet {
     type Output = TrieSet;
 
@@ -502,7 +485,6 @@ impl<'a, 'b> ops::BitAnd<&'b TrieSet> for &'a TrieSet {
     }
 }
 
-#[unstable = "matches collection reform specification, waiting for dust to settle"]
 impl<'a, 'b> ops::BitXor<&'b TrieSet> for &'a TrieSet {
     type Output = TrieSet;
 
@@ -525,7 +507,6 @@ impl<'a, 'b> ops::BitXor<&'b TrieSet> for &'a TrieSet {
     }
 }
 
-#[unstable = "matches collection reform specification, waiting for dust to settle"]
 impl<'a, 'b> ops::Sub<&'b TrieSet> for &'a TrieSet {
     type Output = TrieSet;
 

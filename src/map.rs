@@ -161,7 +161,6 @@ impl<T> TrieMap<T> {
     /// let mut map: TrieMap<&str> = TrieMap::new();
     /// ```
     #[inline]
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
     pub fn new() -> TrieMap<T> {
         TrieMap{root: InternalNode::new(), length: 0}
     }
@@ -192,7 +191,6 @@ impl<T> TrieMap<T> {
 
     /// Gets an iterator visiting all keys in ascending order by the keys.
     /// The iterator's element type is `usize`.
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
     pub fn keys<'r>(&'r self) -> Keys<'r, T> {
         fn first<A, B>((a, _): (A, B)) -> A { a }
         let first: fn((usize, &'r T)) -> usize = first; // coerce to fn pointer
@@ -202,7 +200,6 @@ impl<T> TrieMap<T> {
 
     /// Gets an iterator visiting all values in ascending order by the keys.
     /// The iterator's element type is `&'r T`.
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
     pub fn values<'r>(&'r self) -> Values<'r, T> {
         fn second<A, B>((_, b): (A, B)) -> B { b }
         let second: fn((usize, &'r T)) -> &'r T = second; // coerce to fn pointer
@@ -222,7 +219,6 @@ impl<T> TrieMap<T> {
     ///     println!("{}: {}", key, value);
     /// }
     /// ```
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
     pub fn iter(&self) -> Iter<T> {
         let mut iter = unsafe {Iter::new()};
         iter.stack[0] = self.root.children.iter();
@@ -250,7 +246,6 @@ impl<T> TrieMap<T> {
     /// assert_eq!(map.get(&2), Some(&-2));
     /// assert_eq!(map.get(&3), Some(&-3));
     /// ```
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
     pub fn iter_mut(&mut self) -> IterMut<T> {
         let mut iter = unsafe {IterMut::new()};
         iter.stack[0] = self.root.children.iter_mut();
@@ -274,7 +269,6 @@ impl<T> TrieMap<T> {
     /// assert_eq!(a.len(), 1);
     /// ```
     #[inline]
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
     pub fn len(&self) -> usize { self.length }
 
     /// Return true if the map contains no elements.
@@ -290,7 +284,6 @@ impl<T> TrieMap<T> {
     /// assert!(!a.is_empty());
     /// ```
     #[inline]
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
     pub fn is_empty(&self) -> bool { self.len() == 0 }
 
     /// Clears the map, removing all values.
@@ -306,7 +299,6 @@ impl<T> TrieMap<T> {
     /// assert!(a.is_empty());
     /// ```
     #[inline]
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
     pub fn clear(&mut self) {
         self.root = InternalNode::new();
         self.length = 0;
@@ -325,7 +317,6 @@ impl<T> TrieMap<T> {
     /// assert_eq!(map.get(&2), None);
     /// ```
     #[inline]
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
     pub fn get(&self, key: &usize) -> Option<&T> {
         let mut node = &self.root;
         let mut idx = 0;
@@ -358,7 +349,6 @@ impl<T> TrieMap<T> {
     /// assert_eq!(map.contains_key(&2), false);
     /// ```
     #[inline]
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
     pub fn contains_key(&self, key: &usize) -> bool {
         self.get(key).is_some()
     }
@@ -379,7 +369,6 @@ impl<T> TrieMap<T> {
     /// assert_eq!(map[1], "b");
     /// ```
     #[inline]
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
     pub fn get_mut(&mut self, key: &usize) -> Option<&mut T> {
         find_mut(&mut self.root.children[chunk(*key, 0)], *key, 1)
     }
@@ -400,7 +389,6 @@ impl<T> TrieMap<T> {
     /// assert_eq!(map.insert(37, "c"), Some("b"));
     /// assert_eq!(map[37], "c");
     /// ```
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
     pub fn insert(&mut self, key: usize, value: T) -> Option<T> {
         let (_, old_val) = insert(&mut self.root.count,
                                     &mut self.root.children[chunk(key, 0)],
@@ -422,7 +410,6 @@ impl<T> TrieMap<T> {
     /// assert_eq!(map.remove(&1), Some("a"));
     /// assert_eq!(map.remove(&1), None);
     /// ```
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
     pub fn remove(&mut self, key: &usize) -> Option<T> {
         let ret = remove(&mut self.root.count,
                          &mut self.root.children[chunk(*key, 0)],
