@@ -8,12 +8,20 @@
 // option. This file may not be copied, modified, or distributed
 // except according to those terms.
 
-//! Maps are collections of unique keys with corresponding values, and sets are
-//! just unique keys without a corresponding value.
-//!
-//! This crate defines `TrieMap` and `TrieSet`, which require `uint` keys.
-//!
-//! `TrieMap` is ordered.
+//! An ordered map and set based on a trie.
+
+#![feature(box_patterns, box_syntax)]
+#![feature(core)]
+#![feature(unboxed_closures)]
+#![cfg_attr(test, feature(hash, test))]
+
+#[cfg(test)] extern crate rand;
+#[cfg(test)] extern crate test;
+
+pub use map::TrieMap;
+pub use set::TrieSet;
+
+#[cfg(test)] #[macro_use] mod bench;
 
 pub mod map;
 pub mod set;

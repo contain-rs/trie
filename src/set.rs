@@ -12,19 +12,21 @@
 // FIXME(conventions): replace each_reverse by making iter DoubleEnded
 // FIXME(conventions): implement iter_mut and into_iter
 
+//! An ordered set based on a trie.
+
 use std::cmp::Ordering::{self, Less, Equal, Greater};
 use std::fmt::{self, Debug};
 use std::iter::{self, Peekable, IntoIterator};
 use std::ops;
 
-use trie_map::{TrieMap, self};
+use super::map::{TrieMap, self};
 
 /// A set implemented as a radix trie.
 ///
 /// # Examples
 ///
 /// ```rust
-/// use collect::TrieSet;
+/// use trie::TrieSet;
 ///
 /// let mut set = TrieSet::new();
 /// set.insert(6);
@@ -72,7 +74,7 @@ impl TrieSet {
     /// # Examples
     ///
     /// ```rust
-    /// use collect::TrieSet;
+    /// use trie::TrieSet;
     /// let mut set = TrieSet::new();
     /// ```
     #[inline]
@@ -87,7 +89,7 @@ impl TrieSet {
     /// # Examples
     ///
     /// ```rust
-    /// use collect::TrieSet;
+    /// use trie::TrieSet;
     ///
     /// let set: TrieSet = [1, 2, 3, 4, 5].iter().map(|&x| x).collect();
     ///
@@ -110,7 +112,7 @@ impl TrieSet {
     /// # Examples
     ///
     /// ```rust
-    /// use collect::TrieSet;
+    /// use trie::TrieSet;
     ///
     /// let mut set = TrieSet::new();
     /// set.insert(3);
@@ -135,7 +137,7 @@ impl TrieSet {
     /// # Examples
     ///
     /// ```rust
-    /// use collect::TrieSet;
+    /// use trie::TrieSet;
     ///
     /// let set: TrieSet = [2, 4, 6, 8].iter().map(|&x| x).collect();
     /// assert_eq!(set.lower_bound(4).next(), Some(4));
@@ -152,7 +154,7 @@ impl TrieSet {
     /// # Examples
     ///
     /// ```rust
-    /// use collect::TrieSet;
+    /// use trie::TrieSet;
     ///
     /// let set: TrieSet = [2, 4, 6, 8].iter().map(|&x| x).collect();
     /// assert_eq!(set.upper_bound(4).next(), Some(6));
@@ -168,7 +170,7 @@ impl TrieSet {
     /// # Examples
     ///
     /// ```rust
-    /// use collect::TrieSet;
+    /// use trie::TrieSet;
     ///
     /// let a: TrieSet = [1, 2, 3].iter().map(|&x| x).collect();
     /// let b: TrieSet = [3, 4, 5].iter().map(|&x| x).collect();
@@ -196,7 +198,7 @@ impl TrieSet {
     /// # Examples
     ///
     /// ```rust
-    /// use collect::TrieSet;
+    /// use trie::TrieSet;
     ///
     /// let a: TrieSet = [1, 2, 3].iter().map(|&x| x).collect();
     /// let b: TrieSet = [3, 4, 5].iter().map(|&x| x).collect();
@@ -222,7 +224,7 @@ impl TrieSet {
     /// # Examples
     ///
     /// ```rust
-    /// use collect::TrieSet;
+    /// use trie::TrieSet;
     ///
     /// let a: TrieSet = [1, 2, 3].iter().map(|&x| x).collect();
     /// let b: TrieSet = [2, 3, 4].iter().map(|&x| x).collect();
@@ -245,7 +247,7 @@ impl TrieSet {
     /// # Examples
     ///
     /// ```rust
-    /// use collect::TrieSet;
+    /// use trie::TrieSet;
     ///
     /// let a: TrieSet = [1, 2, 3].iter().map(|&x| x).collect();
     /// let b: TrieSet = [3, 4, 5].iter().map(|&x| x).collect();
@@ -268,7 +270,7 @@ impl TrieSet {
     /// # Examples
     ///
     /// ```rust
-    /// use collect::TrieSet;
+    /// use trie::TrieSet;
     ///
     /// let mut v = TrieSet::new();
     /// assert_eq!(v.len(), 0);
@@ -284,7 +286,7 @@ impl TrieSet {
     /// # Examples
     ///
     /// ```rust
-    /// use collect::TrieSet;
+    /// use trie::TrieSet;
     ///
     /// let mut v = TrieSet::new();
     /// assert!(v.is_empty());
@@ -299,7 +301,7 @@ impl TrieSet {
     /// # Examples
     ///
     /// ```rust
-    /// use collect::TrieSet;
+    /// use trie::TrieSet;
     ///
     /// let mut v = TrieSet::new();
     /// v.insert(1);
@@ -315,7 +317,7 @@ impl TrieSet {
     /// # Examples
     ///
     /// ```rust
-    /// use collect::TrieSet;
+    /// use trie::TrieSet;
     ///
     /// let set: TrieSet = [1, 2, 3].iter().map(|&x| x).collect();
     /// assert_eq!(set.contains(&1), true);
@@ -333,7 +335,7 @@ impl TrieSet {
     /// # Examples
     ///
     /// ```rust
-    /// use collect::TrieSet;
+    /// use trie::TrieSet;
     ///
     /// let a: TrieSet = [1, 2, 3].iter().map(|&x| x).collect();
     /// let mut b: TrieSet = TrieSet::new();
@@ -355,7 +357,7 @@ impl TrieSet {
     /// # Examples
     ///
     /// ```rust
-    /// use collect::TrieSet;
+    /// use trie::TrieSet;
     ///
     /// let sup: TrieSet = [1, 2, 3].iter().map(|&x| x).collect();
     /// let mut set: TrieSet = TrieSet::new();
@@ -377,7 +379,7 @@ impl TrieSet {
     /// # Examples
     ///
     /// ```rust
-    /// use collect::TrieSet;
+    /// use trie::TrieSet;
     ///
     /// let sub: TrieSet = [1, 2].iter().map(|&x| x).collect();
     /// let mut set: TrieSet = TrieSet::new();
@@ -403,7 +405,7 @@ impl TrieSet {
     /// # Examples
     ///
     /// ```rust
-    /// use collect::TrieSet;
+    /// use trie::TrieSet;
     ///
     /// let mut set = TrieSet::new();
     ///
@@ -423,7 +425,7 @@ impl TrieSet {
     /// # Examples
     ///
     /// ```rust
-    /// use collect::TrieSet;
+    /// use trie::TrieSet;
     ///
     /// let mut set = TrieSet::new();
     ///
@@ -463,7 +465,7 @@ impl<'a, 'b> ops::BitOr<&'b TrieSet> for &'a TrieSet {
     /// # Example
     ///
     /// ```rust
-    /// use collect::TrieSet;
+    /// use trie::TrieSet;
     ///
     /// let a: TrieSet = vec![1, 2, 3].into_iter().collect();
     /// let b: TrieSet = vec![3, 4, 5].into_iter().collect();
@@ -486,7 +488,7 @@ impl<'a, 'b> ops::BitAnd<&'b TrieSet> for &'a TrieSet {
     /// # Example
     ///
     /// ```rust
-    /// use collect::TrieSet;
+    /// use trie::TrieSet;
     ///
     /// let a: TrieSet = vec![1, 2, 3].into_iter().collect();
     /// let b: TrieSet = vec![2, 3, 4].into_iter().collect();
@@ -509,7 +511,7 @@ impl<'a, 'b> ops::BitXor<&'b TrieSet> for &'a TrieSet {
     /// # Example
     ///
     /// ```rust
-    /// use collect::TrieSet;
+    /// use trie::TrieSet;
     ///
     /// let a: TrieSet = vec![1, 2, 3].into_iter().collect();
     /// let b: TrieSet = vec![3, 4, 5].into_iter().collect();
@@ -532,7 +534,7 @@ impl<'a, 'b> ops::Sub<&'b TrieSet> for &'a TrieSet {
     /// # Example
     ///
     /// ```rust
-    /// use collect::TrieSet;
+    /// use trie::TrieSet;
     ///
     /// let a: TrieSet = vec![1, 2, 3].into_iter().collect();
     /// let b: TrieSet = vec![3, 4, 5].into_iter().collect();
@@ -548,7 +550,7 @@ impl<'a, 'b> ops::Sub<&'b TrieSet> for &'a TrieSet {
 
 /// A forward iterator over a set.
 pub struct Iter<'a> {
-    iter: trie_map::Iter<'a, ()>
+    iter: map::Iter<'a, ()>
 }
 
 /// An iterator producing elements in the set difference (in-order).
