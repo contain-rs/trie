@@ -191,21 +191,11 @@ impl<T> TrieMap<T> {
 
     /// Gets an iterator visiting all keys in ascending order by the keys.
     /// The iterator's element type is `usize`.
-    pub fn keys<'r>(&'r self) -> Keys<'r, T> {
-        fn first<A, B>((a, _): (A, B)) -> A { a }
-        let first: fn((usize, &'r T)) -> usize = first; // coerce to fn pointer
-
-        self.iter().map(first)
-    }
+    pub fn keys(&self) -> Keys<T> { Keys(self.iter()) }
 
     /// Gets an iterator visiting all values in ascending order by the keys.
     /// The iterator's element type is `&'r T`.
-    pub fn values<'r>(&'r self) -> Values<'r, T> {
-        fn second<A, B>((_, b): (A, B)) -> B { b }
-        let second: fn((usize, &'r T)) -> &'r T = second; // coerce to fn pointer
-
-        self.iter().map(second)
-    }
+    pub fn values(&self) -> Values<T> { Values(self.iter()) }
 
     /// Gets an iterator over the key-value pairs in the map, ordered by keys.
     ///
@@ -1093,10 +1083,30 @@ pub struct IterMut<'a, T:'a> {
 }
 
 /// A forward iterator over the keys of a map.
-pub type Keys<'a, T> = iter::Map<Iter<'a, T>, fn((usize, &'a T)) -> usize>;
+pub struct Keys<'a, T: 'a>(Iter<'a, T>);
+
+impl<'a, T> Clone for Keys<'a, T> {
+    fn clone(&self) -> Keys<'a, T> { Keys(self.0.clone()) }
+}
+
+impl<'a, T> Iterator for Keys<'a, T> {
+    type Item = usize;
+    fn next(&mut self) -> Option<usize> { self.0.next().map(|e| e.0) }
+    fn size_hint(&self) -> (usize, Option<usize>) { self.0.size_hint() }
+}
 
 /// A forward iterator over the values of a map.
-pub type Values<'a, T> = iter::Map<Iter<'a, T>, fn((usize, &'a T)) -> &'a T>;
+pub struct Values<'a, T: 'a>(Iter<'a, T>);
+
+impl<'a, T> Clone for Values<'a, T> {
+    fn clone(&self) -> Values<'a, T> { Values(self.0.clone()) }
+}
+
+impl<'a, T> Iterator for Values<'a, T> {
+    type Item = &'a T;
+    fn next(&mut self) -> Option<&'a T> { self.0.next().map(|e| e.1) }
+    fn size_hint(&self) -> (usize, Option<usize>) { self.0.size_hint() }
+}
 
 // FIXME #5846: see `addr!` above.
 macro_rules! item { ($i:item) => {$i}}
