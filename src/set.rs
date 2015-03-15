@@ -530,29 +530,34 @@ impl<'a, 'b> ops::Sub<&'b TrieSet> for &'a TrieSet {
 }
 
 /// A forward iterator over a set.
+#[derive(Clone)]
 pub struct Iter<'a> {
     iter: map::Iter<'a, ()>
 }
 
 /// An iterator producing elements in the set difference (in-order).
+#[derive(Clone)]
 pub struct Difference<'a> {
     a: Peekable<Iter<'a>>,
     b: Peekable<Iter<'a>>,
 }
 
 /// An iterator producing elements in the set symmetric difference (in-order).
+#[derive(Clone)]
 pub struct SymmetricDifference<'a> {
     a: Peekable<Iter<'a>>,
     b: Peekable<Iter<'a>>,
 }
 
 /// An iterator producing elements in the set intersection (in-order).
+#[derive(Clone)]
 pub struct Intersection<'a> {
     a: Peekable<Iter<'a>>,
     b: Peekable<Iter<'a>>,
 }
 
 /// An iterator producing elements in the set union (in-order).
+#[derive(Clone)]
 pub struct Union<'a> {
     a: Peekable<Iter<'a>>,
     b: Peekable<Iter<'a>>,

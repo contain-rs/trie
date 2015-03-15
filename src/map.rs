@@ -1059,6 +1059,30 @@ pub struct Iter<'a, T:'a> {
     remaining_max: usize
 }
 
+impl<'a, T> Clone for Iter<'a, T> {
+    #[cfg(target_pointer_width="32")]
+    fn clone(&self) -> Iter<'a, T> {
+        Iter {
+            stack: [self.stack[0].clone(), self.stack[1].clone(),
+                    self.stack[2].clone(), self.stack[3].clone(),
+                    self.stack[4].clone(), self.stack[5].clone(),
+                    self.stack[6].clone(), self.stack[7].clone()], ..*self }
+    }
+
+    #[cfg(target_pointer_width="64")]
+    fn clone(&self) -> Iter<'a, T> {
+        Iter {
+            stack: [self.stack[0].clone(), self.stack[1].clone(),
+                    self.stack[2].clone(), self.stack[3].clone(),
+                    self.stack[4].clone(), self.stack[5].clone(),
+                    self.stack[6].clone(), self.stack[7].clone(),
+                    self.stack[8].clone(), self.stack[9].clone(),
+                    self.stack[10].clone(), self.stack[11].clone(),
+                    self.stack[12].clone(), self.stack[13].clone(),
+                    self.stack[14].clone(), self.stack[15].clone()], ..*self }
+    }
+}
+
 /// A forward iterator over the key-value pairs of a map, with the
 /// values being mutable.
 pub struct IterMut<'a, T:'a> {
