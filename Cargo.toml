@@ -16,6 +16,14 @@ documentation = "https://contain-rs.github.io/trie/trie"
 keywords = ["data-structures"]
 readme = "README.md"
 
+[features]
+
+default = ["ordered_iter"]
+
+[dependencies.ordered_iter]
+
+optional = true
+
 [dev-dependencies]
 
 rand = "*"

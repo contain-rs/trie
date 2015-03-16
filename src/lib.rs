@@ -25,3 +25,6 @@ pub use set::TrieSet;
 
 pub mod map;
 pub mod set;
+
+#[cfg(feature="ordered_iter")]
+mod ordered_iter;
