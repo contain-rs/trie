@@ -631,12 +631,10 @@ impl<'a> Iterator for Intersection<'a> {
 impl<'a> Iterator for Union<'a> {
     type Item = usize;
     fn next(&mut self) -> Option<usize> {
-        loop {
-            match cmp_opt(self.a.peek(), self.b.peek(), Greater, Less) {
-                Less    => return self.a.next(),
-                Equal   => { self.b.next(); return self.a.next() }
-                Greater => return self.b.next(),
-            }
+        match cmp_opt(self.a.peek(), self.b.peek(), Greater, Less) {
+            Less    => self.a.next(),
+            Equal   => { self.b.next(); self.a.next() }
+            Greater => self.b.next(),
         }
     }
 }
