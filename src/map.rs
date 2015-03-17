@@ -51,7 +51,7 @@ const MAX_DEPTH: usize = usize::BITS as usize / SHIFT;
 ///
 /// # Examples
 ///
-/// ```rust
+/// ```
 /// let mut map = trie::Map::new();
 /// map.insert(27, "Olaf");
 /// map.insert(1, "Edgar");
@@ -154,7 +154,7 @@ impl<T> Map<T> {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// let mut map: trie::Map<&str> = trie::Map::new();
     /// ```
     #[inline]
@@ -167,7 +167,7 @@ impl<T> Map<T> {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// let map: trie::Map<&str> = [(1, "a"), (2, "b"), (3, "c")].iter().map(|&x| x).collect();
     ///
     /// let mut vec = Vec::new();
@@ -197,7 +197,7 @@ impl<T> Map<T> {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// let map: trie::Map<&str> = [(3, "c"), (1, "a"), (2, "b")].iter().map(|&x| x).collect();
     ///
     /// for (key, value) in map.iter() {
@@ -219,7 +219,7 @@ impl<T> Map<T> {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// let mut map: trie::Map<i32> = [(1, 2), (2, 4), (3, 6)].iter().map(|&x| x).collect();
     ///
     /// for (key, value) in map.iter_mut() {
@@ -244,7 +244,7 @@ impl<T> Map<T> {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// let mut a = trie::Map::new();
     /// assert_eq!(a.len(), 0);
     /// a.insert(1, "a");
@@ -257,7 +257,7 @@ impl<T> Map<T> {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// let mut a = trie::Map::new();
     /// assert!(a.is_empty());
     /// a.insert(1, "a");
@@ -270,7 +270,7 @@ impl<T> Map<T> {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// let mut a = trie::Map::new();
     /// a.insert(1, "a");
     /// a.clear();
@@ -286,7 +286,7 @@ impl<T> Map<T> {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// let mut map = trie::Map::new();
     /// map.insert(1, "a");
     /// assert_eq!(map.get(&1), Some(&"a"));
@@ -316,7 +316,7 @@ impl<T> Map<T> {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// let mut map = trie::Map::new();
     /// map.insert(1, "a");
     /// assert_eq!(map.contains_key(&1), true);
@@ -331,7 +331,7 @@ impl<T> Map<T> {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// let mut map = trie::Map::new();
     /// map.insert(1, "a");
     /// match map.get_mut(&1) {
@@ -350,7 +350,7 @@ impl<T> Map<T> {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// let mut map = trie::Map::new();
     /// assert_eq!(map.insert(37, "a"), None);
     /// assert_eq!(map.is_empty(), false);
@@ -372,7 +372,7 @@ impl<T> Map<T> {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// let mut map = trie::Map::new();
     /// map.insert(1, "a");
     /// assert_eq!(map.remove(&1), Some("a"));
@@ -486,7 +486,7 @@ impl<T> Map<T> {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// let map: trie::Map<&str> = [(2, "a"), (4, "b"), (6, "c")].iter().map(|&x| x).collect();
     ///
     /// assert_eq!(map.lower_bound(4).next(), Some((4, &"b")));
@@ -502,7 +502,7 @@ impl<T> Map<T> {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// let map: trie::Map<&str> = [(2, "a"), (4, "b"), (6, "c")].iter().map(|&x| x).collect();
     ///
     /// assert_eq!(map.upper_bound(4).next(), Some((6, &"c")));
@@ -526,7 +526,7 @@ impl<T> Map<T> {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// let mut map: trie::Map<&str> = [(2, "a"), (4, "b"), (6, "c")].iter().map(|&x| x).collect();
     ///
     /// assert_eq!(map.lower_bound_mut(4).next(), Some((4, &mut "b")));
@@ -550,7 +550,7 @@ impl<T> Map<T> {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// let mut map: trie::Map<&str> = [(2, "a"), (4, "b"), (6, "c")].iter().map(|&x| x).collect();
     ///
     /// assert_eq!(map.upper_bound_mut(4).next(), Some((6, &mut "c")));

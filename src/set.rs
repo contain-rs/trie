@@ -25,7 +25,7 @@ use super::map::{Map, self};
 ///
 /// # Examples
 ///
-/// ```rust
+/// ```
 /// let mut set = trie::Set::new();
 /// set.insert(6);
 /// set.insert(28);
@@ -71,7 +71,7 @@ impl Set {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// let mut set = trie::Set::new();
     /// ```
     #[inline]
@@ -84,7 +84,7 @@ impl Set {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// let set: trie::Set = [1, 2, 3, 4, 5].iter().map(|&x| x).collect();
     ///
     /// let mut vec = Vec::new();
@@ -105,7 +105,7 @@ impl Set {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// let mut set = trie::Set::new();
     /// set.insert(3);
     /// set.insert(2);
@@ -127,7 +127,7 @@ impl Set {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// let set: trie::Set = [2, 4, 6, 8].iter().map(|&x| x).collect();
     /// assert_eq!(set.lower_bound(4).next(), Some(4));
     /// assert_eq!(set.lower_bound(5).next(), Some(6));
@@ -142,7 +142,7 @@ impl Set {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// let set: trie::Set = [2, 4, 6, 8].iter().map(|&x| x).collect();
     /// assert_eq!(set.upper_bound(4).next(), Some(6));
     /// assert_eq!(set.upper_bound(5).next(), Some(6));
@@ -156,7 +156,7 @@ impl Set {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// let a: trie::Set = [1, 2, 3].iter().map(|&x| x).collect();
     /// let b: trie::Set = [3, 4, 5].iter().map(|&x| x).collect();
     ///
@@ -181,7 +181,7 @@ impl Set {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// let a: trie::Set = [1, 2, 3].iter().map(|&x| x).collect();
     /// let b: trie::Set = [3, 4, 5].iter().map(|&x| x).collect();
     ///
@@ -204,7 +204,7 @@ impl Set {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// let a: trie::Set = [1, 2, 3].iter().map(|&x| x).collect();
     /// let b: trie::Set = [2, 3, 4].iter().map(|&x| x).collect();
     ///
@@ -224,7 +224,7 @@ impl Set {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// let a: trie::Set = [1, 2, 3].iter().map(|&x| x).collect();
     /// let b: trie::Set = [3, 4, 5].iter().map(|&x| x).collect();
     ///
@@ -244,7 +244,7 @@ impl Set {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// let mut v = trie::Set::new();
     /// assert_eq!(v.len(), 0);
     /// v.insert(1);
@@ -257,7 +257,7 @@ impl Set {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// let mut v = trie::Set::new();
     /// assert!(v.is_empty());
     /// v.insert(1);
@@ -269,7 +269,7 @@ impl Set {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// let mut v = trie::Set::new();
     /// v.insert(1);
     /// v.clear();
@@ -282,7 +282,7 @@ impl Set {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// let set: trie::Set = [1, 2, 3].iter().map(|&x| x).collect();
     /// assert_eq!(set.contains(&1), true);
     /// assert_eq!(set.contains(&4), false);
@@ -297,7 +297,7 @@ impl Set {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// let a: trie::Set = [1, 2, 3].iter().map(|&x| x).collect();
     /// let mut b = trie::Set::new();
     ///
@@ -316,7 +316,7 @@ impl Set {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// let sup: trie::Set = [1, 2, 3].iter().map(|&x| x).collect();
     /// let mut set = trie::Set::new();
     ///
@@ -335,7 +335,7 @@ impl Set {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// let sub: trie::Set = [1, 2].iter().map(|&x| x).collect();
     /// let mut set = trie::Set::new();
     ///
@@ -358,7 +358,7 @@ impl Set {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// let mut set = trie::Set::new();
     ///
     /// assert_eq!(set.insert(2), true);
@@ -375,7 +375,7 @@ impl Set {
     ///
     /// # Examples
     ///
-    /// ```rust
+    /// ```
     /// let mut set = trie::Set::new();
     ///
     /// set.insert(2);
@@ -411,7 +411,7 @@ impl<'a, 'b> ops::BitOr<&'b Set> for &'a Set {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// let a: trie::Set = vec![1, 2, 3].into_iter().collect();
     /// let b: trie::Set = vec![3, 4, 5].into_iter().collect();
     ///
@@ -431,7 +431,7 @@ impl<'a, 'b> ops::BitAnd<&'b Set> for &'a Set {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// let a: trie::Set = vec![1, 2, 3].into_iter().collect();
     /// let b: trie::Set = vec![2, 3, 4].into_iter().collect();
     ///
@@ -451,7 +451,7 @@ impl<'a, 'b> ops::BitXor<&'b Set> for &'a Set {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// let a: trie::Set = vec![1, 2, 3].into_iter().collect();
     /// let b: trie::Set = vec![3, 4, 5].into_iter().collect();
     ///
@@ -471,7 +471,7 @@ impl<'a, 'b> ops::Sub<&'b Set> for &'a Set {
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```
     /// let a: trie::Set = vec![1, 2, 3].into_iter().collect();
     /// let b: trie::Set = vec![3, 4, 5].into_iter().collect();
     ///
