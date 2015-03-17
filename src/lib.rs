@@ -18,8 +18,8 @@
 #[cfg(test)] extern crate rand;
 #[cfg(test)] extern crate test;
 
-pub use map::TrieMap;
-pub use set::TrieSet;
+pub use map::Map;
+pub use set::Set;
 
 #[cfg(test)] #[macro_use] mod bench;
 

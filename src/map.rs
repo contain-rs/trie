@@ -32,7 +32,7 @@ use std::usize;
 const SHIFT: usize = 4;
 const SIZE: usize = 1 << SHIFT;
 const MASK: usize = SIZE - 1;
-// The number of chunks that the key is divided into. Also the maximum depth of the TrieMap.
+// The number of chunks that the key is divided into. Also the maximum depth of the map.
 const MAX_DEPTH: usize = usize::BITS as usize / SHIFT;
 
 /// A map implemented as a radix trie.
@@ -52,9 +52,7 @@ const MAX_DEPTH: usize = usize::BITS as usize / SHIFT;
 /// # Examples
 ///
 /// ```rust
-/// use trie::TrieMap;
-///
-/// let mut map = TrieMap::new();
+/// let mut map = trie::Map::new();
 /// map.insert(27, "Olaf");
 /// map.insert(1, "Edgar");
 /// map.insert(13, "Ruth");
@@ -86,7 +84,7 @@ const MAX_DEPTH: usize = usize::BITS as usize / SHIFT;
 /// assert!(map.is_empty());
 /// ```
 #[derive(Clone)]
-pub struct TrieMap<T> {
+pub struct Map<T> {
     root: InternalNode<T>,
     length: usize
 }
@@ -110,30 +108,30 @@ enum TrieNode<T> {
     Nothing
 }
 
-impl<T: PartialEq> PartialEq for TrieMap<T> {
-    fn eq(&self, other: &TrieMap<T>) -> bool {
+impl<T: PartialEq> PartialEq for Map<T> {
+    fn eq(&self, other: &Map<T>) -> bool {
         self.len() == other.len() &&
             self.iter().zip(other.iter()).all(|(a, b)| a == b)
     }
 }
 
-impl<T: Eq> Eq for TrieMap<T> {}
+impl<T: Eq> Eq for Map<T> {}
 
-impl<T: PartialOrd> PartialOrd for TrieMap<T> {
+impl<T: PartialOrd> PartialOrd for Map<T> {
     #[inline]
-    fn partial_cmp(&self, other: &TrieMap<T>) -> Option<Ordering> {
+    fn partial_cmp(&self, other: &Map<T>) -> Option<Ordering> {
         iter::order::partial_cmp(self.iter(), other.iter())
     }
 }
 
-impl<T: Ord> Ord for TrieMap<T> {
+impl<T: Ord> Ord for Map<T> {
     #[inline]
-    fn cmp(&self, other: &TrieMap<T>) -> Ordering {
+    fn cmp(&self, other: &Map<T>) -> Ordering {
         iter::order::cmp(self.iter(), other.iter())
     }
 }
 
-impl<T: Debug> Debug for TrieMap<T> {
+impl<T: Debug> Debug for Map<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         try!(write!(f, "{{"));
 
@@ -146,23 +144,22 @@ impl<T: Debug> Debug for TrieMap<T> {
     }
 }
 
-impl<T> Default for TrieMap<T> {
+impl<T> Default for Map<T> {
     #[inline]
-    fn default() -> TrieMap<T> { TrieMap::new() }
+    fn default() -> Map<T> { Map::new() }
 }
 
-impl<T> TrieMap<T> {
-    /// Creates an empty `TrieMap`.
+impl<T> Map<T> {
+    /// Creates an empty map.
     ///
     /// # Examples
     ///
     /// ```rust
-    /// use trie::TrieMap;
-    /// let mut map: TrieMap<&str> = TrieMap::new();
+    /// let mut map: trie::Map<&str> = trie::Map::new();
     /// ```
     #[inline]
-    pub fn new() -> TrieMap<T> {
-        TrieMap{root: InternalNode::new(), length: 0}
+    pub fn new() -> Map<T> {
+        Map{root: InternalNode::new(), length: 0}
     }
 
     /// Visits all key-value pairs in reverse order. Aborts traversal when `f` returns `false`.
@@ -171,8 +168,7 @@ impl<T> TrieMap<T> {
     /// # Examples
     ///
     /// ```rust
-    /// use trie::TrieMap;
-    /// let map: TrieMap<&str> = [(1, "a"), (2, "b"), (3, "c")].iter().map(|&x| x).collect();
+    /// let map: trie::Map<&str> = [(1, "a"), (2, "b"), (3, "c")].iter().map(|&x| x).collect();
     ///
     /// let mut vec = Vec::new();
     /// assert_eq!(true, map.each_reverse(|&key, &value| { vec.push((key, value)); true }));
@@ -202,8 +198,7 @@ impl<T> TrieMap<T> {
     /// # Examples
     ///
     /// ```rust
-    /// use trie::TrieMap;
-    /// let map: TrieMap<&str> = [(3, "c"), (1, "a"), (2, "b")].iter().map(|&x| x).collect();
+    /// let map: trie::Map<&str> = [(3, "c"), (1, "a"), (2, "b")].iter().map(|&x| x).collect();
     ///
     /// for (key, value) in map.iter() {
     ///     println!("{}: {}", key, value);
@@ -225,8 +220,7 @@ impl<T> TrieMap<T> {
     /// # Examples
     ///
     /// ```rust
-    /// use trie::TrieMap;
-    /// let mut map: TrieMap<i32> = [(1, 2), (2, 4), (3, 6)].iter().map(|&x| x).collect();
+    /// let mut map: trie::Map<i32> = [(1, 2), (2, 4), (3, 6)].iter().map(|&x| x).collect();
     ///
     /// for (key, value) in map.iter_mut() {
     ///     *value = -(key as i32);
@@ -251,9 +245,7 @@ impl<T> TrieMap<T> {
     /// # Examples
     ///
     /// ```rust
-    /// use trie::TrieMap;
-    ///
-    /// let mut a = TrieMap::new();
+    /// let mut a = trie::Map::new();
     /// assert_eq!(a.len(), 0);
     /// a.insert(1, "a");
     /// assert_eq!(a.len(), 1);
@@ -266,9 +258,7 @@ impl<T> TrieMap<T> {
     /// # Examples
     ///
     /// ```rust
-    /// use trie::TrieMap;
-    ///
-    /// let mut a = TrieMap::new();
+    /// let mut a = trie::Map::new();
     /// assert!(a.is_empty());
     /// a.insert(1, "a");
     /// assert!(!a.is_empty());
@@ -281,9 +271,7 @@ impl<T> TrieMap<T> {
     /// # Examples
     ///
     /// ```rust
-    /// use trie::TrieMap;
-    ///
-    /// let mut a = TrieMap::new();
+    /// let mut a = trie::Map::new();
     /// a.insert(1, "a");
     /// a.clear();
     /// assert!(a.is_empty());
@@ -299,9 +287,7 @@ impl<T> TrieMap<T> {
     /// # Examples
     ///
     /// ```rust
-    /// use trie::TrieMap;
-    ///
-    /// let mut map = TrieMap::new();
+    /// let mut map = trie::Map::new();
     /// map.insert(1, "a");
     /// assert_eq!(map.get(&1), Some(&"a"));
     /// assert_eq!(map.get(&2), None);
@@ -331,9 +317,7 @@ impl<T> TrieMap<T> {
     /// # Examples
     ///
     /// ```rust
-    /// use trie::TrieMap;
-    ///
-    /// let mut map = TrieMap::new();
+    /// let mut map = trie::Map::new();
     /// map.insert(1, "a");
     /// assert_eq!(map.contains_key(&1), true);
     /// assert_eq!(map.contains_key(&2), false);
@@ -348,9 +332,7 @@ impl<T> TrieMap<T> {
     /// # Examples
     ///
     /// ```rust
-    /// use trie::TrieMap;
-    ///
-    /// let mut map = TrieMap::new();
+    /// let mut map = trie::Map::new();
     /// map.insert(1, "a");
     /// match map.get_mut(&1) {
     ///     Some(x) => *x = "b",
@@ -369,9 +351,7 @@ impl<T> TrieMap<T> {
     /// # Examples
     ///
     /// ```rust
-    /// use trie::TrieMap;
-    ///
-    /// let mut map = TrieMap::new();
+    /// let mut map = trie::Map::new();
     /// assert_eq!(map.insert(37, "a"), None);
     /// assert_eq!(map.is_empty(), false);
     ///
@@ -393,9 +373,7 @@ impl<T> TrieMap<T> {
     /// # Examples
     ///
     /// ```rust
-    /// use trie::TrieMap;
-    ///
-    /// let mut map = TrieMap::new();
+    /// let mut map = trie::Map::new();
     /// map.insert(1, "a");
     /// assert_eq!(map.remove(&1), Some("a"));
     /// assert_eq!(map.remove(&1), None);
@@ -441,7 +419,7 @@ macro_rules! bound {
             // However, we're allowed to flaunt rustc like this because we
             // never actually modify the "shape" of the nodes. The only
             // place that mutation is can actually occur is of the actual
-            // values of the TrieMap (as the return value of the
+            // values of the map (as the return value of the
             // iterator), i.e. we can never cause a deallocation of any
             // InternalNodes so the raw pointer is always valid.
             //
@@ -493,7 +471,7 @@ macro_rules! bound {
     }
 }
 
-impl<T> TrieMap<T> {
+impl<T> Map<T> {
     // If `upper` is true then returns upper_bound else returns lower_bound.
     #[inline]
     fn bound(&self, key: usize, upper: bool) -> Iter<T> {
@@ -509,8 +487,7 @@ impl<T> TrieMap<T> {
     /// # Examples
     ///
     /// ```rust
-    /// use trie::TrieMap;
-    /// let map: TrieMap<&str> = [(2, "a"), (4, "b"), (6, "c")].iter().map(|&x| x).collect();
+    /// let map: trie::Map<&str> = [(2, "a"), (4, "b"), (6, "c")].iter().map(|&x| x).collect();
     ///
     /// assert_eq!(map.lower_bound(4).next(), Some((4, &"b")));
     /// assert_eq!(map.lower_bound(5).next(), Some((6, &"c")));
@@ -526,8 +503,7 @@ impl<T> TrieMap<T> {
     /// # Examples
     ///
     /// ```rust
-    /// use trie::TrieMap;
-    /// let map: TrieMap<&str> = [(2, "a"), (4, "b"), (6, "c")].iter().map(|&x| x).collect();
+    /// let map: trie::Map<&str> = [(2, "a"), (4, "b"), (6, "c")].iter().map(|&x| x).collect();
     ///
     /// assert_eq!(map.upper_bound(4).next(), Some((6, &"c")));
     /// assert_eq!(map.upper_bound(5).next(), Some((6, &"c")));
@@ -551,8 +527,7 @@ impl<T> TrieMap<T> {
     /// # Examples
     ///
     /// ```rust
-    /// use trie::TrieMap;
-    /// let mut map: TrieMap<&str> = [(2, "a"), (4, "b"), (6, "c")].iter().map(|&x| x).collect();
+    /// let mut map: trie::Map<&str> = [(2, "a"), (4, "b"), (6, "c")].iter().map(|&x| x).collect();
     ///
     /// assert_eq!(map.lower_bound_mut(4).next(), Some((4, &mut "b")));
     /// assert_eq!(map.lower_bound_mut(5).next(), Some((6, &mut "c")));
@@ -576,8 +551,7 @@ impl<T> TrieMap<T> {
     /// # Examples
     ///
     /// ```rust
-    /// use trie::TrieMap;
-    /// let mut map: TrieMap<&str> = [(2, "a"), (4, "b"), (6, "c")].iter().map(|&x| x).collect();
+    /// let mut map: trie::Map<&str> = [(2, "a"), (4, "b"), (6, "c")].iter().map(|&x| x).collect();
     ///
     /// assert_eq!(map.upper_bound_mut(4).next(), Some((6, &mut "c")));
     /// assert_eq!(map.upper_bound_mut(5).next(), Some((6, &mut "c")));
@@ -596,15 +570,15 @@ impl<T> TrieMap<T> {
     }
 }
 
-impl<T> iter::FromIterator<(usize, T)> for TrieMap<T> {
-    fn from_iter<I: IntoIterator<Item=(usize, T)>>(iter: I) -> TrieMap<T> {
-        let mut map = TrieMap::new();
+impl<T> iter::FromIterator<(usize, T)> for Map<T> {
+    fn from_iter<I: IntoIterator<Item=(usize, T)>>(iter: I) -> Map<T> {
+        let mut map = Map::new();
         map.extend(iter);
         map
     }
 }
 
-impl<T> Extend<(usize, T)> for TrieMap<T> {
+impl<T> Extend<(usize, T)> for Map<T> {
     fn extend<I: IntoIterator<Item=(usize, T)>>(&mut self, iter: I) {
         for (k, v) in iter {
             self.insert(k, v);
@@ -612,7 +586,7 @@ impl<T> Extend<(usize, T)> for TrieMap<T> {
     }
 }
 
-impl<T: Hash> Hash for TrieMap<T> {
+impl<T: Hash> Hash for Map<T> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         for elt in self.iter() {
             elt.hash(state);
@@ -620,7 +594,7 @@ impl<T: Hash> Hash for TrieMap<T> {
     }
 }
 
-impl<T> ops::Index<usize> for TrieMap<T> {
+impl<T> ops::Index<usize> for Map<T> {
     type Output = T;
     #[inline]
     fn index(&self, i: &usize) -> &T {
@@ -628,7 +602,7 @@ impl<T> ops::Index<usize> for TrieMap<T> {
     }
 }
 
-impl<T> ops::IndexMut<usize> for TrieMap<T> {
+impl<T> ops::IndexMut<usize> for Map<T> {
     #[inline]
     fn index_mut(&mut self, i: &usize) -> &mut T {
         self.get_mut(i).expect("key not present")
@@ -775,7 +749,7 @@ fn remove<T>(count: &mut usize, child: &mut TrieNode<T>, key: usize,
     return ret;
 }
 
-/// A view into a single entry in a TrieMap, which may be vacant or occupied.
+/// A view into a single entry in a map, which may be vacant or occupied.
 pub enum Entry<'a, T: 'a> {
     /// An occupied entry.
     Occupied(OccupiedEntry<'a, T>),
@@ -794,23 +768,23 @@ impl<'a, T> Entry<'a, T> {
     }
 }
 
-/// A view into an occupied entry in a TrieMap.
+/// A view into an occupied entry in a map.
 pub struct OccupiedEntry<'a, T: 'a> {
     search_stack: SearchStack<'a, T>
 }
 
-/// A view into a vacant entry in a TrieMap.
+/// A view into a vacant entry in a map.
 pub struct VacantEntry<'a, T: 'a> {
     search_stack: SearchStack<'a, T>
 }
 
-/// A list of nodes encoding a path from the root of a TrieMap to a node.
+/// A list of nodes encoding a path from the root of a map to a node.
 ///
 /// Invariants:
 /// * The last node is either `External` or `Nothing`.
 /// * Pointers at indexes less than `length` can be safely dereferenced.
 struct SearchStack<'a, T: 'a> {
-    map: &'a mut TrieMap<T>,
+    map: &'a mut Map<T>,
     length: usize,
     key: usize,
     items: [*mut TrieNode<T>; MAX_DEPTH]
@@ -818,7 +792,7 @@ struct SearchStack<'a, T: 'a> {
 
 impl<'a, T> SearchStack<'a, T> {
     /// Creates a new search-stack with empty entries.
-    fn new(map: &'a mut TrieMap<T>, key: usize) -> SearchStack<'a, T> {
+    fn new(map: &'a mut Map<T>, key: usize) -> SearchStack<'a, T> {
         SearchStack {
             map: map,
             length: 0,
@@ -863,7 +837,7 @@ impl<'a, T> SearchStack<'a, T> {
 
 // Implementation of SearchStack creation logic.
 // Once a SearchStack has been created the Entry methods are relatively straight-forward.
-impl<T> TrieMap<T> {
+impl<T> Map<T> {
     /// Gets the given key's corresponding entry in the map for in-place manipulation.
     #[inline]
     pub fn entry(&mut self, key: usize) -> Entry<T> {
@@ -1000,7 +974,7 @@ impl<'a, T> OccupiedEntry<'a, T> {
             *ancestor = Nothing;
         }
 
-        // Decrement the length of the entire TrieMap, for the removed node.
+        // Decrement the length of the entire map, for the removed node.
         search_stack.map.length -= 1;
 
         value
@@ -1014,7 +988,7 @@ impl<'a, T> VacantEntry<'a, T> {
         let old_length = search_stack.length;
         let key = search_stack.key;
 
-        // Update the TrieMap's length for the new element.
+        // Update the map's length for the new element.
         search_stack.map.length += 1;
 
         // If there's only 1 node in the search stack, insert a new node below it at idx 1.
@@ -1226,13 +1200,13 @@ macro_rules! iterator_impl {
 iterator_impl! { Iter, iter = iter, mutability = }
 iterator_impl! { IterMut, iter = iter_mut, mutability = mut }
 
-impl<'a, T> IntoIterator for &'a TrieMap<T> {
+impl<'a, T> IntoIterator for &'a Map<T> {
     type Item = (usize, &'a T);
     type IntoIter = Iter<'a, T>;
     fn into_iter(self) -> Iter<'a, T> { self.iter() }
 }
 
-impl<'a, T> IntoIterator for &'a mut TrieMap<T> {
+impl<'a, T> IntoIterator for &'a mut Map<T> {
     type Item = (usize, &'a mut T);
     type IntoIter = IterMut<'a, T>;
     fn into_iter(self) -> IterMut<'a, T> { self.iter_mut() }
@@ -1244,7 +1218,7 @@ mod test {
     use std::usize;
     use std::hash;
 
-    use super::{TrieMap, InternalNode};
+    use super::{Map, InternalNode};
     use super::Entry::*;
     use super::TrieNode::*;
 
@@ -1269,7 +1243,7 @@ mod test {
 
     #[test]
     fn test_find_mut() {
-        let mut m = TrieMap::new();
+        let mut m = Map::new();
         assert!(m.insert(1, 12).is_none());
         assert!(m.insert(2, 8).is_none());
         assert!(m.insert(5, 14).is_none());
@@ -1282,7 +1256,7 @@ mod test {
 
     #[test]
     fn test_find_mut_missing() {
-        let mut m = TrieMap::new();
+        let mut m = Map::new();
         assert!(m.get_mut(&0).is_none());
         assert!(m.insert(1, 12).is_none());
         assert!(m.get_mut(&0).is_none());
@@ -1292,7 +1266,7 @@ mod test {
 
     #[test]
     fn test_step() {
-        let mut trie = TrieMap::new();
+        let mut trie = Map::new();
         let n = 300;
 
         for x in range_step(1, n, 2) {
@@ -1328,7 +1302,7 @@ mod test {
 
     #[test]
     fn test_each_reverse() {
-        let mut m = TrieMap::new();
+        let mut m = Map::new();
 
         assert!(m.insert(3, 6).is_none());
         assert!(m.insert(0, 0).is_none());
@@ -1349,7 +1323,7 @@ mod test {
 
     #[test]
     fn test_each_reverse_break() {
-        let mut m = TrieMap::new();
+        let mut m = Map::new();
 
         for x in range(usize::MAX - 10000, usize::MAX).rev() {
             m.insert(x, x / 2);
@@ -1370,7 +1344,7 @@ mod test {
 
     #[test]
     fn test_insert() {
-        let mut m = TrieMap::new();
+        let mut m = Map::new();
         assert_eq!(m.insert(1, 2), None);
         assert_eq!(m.insert(1, 3), Some(2));
         assert_eq!(m.insert(1, 4), Some(3));
@@ -1378,7 +1352,7 @@ mod test {
 
     #[test]
     fn test_remove() {
-        let mut m = TrieMap::new();
+        let mut m = Map::new();
         m.insert(1, 2);
         assert_eq!(m.remove(&1), Some(2));
         assert_eq!(m.remove(&1), None);
@@ -1388,7 +1362,7 @@ mod test {
     fn test_from_iter() {
         let xs = vec![(1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6)];
 
-        let map: TrieMap<i32> = xs.iter().map(|&x| x).collect();
+        let map: Map<i32> = xs.iter().map(|&x| x).collect();
 
         for &(k, v) in xs.iter() {
             assert_eq!(map.get(&k), Some(&v));
@@ -1398,7 +1372,7 @@ mod test {
     #[test]
     fn test_keys() {
         let vec = vec![(1, 'a'), (2, 'b'), (3, 'c')];
-        let map = vec.into_iter().collect::<TrieMap<char>>();
+        let map = vec.into_iter().collect::<Map<char>>();
         let keys = map.keys().collect::<Vec<usize>>();
         assert_eq!(keys.len(), 3);
         assert!(keys.contains(&1));
@@ -1409,7 +1383,7 @@ mod test {
     #[test]
     fn test_values() {
         let vec = vec![(1, 'a'), (2, 'b'), (3, 'c')];
-        let map = vec.into_iter().collect::<TrieMap<char>>();
+        let map = vec.into_iter().collect::<Map<char>>();
         let values = map.values().map(|&v| v).collect::<Vec<char>>();
         assert_eq!(values.len(), 3);
         assert!(values.contains(&'a'));
@@ -1419,13 +1393,13 @@ mod test {
 
     #[test]
     fn test_iteration() {
-        let empty_map : TrieMap<usize> = TrieMap::new();
+        let empty_map : Map<usize> = Map::new();
         assert_eq!(empty_map.iter().next(), None);
 
         let first = usize::MAX - 10000;
         let last = usize::MAX;
 
-        let mut map = TrieMap::new();
+        let mut map = Map::new();
         for x in range(first, last).rev() {
             map.insert(x, x / 2);
         }
@@ -1441,13 +1415,13 @@ mod test {
 
     #[test]
     fn test_mut_iter() {
-        let mut empty_map : TrieMap<usize> = TrieMap::new();
+        let mut empty_map : Map<usize> = Map::new();
         assert!(empty_map.iter_mut().next().is_none());
 
         let first = usize::MAX - 10000;
         let last = usize::MAX;
 
-        let mut map = TrieMap::new();
+        let mut map = Map::new();
         for x in range(first, last).rev() {
             map.insert(x, x / 2);
         }
@@ -1465,7 +1439,7 @@ mod test {
 
     #[test]
     fn test_bound() {
-        let empty_map : TrieMap<usize> = TrieMap::new();
+        let empty_map : Map<usize> = Map::new();
         assert_eq!(empty_map.lower_bound(0).next(), None);
         assert_eq!(empty_map.upper_bound(0).next(), None);
 
@@ -1473,7 +1447,7 @@ mod test {
         let step = 3;
         let value = 42;
 
-        let mut map : TrieMap<usize> = TrieMap::new();
+        let mut map : Map<usize> = Map::new();
         for x in range_step(0, last, step) {
             assert!(x % step == 0);
             map.insert(x, value);
@@ -1507,12 +1481,12 @@ mod test {
 
     #[test]
     fn test_mut_bound() {
-        let empty_map : TrieMap<usize> = TrieMap::new();
+        let empty_map : Map<usize> = Map::new();
         assert_eq!(empty_map.lower_bound(0).next(), None);
         assert_eq!(empty_map.upper_bound(0).next(), None);
 
-        let mut m_lower = TrieMap::new();
-        let mut m_upper = TrieMap::new();
+        let mut m_lower = Map::new();
+        let mut m_upper = Map::new();
         for i in range(0, 100) {
             m_lower.insert(2 * i, 4 * i);
             m_upper.insert(2 * i, 4 * i);
@@ -1543,7 +1517,7 @@ mod test {
 
     #[test]
     fn test_clone() {
-        let mut a = TrieMap::new();
+        let mut a = Map::new();
 
         a.insert(1, 'a');
         a.insert(2, 'b');
@@ -1554,8 +1528,8 @@ mod test {
 
     #[test]
     fn test_eq() {
-        let mut a = TrieMap::new();
-        let mut b = TrieMap::new();
+        let mut a = Map::new();
+        let mut b = Map::new();
 
         assert!(a == b);
         assert!(a.insert(0, 5).is_none());
@@ -1572,8 +1546,8 @@ mod test {
 
     #[test]
     fn test_lt() {
-        let mut a = TrieMap::new();
-        let mut b = TrieMap::new();
+        let mut a = Map::new();
+        let mut b = Map::new();
 
         assert!(!(a < b) && !(b < a));
         assert!(b.insert(2, 5).is_none());
@@ -1590,8 +1564,8 @@ mod test {
 
     #[test]
     fn test_ord() {
-        let mut a = TrieMap::new();
-        let mut b = TrieMap::new();
+        let mut a = Map::new();
+        let mut b = Map::new();
 
         assert!(a <= b && a >= b);
         assert!(a.insert(1, 1).is_none());
@@ -1604,8 +1578,8 @@ mod test {
 
     #[test]
     fn test_hash() {
-      let mut x = TrieMap::new();
-      let mut y = TrieMap::new();
+      let mut x = Map::new();
+      let mut y = Map::new();
 
       assert!(hash::hash::<_, hash::SipHasher>(&x) == hash::hash::<_, hash::SipHasher>(&y));
       x.insert(1, 'a');
@@ -1621,8 +1595,8 @@ mod test {
 
     #[test]
     fn test_debug() {
-        let mut map = TrieMap::new();
-        let empty: TrieMap<char> = TrieMap::new();
+        let mut map = Map::new();
+        let empty: Map<char> = Map::new();
 
         map.insert(1, 'a');
         map.insert(2, 'b');
@@ -1633,7 +1607,7 @@ mod test {
 
     #[test]
     fn test_index() {
-        let mut map = TrieMap::new();
+        let mut map = Map::new();
 
         map.insert(1, 2);
         map.insert(2, 1);
@@ -1645,7 +1619,7 @@ mod test {
     #[test]
     #[should_panic]
     fn test_index_nonexistent() {
-        let mut map = TrieMap::new();
+        let mut map = Map::new();
 
         map.insert(1, 2);
         map.insert(2, 1);
@@ -1658,9 +1632,9 @@ mod test {
     // The tests rely on it being even.
     const SQUARES_UPPER_LIM: usize = 128;
 
-    /// Make a TrieMap storing i^2 for i in [0, 128)
-    fn squares_map() -> TrieMap<usize> {
-        let mut map = TrieMap::new();
+    /// Make a map storing i^2 for i in [0, 128)
+    fn squares_map() -> Map<usize> {
+        let mut map = Map::new();
         for i in range(0, SQUARES_UPPER_LIM) {
             map.insert(i, i * i);
         }
@@ -1700,7 +1674,7 @@ mod test {
 
     #[test]
     fn test_entry_into_mut() {
-        let mut map = TrieMap::new();
+        let mut map = Map::new();
         map.insert(3, 6);
 
         let value_ref = match map.entry(3) {
@@ -1751,7 +1725,7 @@ mod test {
 
     #[test]
     fn test_vacant_entry_set() {
-        let mut map = TrieMap::new();
+        let mut map = Map::new();
 
         for i in range(0, SQUARES_UPPER_LIM) {
             match map.entry(i) {
@@ -1774,7 +1748,7 @@ mod test {
 
     #[test]
     fn test_single_key() {
-        let mut map = TrieMap::new();
+        let mut map = Map::new();
         map.insert(1, 2);
 
         match map.entry(1) {
@@ -1789,24 +1763,24 @@ mod bench {
     use rand::{weak_rng, Rng};
     use test::{Bencher, black_box};
 
-    use super::{TrieMap, Occupied, Vacant};
+    use super::{Map, Occupied, Vacant};
 
     const MAP_SIZE: usize = 1000;
 
-    map_insert_rand_bench!{insert_rand_100,    100,    TrieMap}
-    map_insert_rand_bench!{insert_rand_10_000, 10_000, TrieMap}
+    map_insert_rand_bench!{insert_rand_100,    100,    Map}
+    map_insert_rand_bench!{insert_rand_10_000, 10_000, Map}
 
-    map_insert_seq_bench!{insert_seq_100,    100,    TrieMap}
-    map_insert_seq_bench!{insert_seq_10_000, 10_000, TrieMap}
+    map_insert_seq_bench!{insert_seq_100,    100,    Map}
+    map_insert_seq_bench!{insert_seq_10_000, 10_000, Map}
 
-    map_find_rand_bench!{find_rand_100,    100,    TrieMap}
-    map_find_rand_bench!{find_rand_10_000, 10_000, TrieMap}
+    map_find_rand_bench!{find_rand_100,    100,    Map}
+    map_find_rand_bench!{find_rand_10_000, 10_000, Map}
 
-    map_find_seq_bench!{find_seq_100,    100,    TrieMap}
-    map_find_seq_bench!{find_seq_10_000, 10_000, TrieMap}
+    map_find_seq_bench!{find_seq_100,    100,    Map}
+    map_find_seq_bench!{find_seq_10_000, 10_000, Map}
 
-    fn random_map(size: usize) -> TrieMap<usize> {
-        let mut map = TrieMap::<usize>::new();
+    fn random_map(size: usize) -> Map<usize> {
+        let mut map = Map::<usize>::new();
         let mut rng = weak_rng();
 
         for _ in range(0, size) {
@@ -1841,7 +1815,7 @@ mod bench {
 
     #[bench]
     fn bench_lower_bound(b: &mut Bencher) {
-        let mut m = TrieMap::<usize>::new();
+        let mut m = Map::<usize>::new();
         let mut rng = weak_rng();
         for _ in range(0, MAP_SIZE) {
             m.insert(rng.gen(), rng.gen());
@@ -1856,7 +1830,7 @@ mod bench {
 
     #[bench]
     fn bench_upper_bound(b: &mut Bencher) {
-        let mut m = TrieMap::<usize>::new();
+        let mut m = Map::<usize>::new();
         let mut rng = weak_rng();
         for _ in range(0, MAP_SIZE) {
             m.insert(rng.gen(), rng.gen());
@@ -1871,7 +1845,7 @@ mod bench {
 
     #[bench]
     fn bench_insert_large(b: &mut Bencher) {
-        let mut m = TrieMap::<[usize; 10]>::new();
+        let mut m = Map::<[usize; 10]>::new();
         let mut rng = weak_rng();
 
         b.iter(|| {
@@ -1883,7 +1857,7 @@ mod bench {
 
     #[bench]
     fn bench_insert_large_entry(b: &mut Bencher) {
-        let mut m = TrieMap::<[usize; 10]>::new();
+        let mut m = Map::<[usize; 10]>::new();
         let mut rng = weak_rng();
 
         b.iter(|| {
@@ -1898,7 +1872,7 @@ mod bench {
 
     #[bench]
     fn bench_insert_large_low_bits(b: &mut Bencher) {
-        let mut m = TrieMap::<[usize; 10]>::new();
+        let mut m = Map::<[usize; 10]>::new();
         let mut rng = weak_rng();
 
         b.iter(|| {
@@ -1911,7 +1885,7 @@ mod bench {
 
     #[bench]
     fn bench_insert_small(b: &mut Bencher) {
-        let mut m = TrieMap::<()>::new();
+        let mut m = Map::<()>::new();
         let mut rng = weak_rng();
 
         b.iter(|| {
@@ -1923,7 +1897,7 @@ mod bench {
 
     #[bench]
     fn bench_insert_small_low_bits(b: &mut Bencher) {
-        let mut m = TrieMap::<()>::new();
+        let mut m = Map::<()>::new();
         let mut rng = weak_rng();
 
         b.iter(|| {
