@@ -85,16 +85,16 @@ impl Set {
     /// # Examples
     ///
     /// ```
-    /// let set: trie::Set = [1, 2, 3, 4, 5].iter().map(|&x| x).collect();
+    /// let set: trie::Set = [1, 2, 3, 4, 5].iter().cloned().collect();
     ///
-    /// let mut vec = Vec::new();
+    /// let mut vec = vec![];
     /// assert_eq!(true, set.each_reverse(|&x| { vec.push(x); true }));
-    /// assert_eq!(vec, vec![5, 4, 3, 2, 1]);
+    /// assert_eq!(vec, [5, 4, 3, 2, 1]);
     ///
     /// // Stop when we reach 3
-    /// let mut vec = Vec::new();
+    /// let mut vec = vec![];
     /// assert_eq!(false, set.each_reverse(|&x| { vec.push(x); x != 3 }));
-    /// assert_eq!(vec, vec![5, 4, 3]);
+    /// assert_eq!(vec, [5, 4, 3]);
     /// ```
     #[inline]
     pub fn each_reverse<F>(&self, mut f: F) -> bool where F: FnMut(&usize) -> bool {
@@ -128,7 +128,7 @@ impl Set {
     /// # Examples
     ///
     /// ```
-    /// let set: trie::Set = [2, 4, 6, 8].iter().map(|&x| x).collect();
+    /// let set: trie::Set = [2, 4, 6, 8].iter().cloned().collect();
     /// assert_eq!(set.lower_bound(4).next(), Some(4));
     /// assert_eq!(set.lower_bound(5).next(), Some(6));
     /// assert_eq!(set.lower_bound(10).next(), None);
@@ -143,7 +143,7 @@ impl Set {
     /// # Examples
     ///
     /// ```
-    /// let set: trie::Set = [2, 4, 6, 8].iter().map(|&x| x).collect();
+    /// let set: trie::Set = [2, 4, 6, 8].iter().cloned().collect();
     /// assert_eq!(set.upper_bound(4).next(), Some(6));
     /// assert_eq!(set.upper_bound(5).next(), Some(6));
     /// assert_eq!(set.upper_bound(10).next(), None);
@@ -157,8 +157,8 @@ impl Set {
     /// # Examples
     ///
     /// ```
-    /// let a: trie::Set = [1, 2, 3].iter().map(|&x| x).collect();
-    /// let b: trie::Set = [3, 4, 5].iter().map(|&x| x).collect();
+    /// let a: trie::Set = [1, 2, 3].iter().cloned().collect();
+    /// let b: trie::Set = [3, 4, 5].iter().cloned().collect();
     ///
     /// // Can be seen as `a - b`.
     /// for x in a.difference(&b) {
@@ -166,12 +166,12 @@ impl Set {
     /// }
     ///
     /// let diff1: trie::Set = a.difference(&b).collect();
-    /// assert_eq!(diff1, [1, 2].iter().map(|&x| x).collect());
+    /// assert_eq!(diff1, [1, 2].iter().cloned().collect());
     ///
     /// // Note that difference is not symmetric,
     /// // and `b - a` means something else:
     /// let diff2: trie::Set = b.difference(&a).collect();
-    /// assert_eq!(diff2, [4, 5].iter().map(|&x| x).collect());
+    /// assert_eq!(diff2, [4, 5].iter().cloned().collect());
     /// ```
     pub fn difference<'a>(&'a self, other: &'a Set) -> Difference<'a> {
         Difference { a: self.iter().peekable(), b: other.iter().peekable() }
@@ -182,8 +182,8 @@ impl Set {
     /// # Examples
     ///
     /// ```
-    /// let a: trie::Set = [1, 2, 3].iter().map(|&x| x).collect();
-    /// let b: trie::Set = [3, 4, 5].iter().map(|&x| x).collect();
+    /// let a: trie::Set = [1, 2, 3].iter().cloned().collect();
+    /// let b: trie::Set = [3, 4, 5].iter().cloned().collect();
     ///
     /// // Print 1, 2, 4, 5 in ascending order.
     /// for x in a.symmetric_difference(&b) {
@@ -194,7 +194,7 @@ impl Set {
     /// let diff2: trie::Set = b.symmetric_difference(&a).collect();
     ///
     /// assert_eq!(diff1, diff2);
-    /// assert_eq!(diff1, [1, 2, 4, 5].iter().map(|&x| x).collect());
+    /// assert_eq!(diff1, [1, 2, 4, 5].iter().cloned().collect());
     /// ```
     pub fn symmetric_difference<'a>(&'a self, other: &'a Set) -> SymmetricDifference<'a> {
         SymmetricDifference { a: self.iter().peekable(), b: other.iter().peekable() }
@@ -205,8 +205,8 @@ impl Set {
     /// # Examples
     ///
     /// ```
-    /// let a: trie::Set = [1, 2, 3].iter().map(|&x| x).collect();
-    /// let b: trie::Set = [2, 3, 4].iter().map(|&x| x).collect();
+    /// let a: trie::Set = [1, 2, 3].iter().cloned().collect();
+    /// let b: trie::Set = [2, 3, 4].iter().cloned().collect();
     ///
     /// // Print 2, 3 in ascending order.
     /// for x in a.intersection(&b) {
@@ -214,7 +214,7 @@ impl Set {
     /// }
     ///
     /// let diff: trie::Set = a.intersection(&b).collect();
-    /// assert_eq!(diff, [2, 3].iter().map(|&x| x).collect());
+    /// assert_eq!(diff, [2, 3].iter().cloned().collect());
     /// ```
     pub fn intersection<'a>(&'a self, other: &'a Set) -> Intersection<'a> {
         Intersection { a: self.iter().peekable(), b: other.iter().peekable() }
@@ -225,8 +225,8 @@ impl Set {
     /// # Examples
     ///
     /// ```
-    /// let a: trie::Set = [1, 2, 3].iter().map(|&x| x).collect();
-    /// let b: trie::Set = [3, 4, 5].iter().map(|&x| x).collect();
+    /// let a: trie::Set = [1, 2, 3].iter().cloned().collect();
+    /// let b: trie::Set = [3, 4, 5].iter().cloned().collect();
     ///
     /// // Print 1, 2, 3, 4, 5 in ascending order.
     /// for x in a.union(&b) {
@@ -234,7 +234,7 @@ impl Set {
     /// }
     ///
     /// let diff: trie::Set = a.union(&b).collect();
-    /// assert_eq!(diff, [1, 2, 3, 4, 5].iter().map(|&x| x).collect());
+    /// assert_eq!(diff, [1, 2, 3, 4, 5].iter().cloned().collect());
     /// ```
     pub fn union<'a>(&'a self, other: &'a Set) -> Union<'a> {
         Union { a: self.iter().peekable(), b: other.iter().peekable() }
@@ -283,7 +283,7 @@ impl Set {
     /// # Examples
     ///
     /// ```
-    /// let set: trie::Set = [1, 2, 3].iter().map(|&x| x).collect();
+    /// let set: trie::Set = [1, 2, 3].iter().cloned().collect();
     /// assert_eq!(set.contains(&1), true);
     /// assert_eq!(set.contains(&4), false);
     /// ```
@@ -298,7 +298,7 @@ impl Set {
     /// # Examples
     ///
     /// ```
-    /// let a: trie::Set = [1, 2, 3].iter().map(|&x| x).collect();
+    /// let a: trie::Set = [1, 2, 3].iter().cloned().collect();
     /// let mut b = trie::Set::new();
     ///
     /// assert_eq!(a.is_disjoint(&b), true);
@@ -317,7 +317,7 @@ impl Set {
     /// # Examples
     ///
     /// ```
-    /// let sup: trie::Set = [1, 2, 3].iter().map(|&x| x).collect();
+    /// let sup: trie::Set = [1, 2, 3].iter().cloned().collect();
     /// let mut set = trie::Set::new();
     ///
     /// assert_eq!(set.is_subset(&sup), true);
@@ -336,7 +336,7 @@ impl Set {
     /// # Examples
     ///
     /// ```
-    /// let sub: trie::Set = [1, 2].iter().map(|&x| x).collect();
+    /// let sub: trie::Set = [1, 2].iter().cloned().collect();
     /// let mut set = trie::Set::new();
     ///
     /// assert_eq!(set.is_superset(&sub), false);
@@ -412,12 +412,12 @@ impl<'a, 'b> ops::BitOr<&'b Set> for &'a Set {
     /// # Example
     ///
     /// ```
-    /// let a: trie::Set = vec![1, 2, 3].into_iter().collect();
-    /// let b: trie::Set = vec![3, 4, 5].into_iter().collect();
+    /// let a: trie::Set = [1, 2, 3].iter().cloned().collect();
+    /// let b: trie::Set = [3, 4, 5].iter().cloned().collect();
     ///
     /// let set: trie::Set = &a | &b;
     /// let v: Vec<usize> = set.iter().collect();
-    /// assert_eq!(v, vec![1, 2, 3, 4, 5]);
+    /// assert_eq!(v, [1, 2, 3, 4, 5]);
     /// ```
     fn bitor(self, rhs: &Set) -> Set {
         self.union(rhs).collect()
@@ -432,12 +432,12 @@ impl<'a, 'b> ops::BitAnd<&'b Set> for &'a Set {
     /// # Example
     ///
     /// ```
-    /// let a: trie::Set = vec![1, 2, 3].into_iter().collect();
-    /// let b: trie::Set = vec![2, 3, 4].into_iter().collect();
+    /// let a: trie::Set = [1, 2, 3].iter().cloned().collect();
+    /// let b: trie::Set = [2, 3, 4].iter().cloned().collect();
     ///
     /// let set: trie::Set = &a & &b;
     /// let v: Vec<usize> = set.iter().collect();
-    /// assert_eq!(v, vec![2, 3]);
+    /// assert_eq!(v, [2, 3]);
     /// ```
     fn bitand(self, rhs: &Set) -> Set {
         self.intersection(rhs).collect()
@@ -452,12 +452,12 @@ impl<'a, 'b> ops::BitXor<&'b Set> for &'a Set {
     /// # Example
     ///
     /// ```
-    /// let a: trie::Set = vec![1, 2, 3].into_iter().collect();
-    /// let b: trie::Set = vec![3, 4, 5].into_iter().collect();
+    /// let a: trie::Set = [1, 2, 3].iter().cloned().collect();
+    /// let b: trie::Set = [3, 4, 5].iter().cloned().collect();
     ///
     /// let set: trie::Set = &a ^ &b;
     /// let v: Vec<usize> = set.iter().collect();
-    /// assert_eq!(v, vec![1, 2, 4, 5]);
+    /// assert_eq!(v, [1, 2, 4, 5]);
     /// ```
     fn bitxor(self, rhs: &Set) -> Set {
         self.symmetric_difference(rhs).collect()
@@ -472,12 +472,12 @@ impl<'a, 'b> ops::Sub<&'b Set> for &'a Set {
     /// # Example
     ///
     /// ```
-    /// let a: trie::Set = vec![1, 2, 3].into_iter().collect();
-    /// let b: trie::Set = vec![3, 4, 5].into_iter().collect();
+    /// let a: trie::Set = [1, 2, 3].iter().cloned().collect();
+    /// let b: trie::Set = [3, 4, 5].iter().cloned().collect();
     ///
     /// let set: trie::Set = &a - &b;
     /// let v: Vec<usize> = set.iter().collect();
-    /// assert_eq!(v, vec![1, 2]);
+    /// assert_eq!(v, [1, 2]);
     /// ```
     fn sub(self, rhs: &Set) -> Set {
         self.difference(rhs).collect()
@@ -627,9 +627,9 @@ mod test {
 
     #[test]
     fn test_from_iter() {
-        let xs = vec![9, 8, 7, 6, 5, 4, 3, 2, 1];
+        let xs = [9, 8, 7, 6, 5, 4, 3, 2, 1];
 
-        let set: Set = xs.iter().map(|&x| x).collect();
+        let set: Set = xs.iter().cloned().collect();
 
         for x in xs.iter() {
             assert!(set.contains(x));
@@ -783,41 +783,41 @@ mod test {
 
     #[test]
     fn test_bit_or() {
-        let a: Set = vec![1, 2, 3].into_iter().collect();
-        let b: Set = vec![3, 4, 5].into_iter().collect();
+        let a: Set = [1, 2, 3].iter().cloned().collect();
+        let b: Set = [3, 4, 5].iter().cloned().collect();
 
         let set: Set = &a | &b;
         let v: Vec<usize> = set.iter().collect();
-        assert_eq!(v, vec![1, 2, 3, 4, 5]);
+        assert_eq!(v, [1, 2, 3, 4, 5]);
     }
 
     #[test]
     fn test_bit_and() {
-        let a: Set = vec![1, 2, 3].into_iter().collect();
-        let b: Set = vec![2, 3, 4].into_iter().collect();
+        let a: Set = [1, 2, 3].iter().cloned().collect();
+        let b: Set = [2, 3, 4].iter().cloned().collect();
 
         let set: Set = &a & &b;
         let v: Vec<usize> = set.iter().collect();
-        assert_eq!(v, vec![2, 3]);
+        assert_eq!(v, [2, 3]);
     }
 
     #[test]
     fn test_bit_xor() {
-        let a: Set = vec![1, 2, 3].into_iter().collect();
-        let b: Set = vec![3, 4, 5].into_iter().collect();
+        let a: Set = [1, 2, 3].iter().cloned().collect();
+        let b: Set = [3, 4, 5].iter().cloned().collect();
 
         let set: Set = &a ^ &b;
         let v: Vec<usize> = set.iter().collect();
-        assert_eq!(v, vec![1, 2, 4, 5]);
+        assert_eq!(v, [1, 2, 4, 5]);
     }
 
     #[test]
     fn test_sub() {
-        let a: Set = vec![1, 2, 3].into_iter().collect();
-        let b: Set = vec![3, 4, 5].into_iter().collect();
+        let a: Set = [1, 2, 3].iter().cloned().collect();
+        let b: Set = [3, 4, 5].iter().cloned().collect();
 
         let set: Set = &a - &b;
         let v: Vec<usize> = set.iter().collect();
-        assert_eq!(v, vec![1, 2]);
+        assert_eq!(v, [1, 2]);
     }
 }

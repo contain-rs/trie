@@ -168,16 +168,16 @@ impl<T> Map<T> {
     /// # Examples
     ///
     /// ```
-    /// let map: trie::Map<&str> = [(1, "a"), (2, "b"), (3, "c")].iter().map(|&x| x).collect();
+    /// let map: trie::Map<&str> = [(1, "a"), (2, "b"), (3, "c")].iter().cloned().collect();
     ///
-    /// let mut vec = Vec::new();
+    /// let mut vec = vec![];
     /// assert_eq!(true, map.each_reverse(|&key, &value| { vec.push((key, value)); true }));
-    /// assert_eq!(vec, vec![(3, "c"), (2, "b"), (1, "a")]);
+    /// assert_eq!(vec, [(3, "c"), (2, "b"), (1, "a")]);
     ///
     /// // Stop when we reach 2
-    /// let mut vec = Vec::new();
+    /// let mut vec = vec![];
     /// assert_eq!(false, map.each_reverse(|&key, &value| { vec.push(value); key != 2 }));
-    /// assert_eq!(vec, vec!["c", "b"]);
+    /// assert_eq!(vec, ["c", "b"]);
     /// ```
     #[inline]
     pub fn each_reverse<'a, F>(&'a self, mut f: F) -> bool
@@ -198,7 +198,7 @@ impl<T> Map<T> {
     /// # Examples
     ///
     /// ```
-    /// let map: trie::Map<&str> = [(3, "c"), (1, "a"), (2, "b")].iter().map(|&x| x).collect();
+    /// let map: trie::Map<&str> = [(3, "c"), (1, "a"), (2, "b")].iter().cloned().collect();
     ///
     /// for (key, value) in map.iter() {
     ///     println!("{}: {}", key, value);
@@ -220,7 +220,7 @@ impl<T> Map<T> {
     /// # Examples
     ///
     /// ```
-    /// let mut map: trie::Map<i32> = [(1, 2), (2, 4), (3, 6)].iter().map(|&x| x).collect();
+    /// let mut map: trie::Map<i32> = [(1, 2), (2, 4), (3, 6)].iter().cloned().collect();
     ///
     /// for (key, value) in map.iter_mut() {
     ///     *value = -(key as i32);
@@ -487,7 +487,7 @@ impl<T> Map<T> {
     /// # Examples
     ///
     /// ```
-    /// let map: trie::Map<&str> = [(2, "a"), (4, "b"), (6, "c")].iter().map(|&x| x).collect();
+    /// let map: trie::Map<&str> = [(2, "a"), (4, "b"), (6, "c")].iter().cloned().collect();
     ///
     /// assert_eq!(map.lower_bound(4).next(), Some((4, &"b")));
     /// assert_eq!(map.lower_bound(5).next(), Some((6, &"c")));
@@ -503,7 +503,7 @@ impl<T> Map<T> {
     /// # Examples
     ///
     /// ```
-    /// let map: trie::Map<&str> = [(2, "a"), (4, "b"), (6, "c")].iter().map(|&x| x).collect();
+    /// let map: trie::Map<&str> = [(2, "a"), (4, "b"), (6, "c")].iter().cloned().collect();
     ///
     /// assert_eq!(map.upper_bound(4).next(), Some((6, &"c")));
     /// assert_eq!(map.upper_bound(5).next(), Some((6, &"c")));
@@ -527,7 +527,7 @@ impl<T> Map<T> {
     /// # Examples
     ///
     /// ```
-    /// let mut map: trie::Map<&str> = [(2, "a"), (4, "b"), (6, "c")].iter().map(|&x| x).collect();
+    /// let mut map: trie::Map<&str> = [(2, "a"), (4, "b"), (6, "c")].iter().cloned().collect();
     ///
     /// assert_eq!(map.lower_bound_mut(4).next(), Some((4, &mut "b")));
     /// assert_eq!(map.lower_bound_mut(5).next(), Some((6, &mut "c")));
@@ -551,7 +551,7 @@ impl<T> Map<T> {
     /// # Examples
     ///
     /// ```
-    /// let mut map: trie::Map<&str> = [(2, "a"), (4, "b"), (6, "c")].iter().map(|&x| x).collect();
+    /// let mut map: trie::Map<&str> = [(2, "a"), (4, "b"), (6, "c")].iter().cloned().collect();
     ///
     /// assert_eq!(map.upper_bound_mut(4).next(), Some((6, &mut "c")));
     /// assert_eq!(map.upper_bound_mut(5).next(), Some((6, &mut "c")));
@@ -1360,9 +1360,9 @@ mod test {
 
     #[test]
     fn test_from_iter() {
-        let xs = vec![(1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6)];
+        let xs = [(1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6)];
 
-        let map: Map<i32> = xs.iter().map(|&x| x).collect();
+        let map: Map<i32> = xs.iter().cloned().collect();
 
         for &(k, v) in xs.iter() {
             assert_eq!(map.get(&k), Some(&v));
@@ -1371,9 +1371,9 @@ mod test {
 
     #[test]
     fn test_keys() {
-        let vec = vec![(1, 'a'), (2, 'b'), (3, 'c')];
-        let map = vec.into_iter().collect::<Map<char>>();
-        let keys = map.keys().collect::<Vec<usize>>();
+        let vec = [(1, 'a'), (2, 'b'), (3, 'c')];
+        let map: Map<_> = vec.iter().cloned().collect();
+        let keys: Vec<_> = map.keys().collect();
         assert_eq!(keys.len(), 3);
         assert!(keys.contains(&1));
         assert!(keys.contains(&2));
@@ -1382,9 +1382,9 @@ mod test {
 
     #[test]
     fn test_values() {
-        let vec = vec![(1, 'a'), (2, 'b'), (3, 'c')];
-        let map = vec.into_iter().collect::<Map<char>>();
-        let values = map.values().map(|&v| v).collect::<Vec<char>>();
+        let vec = [(1, 'a'), (2, 'b'), (3, 'c')];
+        let map: Map<_> = vec.iter().cloned().collect();
+        let values: Vec<_> = map.values().cloned().collect();
         assert_eq!(values.len(), 3);
         assert!(values.contains(&'a'));
         assert!(values.contains(&'b'));
