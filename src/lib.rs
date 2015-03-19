@@ -18,10 +18,13 @@
 #[cfg(test)] extern crate rand;
 #[cfg(test)] extern crate test;
 
-pub use map::TrieMap;
-pub use set::TrieSet;
+pub use map::Map;
+pub use set::Set;
 
 #[cfg(test)] #[macro_use] mod bench;
 
 pub mod map;
 pub mod set;
+
+#[cfg(feature="ordered_iter")]
+mod ordered_iter;

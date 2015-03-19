@@ -19,16 +19,14 @@ use std::fmt::{self, Debug};
 use std::iter::{self, Peekable, IntoIterator};
 use std::ops;
 
-use super::map::{TrieMap, self};
+use super::map::{Map, self};
 
 /// A set implemented as a radix trie.
 ///
 /// # Examples
 ///
-/// ```rust
-/// use trie::TrieSet;
-///
-/// let mut set = TrieSet::new();
+/// ```
+/// let mut set = trie::Set::new();
 /// set.insert(6);
 /// set.insert(28);
 /// set.insert(6);
@@ -51,11 +49,11 @@ use super::map::{TrieMap, self};
 /// assert!(set.is_empty());
 /// ```
 #[derive(Clone, Default, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct TrieSet {
-    map: TrieMap<()>
+pub struct Set {
+    map: Map<()>
 }
 
-impl Debug for TrieSet {
+impl Debug for Set {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         try!(write!(f, "{{"));
 
@@ -68,19 +66,17 @@ impl Debug for TrieSet {
     }
 }
 
-impl TrieSet {
-    /// Creates an empty TrieSet.
+impl Set {
+    /// Creates an empty set.
     ///
     /// # Examples
     ///
-    /// ```rust
-    /// use trie::TrieSet;
-    /// let mut set = TrieSet::new();
+    /// ```
+    /// let mut set = trie::Set::new();
     /// ```
     #[inline]
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
-    pub fn new() -> TrieSet {
-        TrieSet{map: TrieMap::new()}
+    pub fn new() -> Set {
+        Set{map: Map::new()}
     }
 
     /// Visits all values in reverse order. Aborts traversal when `f` returns `false`.
@@ -88,19 +84,17 @@ impl TrieSet {
     ///
     /// # Examples
     ///
-    /// ```rust
-    /// use trie::TrieSet;
+    /// ```
+    /// let set: trie::Set = [1, 2, 3, 4, 5].iter().cloned().collect();
     ///
-    /// let set: TrieSet = [1, 2, 3, 4, 5].iter().map(|&x| x).collect();
-    ///
-    /// let mut vec = Vec::new();
+    /// let mut vec = vec![];
     /// assert_eq!(true, set.each_reverse(|&x| { vec.push(x); true }));
-    /// assert_eq!(vec, vec![5, 4, 3, 2, 1]);
+    /// assert_eq!(vec, [5, 4, 3, 2, 1]);
     ///
     /// // Stop when we reach 3
-    /// let mut vec = Vec::new();
+    /// let mut vec = vec![];
     /// assert_eq!(false, set.each_reverse(|&x| { vec.push(x); x != 3 }));
-    /// assert_eq!(vec, vec![5, 4, 3]);
+    /// assert_eq!(vec, [5, 4, 3]);
     /// ```
     #[inline]
     pub fn each_reverse<F>(&self, mut f: F) -> bool where F: FnMut(&usize) -> bool {
@@ -111,10 +105,8 @@ impl TrieSet {
     ///
     /// # Examples
     ///
-    /// ```rust
-    /// use trie::TrieSet;
-    ///
-    /// let mut set = TrieSet::new();
+    /// ```
+    /// let mut set = trie::Set::new();
     /// set.insert(3);
     /// set.insert(2);
     /// set.insert(1);
@@ -126,7 +118,6 @@ impl TrieSet {
     /// }
     /// ```
     #[inline]
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
     pub fn iter(&self) -> Iter {
         Iter { iter: self.map.iter() }
     }
@@ -136,10 +127,8 @@ impl TrieSet {
     ///
     /// # Examples
     ///
-    /// ```rust
-    /// use trie::TrieSet;
-    ///
-    /// let set: TrieSet = [2, 4, 6, 8].iter().map(|&x| x).collect();
+    /// ```
+    /// let set: trie::Set = [2, 4, 6, 8].iter().cloned().collect();
     /// assert_eq!(set.lower_bound(4).next(), Some(4));
     /// assert_eq!(set.lower_bound(5).next(), Some(6));
     /// assert_eq!(set.lower_bound(10).next(), None);
@@ -153,10 +142,8 @@ impl TrieSet {
     ///
     /// # Examples
     ///
-    /// ```rust
-    /// use trie::TrieSet;
-    ///
-    /// let set: TrieSet = [2, 4, 6, 8].iter().map(|&x| x).collect();
+    /// ```
+    /// let set: trie::Set = [2, 4, 6, 8].iter().cloned().collect();
     /// assert_eq!(set.upper_bound(4).next(), Some(6));
     /// assert_eq!(set.upper_bound(5).next(), Some(6));
     /// assert_eq!(set.upper_bound(10).next(), None);
@@ -169,27 +156,24 @@ impl TrieSet {
     ///
     /// # Examples
     ///
-    /// ```rust
-    /// use trie::TrieSet;
-    ///
-    /// let a: TrieSet = [1, 2, 3].iter().map(|&x| x).collect();
-    /// let b: TrieSet = [3, 4, 5].iter().map(|&x| x).collect();
+    /// ```
+    /// let a: trie::Set = [1, 2, 3].iter().cloned().collect();
+    /// let b: trie::Set = [3, 4, 5].iter().cloned().collect();
     ///
     /// // Can be seen as `a - b`.
     /// for x in a.difference(&b) {
     ///     println!("{}", x); // Print 1 then 2
     /// }
     ///
-    /// let diff1: TrieSet = a.difference(&b).collect();
-    /// assert_eq!(diff1, [1, 2].iter().map(|&x| x).collect());
+    /// let diff1: trie::Set = a.difference(&b).collect();
+    /// assert_eq!(diff1, [1, 2].iter().cloned().collect());
     ///
     /// // Note that difference is not symmetric,
     /// // and `b - a` means something else:
-    /// let diff2: TrieSet = b.difference(&a).collect();
-    /// assert_eq!(diff2, [4, 5].iter().map(|&x| x).collect());
+    /// let diff2: trie::Set = b.difference(&a).collect();
+    /// assert_eq!(diff2, [4, 5].iter().cloned().collect());
     /// ```
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
-    pub fn difference<'a>(&'a self, other: &'a TrieSet) -> Difference<'a> {
+    pub fn difference<'a>(&'a self, other: &'a Set) -> Difference<'a> {
         Difference { a: self.iter().peekable(), b: other.iter().peekable() }
     }
 
@@ -197,25 +181,22 @@ impl TrieSet {
     ///
     /// # Examples
     ///
-    /// ```rust
-    /// use trie::TrieSet;
-    ///
-    /// let a: TrieSet = [1, 2, 3].iter().map(|&x| x).collect();
-    /// let b: TrieSet = [3, 4, 5].iter().map(|&x| x).collect();
+    /// ```
+    /// let a: trie::Set = [1, 2, 3].iter().cloned().collect();
+    /// let b: trie::Set = [3, 4, 5].iter().cloned().collect();
     ///
     /// // Print 1, 2, 4, 5 in ascending order.
     /// for x in a.symmetric_difference(&b) {
     ///     println!("{}", x);
     /// }
     ///
-    /// let diff1: TrieSet = a.symmetric_difference(&b).collect();
-    /// let diff2: TrieSet = b.symmetric_difference(&a).collect();
+    /// let diff1: trie::Set = a.symmetric_difference(&b).collect();
+    /// let diff2: trie::Set = b.symmetric_difference(&a).collect();
     ///
     /// assert_eq!(diff1, diff2);
-    /// assert_eq!(diff1, [1, 2, 4, 5].iter().map(|&x| x).collect());
+    /// assert_eq!(diff1, [1, 2, 4, 5].iter().cloned().collect());
     /// ```
-    #[unstable = "matches collection reform specification, waiting for dust to settle."]
-    pub fn symmetric_difference<'a>(&'a self, other: &'a TrieSet) -> SymmetricDifference<'a> {
+    pub fn symmetric_difference<'a>(&'a self, other: &'a Set) -> SymmetricDifference<'a> {
         SymmetricDifference { a: self.iter().peekable(), b: other.iter().peekable() }
     }
 
@@ -223,22 +204,19 @@ impl TrieSet {
     ///
     /// # Examples
     ///
-    /// ```rust
-    /// use trie::TrieSet;
-    ///
-    /// let a: TrieSet = [1, 2, 3].iter().map(|&x| x).collect();
-    /// let b: TrieSet = [2, 3, 4].iter().map(|&x| x).collect();
+    /// ```
+    /// let a: trie::Set = [1, 2, 3].iter().cloned().collect();
+    /// let b: trie::Set = [2, 3, 4].iter().cloned().collect();
     ///
     /// // Print 2, 3 in ascending order.
     /// for x in a.intersection(&b) {
     ///     println!("{}", x);
     /// }
     ///
-    /// let diff: TrieSet = a.intersection(&b).collect();
-    /// assert_eq!(diff, [2, 3].iter().map(|&x| x).collect());
+    /// let diff: trie::Set = a.intersection(&b).collect();
+    /// assert_eq!(diff, [2, 3].iter().cloned().collect());
     /// ```
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
-    pub fn intersection<'a>(&'a self, other: &'a TrieSet) -> Intersection<'a> {
+    pub fn intersection<'a>(&'a self, other: &'a Set) -> Intersection<'a> {
         Intersection { a: self.iter().peekable(), b: other.iter().peekable() }
     }
 
@@ -246,22 +224,19 @@ impl TrieSet {
     ///
     /// # Examples
     ///
-    /// ```rust
-    /// use trie::TrieSet;
-    ///
-    /// let a: TrieSet = [1, 2, 3].iter().map(|&x| x).collect();
-    /// let b: TrieSet = [3, 4, 5].iter().map(|&x| x).collect();
+    /// ```
+    /// let a: trie::Set = [1, 2, 3].iter().cloned().collect();
+    /// let b: trie::Set = [3, 4, 5].iter().cloned().collect();
     ///
     /// // Print 1, 2, 3, 4, 5 in ascending order.
     /// for x in a.union(&b) {
     ///     println!("{}", x);
     /// }
     ///
-    /// let diff: TrieSet = a.union(&b).collect();
-    /// assert_eq!(diff, [1, 2, 3, 4, 5].iter().map(|&x| x).collect());
+    /// let diff: trie::Set = a.union(&b).collect();
+    /// assert_eq!(diff, [1, 2, 3, 4, 5].iter().cloned().collect());
     /// ```
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
-    pub fn union<'a>(&'a self, other: &'a TrieSet) -> Union<'a> {
+    pub fn union<'a>(&'a self, other: &'a Set) -> Union<'a> {
         Union { a: self.iter().peekable(), b: other.iter().peekable() }
     }
 
@@ -269,62 +244,50 @@ impl TrieSet {
     ///
     /// # Examples
     ///
-    /// ```rust
-    /// use trie::TrieSet;
-    ///
-    /// let mut v = TrieSet::new();
+    /// ```
+    /// let mut v = trie::Set::new();
     /// assert_eq!(v.len(), 0);
     /// v.insert(1);
     /// assert_eq!(v.len(), 1);
     /// ```
     #[inline]
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
     pub fn len(&self) -> usize { self.map.len() }
 
     /// Returns true if the set contains no elements
     ///
     /// # Examples
     ///
-    /// ```rust
-    /// use trie::TrieSet;
-    ///
-    /// let mut v = TrieSet::new();
+    /// ```
+    /// let mut v = trie::Set::new();
     /// assert!(v.is_empty());
     /// v.insert(1);
     /// assert!(!v.is_empty());
     /// ```
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
     pub fn is_empty(&self) -> bool { self.map.is_empty() }
 
     /// Clears the set, removing all values.
     ///
     /// # Examples
     ///
-    /// ```rust
-    /// use trie::TrieSet;
-    ///
-    /// let mut v = TrieSet::new();
+    /// ```
+    /// let mut v = trie::Set::new();
     /// v.insert(1);
     /// v.clear();
     /// assert!(v.is_empty());
     /// ```
     #[inline]
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
     pub fn clear(&mut self) { self.map.clear() }
 
     /// Returns `true` if the set contains a value.
     ///
     /// # Examples
     ///
-    /// ```rust
-    /// use trie::TrieSet;
-    ///
-    /// let set: TrieSet = [1, 2, 3].iter().map(|&x| x).collect();
+    /// ```
+    /// let set: trie::Set = [1, 2, 3].iter().cloned().collect();
     /// assert_eq!(set.contains(&1), true);
     /// assert_eq!(set.contains(&4), false);
     /// ```
     #[inline]
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
     pub fn contains(&self, value: &usize) -> bool {
         self.map.contains_key(value)
     }
@@ -334,11 +297,9 @@ impl TrieSet {
     ///
     /// # Examples
     ///
-    /// ```rust
-    /// use trie::TrieSet;
-    ///
-    /// let a: TrieSet = [1, 2, 3].iter().map(|&x| x).collect();
-    /// let mut b: TrieSet = TrieSet::new();
+    /// ```
+    /// let a: trie::Set = [1, 2, 3].iter().cloned().collect();
+    /// let mut b = trie::Set::new();
     ///
     /// assert_eq!(a.is_disjoint(&b), true);
     /// b.insert(4);
@@ -347,8 +308,7 @@ impl TrieSet {
     /// assert_eq!(a.is_disjoint(&b), false);
     /// ```
     #[inline]
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
-    pub fn is_disjoint(&self, other: &TrieSet) -> bool {
+    pub fn is_disjoint(&self, other: &Set) -> bool {
         self.iter().all(|v| !other.contains(&v))
     }
 
@@ -356,11 +316,9 @@ impl TrieSet {
     ///
     /// # Examples
     ///
-    /// ```rust
-    /// use trie::TrieSet;
-    ///
-    /// let sup: TrieSet = [1, 2, 3].iter().map(|&x| x).collect();
-    /// let mut set: TrieSet = TrieSet::new();
+    /// ```
+    /// let sup: trie::Set = [1, 2, 3].iter().cloned().collect();
+    /// let mut set = trie::Set::new();
     ///
     /// assert_eq!(set.is_subset(&sup), true);
     /// set.insert(2);
@@ -369,8 +327,7 @@ impl TrieSet {
     /// assert_eq!(set.is_subset(&sup), false);
     /// ```
     #[inline]
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
-    pub fn is_subset(&self, other: &TrieSet) -> bool {
+    pub fn is_subset(&self, other: &Set) -> bool {
         self.iter().all(|v| other.contains(&v))
     }
 
@@ -378,11 +335,9 @@ impl TrieSet {
     ///
     /// # Examples
     ///
-    /// ```rust
-    /// use trie::TrieSet;
-    ///
-    /// let sub: TrieSet = [1, 2].iter().map(|&x| x).collect();
-    /// let mut set: TrieSet = TrieSet::new();
+    /// ```
+    /// let sub: trie::Set = [1, 2].iter().cloned().collect();
+    /// let mut set = trie::Set::new();
     ///
     /// assert_eq!(set.is_superset(&sub), false);
     ///
@@ -394,8 +349,7 @@ impl TrieSet {
     /// assert_eq!(set.is_superset(&sub), true);
     /// ```
     #[inline]
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
-    pub fn is_superset(&self, other: &TrieSet) -> bool {
+    pub fn is_superset(&self, other: &Set) -> bool {
         other.is_subset(self)
     }
 
@@ -404,17 +358,14 @@ impl TrieSet {
     ///
     /// # Examples
     ///
-    /// ```rust
-    /// use trie::TrieSet;
-    ///
-    /// let mut set = TrieSet::new();
+    /// ```
+    /// let mut set = trie::Set::new();
     ///
     /// assert_eq!(set.insert(2), true);
     /// assert_eq!(set.insert(2), false);
     /// assert_eq!(set.len(), 1);
     /// ```
     #[inline]
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
     pub fn insert(&mut self, value: usize) -> bool {
         self.map.insert(value, ()).is_none()
     }
@@ -424,31 +375,28 @@ impl TrieSet {
     ///
     /// # Examples
     ///
-    /// ```rust
-    /// use trie::TrieSet;
-    ///
-    /// let mut set = TrieSet::new();
+    /// ```
+    /// let mut set = trie::Set::new();
     ///
     /// set.insert(2);
     /// assert_eq!(set.remove(&2), true);
     /// assert_eq!(set.remove(&2), false);
     /// ```
     #[inline]
-    #[unstable = "matches collection reform specification, waiting for dust to settle"]
     pub fn remove(&mut self, value: &usize) -> bool {
         self.map.remove(value).is_some()
     }
 }
 
-impl iter::FromIterator<usize> for TrieSet {
-    fn from_iter<I: IntoIterator<Item=usize>>(iter: I) -> TrieSet {
-        let mut set = TrieSet::new();
+impl iter::FromIterator<usize> for Set {
+    fn from_iter<I: IntoIterator<Item=usize>>(iter: I) -> Set {
+        let mut set = Set::new();
         set.extend(iter);
         set
     }
 }
 
-impl Extend<usize> for TrieSet {
+impl Extend<usize> for Set {
     fn extend<I: IntoIterator<Item=usize>>(&mut self, iter: I) {
         for elem in iter {
             self.insert(elem);
@@ -456,122 +404,115 @@ impl Extend<usize> for TrieSet {
     }
 }
 
-#[unstable = "matches collection reform specification, waiting for dust to settle"]
-impl<'a, 'b> ops::BitOr<&'b TrieSet> for &'a TrieSet {
-    type Output = TrieSet;
+impl<'a, 'b> ops::BitOr<&'b Set> for &'a Set {
+    type Output = Set;
 
-    /// Returns the union of `self` and `rhs` as a new `TrieSet`.
+    /// Returns the union of `self` and `rhs` as a new set.
     ///
     /// # Example
     ///
-    /// ```rust
-    /// use trie::TrieSet;
-    ///
-    /// let a: TrieSet = vec![1, 2, 3].into_iter().collect();
-    /// let b: TrieSet = vec![3, 4, 5].into_iter().collect();
-    ///
-    /// let set: TrieSet = &a | &b;
-    /// let v: Vec<usize> = set.iter().collect();
-    /// assert_eq!(v, vec![1, 2, 3, 4, 5]);
     /// ```
-    fn bitor(self, rhs: &TrieSet) -> TrieSet {
+    /// let a: trie::Set = [1, 2, 3].iter().cloned().collect();
+    /// let b: trie::Set = [3, 4, 5].iter().cloned().collect();
+    ///
+    /// let set: trie::Set = &a | &b;
+    /// let v: Vec<usize> = set.iter().collect();
+    /// assert_eq!(v, [1, 2, 3, 4, 5]);
+    /// ```
+    fn bitor(self, rhs: &Set) -> Set {
         self.union(rhs).collect()
     }
 }
 
-#[unstable = "matches collection reform specification, waiting for dust to settle"]
-impl<'a, 'b> ops::BitAnd<&'b TrieSet> for &'a TrieSet {
-    type Output = TrieSet;
+impl<'a, 'b> ops::BitAnd<&'b Set> for &'a Set {
+    type Output = Set;
 
-    /// Returns the intersection of `self` and `rhs` as a new `TrieSet`.
+    /// Returns the intersection of `self` and `rhs` as a new set.
     ///
     /// # Example
     ///
-    /// ```rust
-    /// use trie::TrieSet;
-    ///
-    /// let a: TrieSet = vec![1, 2, 3].into_iter().collect();
-    /// let b: TrieSet = vec![2, 3, 4].into_iter().collect();
-    ///
-    /// let set: TrieSet = &a & &b;
-    /// let v: Vec<usize> = set.iter().collect();
-    /// assert_eq!(v, vec![2, 3]);
     /// ```
-    fn bitand(self, rhs: &TrieSet) -> TrieSet {
+    /// let a: trie::Set = [1, 2, 3].iter().cloned().collect();
+    /// let b: trie::Set = [2, 3, 4].iter().cloned().collect();
+    ///
+    /// let set: trie::Set = &a & &b;
+    /// let v: Vec<usize> = set.iter().collect();
+    /// assert_eq!(v, [2, 3]);
+    /// ```
+    fn bitand(self, rhs: &Set) -> Set {
         self.intersection(rhs).collect()
     }
 }
 
-#[unstable = "matches collection reform specification, waiting for dust to settle"]
-impl<'a, 'b> ops::BitXor<&'b TrieSet> for &'a TrieSet {
-    type Output = TrieSet;
+impl<'a, 'b> ops::BitXor<&'b Set> for &'a Set {
+    type Output = Set;
 
-    /// Returns the symmetric difference of `self` and `rhs` as a new `TrieSet`.
+    /// Returns the symmetric difference of `self` and `rhs` as a new set.
     ///
     /// # Example
     ///
-    /// ```rust
-    /// use trie::TrieSet;
-    ///
-    /// let a: TrieSet = vec![1, 2, 3].into_iter().collect();
-    /// let b: TrieSet = vec![3, 4, 5].into_iter().collect();
-    ///
-    /// let set: TrieSet = &a ^ &b;
-    /// let v: Vec<usize> = set.iter().collect();
-    /// assert_eq!(v, vec![1, 2, 4, 5]);
     /// ```
-    fn bitxor(self, rhs: &TrieSet) -> TrieSet {
+    /// let a: trie::Set = [1, 2, 3].iter().cloned().collect();
+    /// let b: trie::Set = [3, 4, 5].iter().cloned().collect();
+    ///
+    /// let set: trie::Set = &a ^ &b;
+    /// let v: Vec<usize> = set.iter().collect();
+    /// assert_eq!(v, [1, 2, 4, 5]);
+    /// ```
+    fn bitxor(self, rhs: &Set) -> Set {
         self.symmetric_difference(rhs).collect()
     }
 }
 
-#[unstable = "matches collection reform specification, waiting for dust to settle"]
-impl<'a, 'b> ops::Sub<&'b TrieSet> for &'a TrieSet {
-    type Output = TrieSet;
+impl<'a, 'b> ops::Sub<&'b Set> for &'a Set {
+    type Output = Set;
 
-    /// Returns the difference of `self` and `rhs` as a new `TrieSet`.
+    /// Returns the difference of `self` and `rhs` as a new set.
     ///
     /// # Example
     ///
-    /// ```rust
-    /// use trie::TrieSet;
-    ///
-    /// let a: TrieSet = vec![1, 2, 3].into_iter().collect();
-    /// let b: TrieSet = vec![3, 4, 5].into_iter().collect();
-    ///
-    /// let set: TrieSet = &a - &b;
-    /// let v: Vec<usize> = set.iter().collect();
-    /// assert_eq!(v, vec![1, 2]);
     /// ```
-    fn sub(self, rhs: &TrieSet) -> TrieSet {
+    /// let a: trie::Set = [1, 2, 3].iter().cloned().collect();
+    /// let b: trie::Set = [3, 4, 5].iter().cloned().collect();
+    ///
+    /// let set: trie::Set = &a - &b;
+    /// let v: Vec<usize> = set.iter().collect();
+    /// assert_eq!(v, [1, 2]);
+    /// ```
+    fn sub(self, rhs: &Set) -> Set {
         self.difference(rhs).collect()
     }
 }
 
 /// A forward iterator over a set.
+#[derive(Clone)]
 pub struct Iter<'a> {
     iter: map::Iter<'a, ()>
 }
 
 /// An iterator producing elements in the set difference (in-order).
+#[derive(Clone)]
 pub struct Difference<'a> {
     a: Peekable<Iter<'a>>,
     b: Peekable<Iter<'a>>,
 }
 
 /// An iterator producing elements in the set symmetric difference (in-order).
+#[derive(Clone)]
 pub struct SymmetricDifference<'a> {
     a: Peekable<Iter<'a>>,
     b: Peekable<Iter<'a>>,
 }
 
 /// An iterator producing elements in the set intersection (in-order).
+#[derive(Clone)]
 pub struct Intersection<'a> {
     a: Peekable<Iter<'a>>,
     b: Peekable<Iter<'a>>,
 }
 
 /// An iterator producing elements in the set union (in-order).
+#[derive(Clone)]
 pub struct Union<'a> {
     a: Peekable<Iter<'a>>,
     b: Peekable<Iter<'a>>,
@@ -645,17 +586,15 @@ impl<'a> Iterator for Intersection<'a> {
 impl<'a> Iterator for Union<'a> {
     type Item = usize;
     fn next(&mut self) -> Option<usize> {
-        loop {
-            match cmp_opt(self.a.peek(), self.b.peek(), Greater, Less) {
-                Less    => return self.a.next(),
-                Equal   => { self.b.next(); return self.a.next() }
-                Greater => return self.b.next(),
-            }
+        match cmp_opt(self.a.peek(), self.b.peek(), Greater, Less) {
+            Less    => self.a.next(),
+            Equal   => { self.b.next(); self.a.next() }
+            Greater => self.b.next(),
         }
     }
 }
 
-impl<'a> IntoIterator for &'a TrieSet {
+impl<'a> IntoIterator for &'a Set {
     type Item = usize;
     type IntoIter = Iter<'a>;
     fn into_iter(self) -> Iter<'a> { self.iter() }
@@ -665,14 +604,14 @@ impl<'a> IntoIterator for &'a TrieSet {
 mod test {
     use std::usize;
 
-    use super::TrieSet;
+    use super::Set;
 
     #[test]
     fn test_sane_chunk() {
         let x = 1;
         let y = 1 << (usize::BITS - 1);
 
-        let mut trie = TrieSet::new();
+        let mut trie = Set::new();
 
         assert!(trie.insert(x));
         assert!(trie.insert(y));
@@ -688,9 +627,9 @@ mod test {
 
     #[test]
     fn test_from_iter() {
-        let xs = vec![9, 8, 7, 6, 5, 4, 3, 2, 1];
+        let xs = [9, 8, 7, 6, 5, 4, 3, 2, 1];
 
-        let set: TrieSet = xs.iter().map(|&x| x).collect();
+        let set: Set = xs.iter().cloned().collect();
 
         for x in xs.iter() {
             assert!(set.contains(x));
@@ -699,8 +638,8 @@ mod test {
 
     #[test]
     fn test_debug() {
-        let mut set = TrieSet::new();
-        let empty = TrieSet::new();
+        let mut set = Set::new();
+        let empty = Set::new();
 
         set.insert(1);
         set.insert(2);
@@ -711,7 +650,7 @@ mod test {
 
     #[test]
     fn test_clone() {
-        let mut a = TrieSet::new();
+        let mut a = Set::new();
 
         a.insert(1);
         a.insert(2);
@@ -722,8 +661,8 @@ mod test {
 
     #[test]
     fn test_lt() {
-        let mut a = TrieSet::new();
-        let mut b = TrieSet::new();
+        let mut a = Set::new();
+        let mut b = Set::new();
 
         assert!(!(a < b) && !(b < a));
         assert!(b.insert(2));
@@ -740,8 +679,8 @@ mod test {
 
     #[test]
     fn test_ord() {
-        let mut a = TrieSet::new();
-        let mut b = TrieSet::new();
+        let mut a = Set::new();
+        let mut b = Set::new();
 
         assert!(a <= b && a >= b);
         assert!(a.insert(1));
@@ -768,10 +707,10 @@ mod test {
 
     fn check<F>(a: &[usize], b: &[usize], expected: &[usize], f: F) where
         // FIXME Replace `Counter` with `Box<FnMut(&usize) -> bool>`
-        F: FnOnce(&TrieSet, &TrieSet, Counter) -> bool,
+        F: FnOnce(&Set, &Set, Counter) -> bool,
     {
-        let mut set_a = TrieSet::new();
-        let mut set_b = TrieSet::new();
+        let mut set_a = Set::new();
+        let mut set_b = Set::new();
 
         for x in a.iter() { assert!(set_a.insert(*x)) }
         for y in b.iter() { assert!(set_b.insert(*y)) }
@@ -844,41 +783,41 @@ mod test {
 
     #[test]
     fn test_bit_or() {
-        let a: TrieSet = vec![1, 2, 3].into_iter().collect();
-        let b: TrieSet = vec![3, 4, 5].into_iter().collect();
+        let a: Set = [1, 2, 3].iter().cloned().collect();
+        let b: Set = [3, 4, 5].iter().cloned().collect();
 
-        let set: TrieSet = &a | &b;
+        let set: Set = &a | &b;
         let v: Vec<usize> = set.iter().collect();
-        assert_eq!(v, vec![1, 2, 3, 4, 5]);
+        assert_eq!(v, [1, 2, 3, 4, 5]);
     }
 
     #[test]
     fn test_bit_and() {
-        let a: TrieSet = vec![1, 2, 3].into_iter().collect();
-        let b: TrieSet = vec![2, 3, 4].into_iter().collect();
+        let a: Set = [1, 2, 3].iter().cloned().collect();
+        let b: Set = [2, 3, 4].iter().cloned().collect();
 
-        let set: TrieSet = &a & &b;
+        let set: Set = &a & &b;
         let v: Vec<usize> = set.iter().collect();
-        assert_eq!(v, vec![2, 3]);
+        assert_eq!(v, [2, 3]);
     }
 
     #[test]
     fn test_bit_xor() {
-        let a: TrieSet = vec![1, 2, 3].into_iter().collect();
-        let b: TrieSet = vec![3, 4, 5].into_iter().collect();
+        let a: Set = [1, 2, 3].iter().cloned().collect();
+        let b: Set = [3, 4, 5].iter().cloned().collect();
 
-        let set: TrieSet = &a ^ &b;
+        let set: Set = &a ^ &b;
         let v: Vec<usize> = set.iter().collect();
-        assert_eq!(v, vec![1, 2, 4, 5]);
+        assert_eq!(v, [1, 2, 4, 5]);
     }
 
     #[test]
     fn test_sub() {
-        let a: TrieSet = vec![1, 2, 3].into_iter().collect();
-        let b: TrieSet = vec![3, 4, 5].into_iter().collect();
+        let a: Set = [1, 2, 3].iter().cloned().collect();
+        let b: Set = [3, 4, 5].iter().cloned().collect();
 
-        let set: TrieSet = &a - &b;
+        let set: Set = &a - &b;
         let v: Vec<usize> = set.iter().collect();
-        assert_eq!(v, vec![1, 2]);
+        assert_eq!(v, [1, 2]);
     }
 }
