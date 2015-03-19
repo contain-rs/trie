@@ -1,1 +1,1 @@
-{"name":"trie","counts":{"deprecated":0,"unstable":0,"stable":29,"unmarked":70},"submodules":[{"name":"map","counts":{"deprecated":0,"unstable":0,"stable":14,"unmarked":43},"submodules":[]},{"name":"set","counts":{"deprecated":0,"unstable":0,"stable":15,"unmarked":26},"submodules":[]}]}
+{"name":"trie","counts":{"deprecated":0,"unstable":0,"stable":39,"unmarked":78},"submodules":[{"name":"map","counts":{"deprecated":0,"unstable":0,"stable":19,"unmarked":46},"submodules":[]},{"name":"set","counts":{"deprecated":0,"unstable":0,"stable":20,"unmarked":31},"submodules":[]}]}

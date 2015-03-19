@@ -863,67 +863,6 @@
 <span id="821">821</span>
 <span id="822">822</span>
 <span id="823">823</span>
-<span id="824">824</span>
-<span id="825">825</span>
-<span id="826">826</span>
-<span id="827">827</span>
-<span id="828">828</span>
-<span id="829">829</span>
-<span id="830">830</span>
-<span id="831">831</span>
-<span id="832">832</span>
-<span id="833">833</span>
-<span id="834">834</span>
-<span id="835">835</span>
-<span id="836">836</span>
-<span id="837">837</span>
-<span id="838">838</span>
-<span id="839">839</span>
-<span id="840">840</span>
-<span id="841">841</span>
-<span id="842">842</span>
-<span id="843">843</span>
-<span id="844">844</span>
-<span id="845">845</span>
-<span id="846">846</span>
-<span id="847">847</span>
-<span id="848">848</span>
-<span id="849">849</span>
-<span id="850">850</span>
-<span id="851">851</span>
-<span id="852">852</span>
-<span id="853">853</span>
-<span id="854">854</span>
-<span id="855">855</span>
-<span id="856">856</span>
-<span id="857">857</span>
-<span id="858">858</span>
-<span id="859">859</span>
-<span id="860">860</span>
-<span id="861">861</span>
-<span id="862">862</span>
-<span id="863">863</span>
-<span id="864">864</span>
-<span id="865">865</span>
-<span id="866">866</span>
-<span id="867">867</span>
-<span id="868">868</span>
-<span id="869">869</span>
-<span id="870">870</span>
-<span id="871">871</span>
-<span id="872">872</span>
-<span id="873">873</span>
-<span id="874">874</span>
-<span id="875">875</span>
-<span id="876">876</span>
-<span id="877">877</span>
-<span id="878">878</span>
-<span id="879">879</span>
-<span id="880">880</span>
-<span id="881">881</span>
-<span id="882">882</span>
-<span id="883">883</span>
-<span id="884">884</span>
 </pre><pre class='rust '>
 <span class='comment'>// Copyright 2014 The Rust Project Developers. See the COPYRIGHT</span>
 <span class='comment'>// file at the top-level directory of this distribution and at</span>
@@ -946,16 +885,14 @@
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>iter</span>::{<span class='self'>self</span>, <span class='ident'>Peekable</span>, <span class='ident'>IntoIterator</span>};
 <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>ops</span>;
 
-<span class='kw'>use</span> <span class='ident'>super</span>::<span class='ident'>map</span>::{<span class='ident'>TrieMap</span>, <span class='self'>self</span>};
+<span class='kw'>use</span> <span class='ident'>super</span>::<span class='ident'>map</span>::{<span class='ident'>Map</span>, <span class='self'>self</span>};
 
 <span class='doccomment'>/// A set implemented as a radix trie.</span>
 <span class='doccomment'>///</span>
 <span class='doccomment'>/// # Examples</span>
 <span class='doccomment'>///</span>
-<span class='doccomment'>/// ```rust</span>
-<span class='doccomment'>/// use trie::TrieSet;</span>
-<span class='doccomment'>///</span>
-<span class='doccomment'>/// let mut set = TrieSet::new();</span>
+<span class='doccomment'>/// ```</span>
+<span class='doccomment'>/// let mut set = trie::Set::new();</span>
 <span class='doccomment'>/// set.insert(6);</span>
 <span class='doccomment'>/// set.insert(28);</span>
 <span class='doccomment'>/// set.insert(6);</span>
@@ -978,11 +915,11 @@
 <span class='doccomment'>/// assert!(set.is_empty());</span>
 <span class='doccomment'>/// ```</span>
 <span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>Clone</span>, <span class='ident'>Default</span>, <span class='ident'>Hash</span>, <span class='ident'>PartialEq</span>, <span class='ident'>Eq</span>, <span class='ident'>PartialOrd</span>, <span class='ident'>Ord</span>)]</span>
-<span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>TrieSet</span> {
-    <span class='ident'>map</span>: <span class='ident'>TrieMap</span><span class='op'>&lt;</span>()<span class='op'>&gt;</span>
+<span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>Set</span> {
+    <span class='ident'>map</span>: <span class='ident'>Map</span><span class='op'>&lt;</span>()<span class='op'>&gt;</span>
 }
 
-<span class='kw'>impl</span> <span class='ident'>Debug</span> <span class='kw'>for</span> <span class='ident'>TrieSet</span> {
+<span class='kw'>impl</span> <span class='ident'>Debug</span> <span class='kw'>for</span> <span class='ident'>Set</span> {
     <span class='kw'>fn</span> <span class='ident'>fmt</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>f</span>: <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>fmt</span>::<span class='ident'>Formatter</span>) <span class='op'>-&gt;</span> <span class='ident'>fmt</span>::<span class='prelude-ty'>Result</span> {
         <span class='macro'>try</span><span class='macro'>!</span>(<span class='macro'>write</span><span class='macro'>!</span>(<span class='ident'>f</span>, <span class='string'>&quot;{{&quot;</span>));
 
@@ -995,19 +932,17 @@
     }
 }
 
-<span class='kw'>impl</span> <span class='ident'>TrieSet</span> {
-    <span class='doccomment'>/// Creates an empty TrieSet.</span>
+<span class='kw'>impl</span> <span class='ident'>Set</span> {
+    <span class='doccomment'>/// Creates an empty set.</span>
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// # Examples</span>
     <span class='doccomment'>///</span>
-    <span class='doccomment'>/// ```rust</span>
-    <span class='doccomment'>/// use trie::TrieSet;</span>
-    <span class='doccomment'>/// let mut set = TrieSet::new();</span>
+    <span class='doccomment'>/// ```</span>
+    <span class='doccomment'>/// let mut set = trie::Set::new();</span>
     <span class='doccomment'>/// ```</span>
     <span class='attribute'>#[<span class='ident'>inline</span>]</span>
-    <span class='attribute'>#[<span class='ident'>unstable</span> <span class='op'>=</span> <span class='string'>&quot;matches collection reform specification, waiting for dust to settle&quot;</span>]</span>
-    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>new</span>() <span class='op'>-&gt;</span> <span class='ident'>TrieSet</span> {
-        <span class='ident'>TrieSet</span>{<span class='ident'>map</span>: <span class='ident'>TrieMap</span>::<span class='ident'>new</span>()}
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>new</span>() <span class='op'>-&gt;</span> <span class='ident'>Set</span> {
+        <span class='ident'>Set</span>{<span class='ident'>map</span>: <span class='ident'>Map</span>::<span class='ident'>new</span>()}
     }
 
     <span class='doccomment'>/// Visits all values in reverse order. Aborts traversal when `f` returns `false`.</span>
@@ -1015,19 +950,17 @@
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// # Examples</span>
     <span class='doccomment'>///</span>
-    <span class='doccomment'>/// ```rust</span>
-    <span class='doccomment'>/// use trie::TrieSet;</span>
+    <span class='doccomment'>/// ```</span>
+    <span class='doccomment'>/// let set: trie::Set = [1, 2, 3, 4, 5].iter().cloned().collect();</span>
     <span class='doccomment'>///</span>
-    <span class='doccomment'>/// let set: TrieSet = [1, 2, 3, 4, 5].iter().map(|&amp;x| x).collect();</span>
-    <span class='doccomment'>///</span>
-    <span class='doccomment'>/// let mut vec = Vec::new();</span>
+    <span class='doccomment'>/// let mut vec = vec![];</span>
     <span class='doccomment'>/// assert_eq!(true, set.each_reverse(|&amp;x| { vec.push(x); true }));</span>
-    <span class='doccomment'>/// assert_eq!(vec, vec![5, 4, 3, 2, 1]);</span>
+    <span class='doccomment'>/// assert_eq!(vec, [5, 4, 3, 2, 1]);</span>
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// // Stop when we reach 3</span>
-    <span class='doccomment'>/// let mut vec = Vec::new();</span>
+    <span class='doccomment'>/// let mut vec = vec![];</span>
     <span class='doccomment'>/// assert_eq!(false, set.each_reverse(|&amp;x| { vec.push(x); x != 3 }));</span>
-    <span class='doccomment'>/// assert_eq!(vec, vec![5, 4, 3]);</span>
+    <span class='doccomment'>/// assert_eq!(vec, [5, 4, 3]);</span>
     <span class='doccomment'>/// ```</span>
     <span class='attribute'>#[<span class='ident'>inline</span>]</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>each_reverse</span><span class='op'>&lt;</span><span class='ident'>F</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='kw-2'>mut</span> <span class='ident'>f</span>: <span class='ident'>F</span>) <span class='op'>-&gt;</span> <span class='ident'>bool</span> <span class='kw'>where</span> <span class='ident'>F</span>: <span class='ident'>FnMut</span>(<span class='kw-2'>&amp;</span><span class='ident'>usize</span>) <span class='op'>-&gt;</span> <span class='ident'>bool</span> {
@@ -1038,10 +971,8 @@
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// # Examples</span>
     <span class='doccomment'>///</span>
-    <span class='doccomment'>/// ```rust</span>
-    <span class='doccomment'>/// use trie::TrieSet;</span>
-    <span class='doccomment'>///</span>
-    <span class='doccomment'>/// let mut set = TrieSet::new();</span>
+    <span class='doccomment'>/// ```</span>
+    <span class='doccomment'>/// let mut set = trie::Set::new();</span>
     <span class='doccomment'>/// set.insert(3);</span>
     <span class='doccomment'>/// set.insert(2);</span>
     <span class='doccomment'>/// set.insert(1);</span>
@@ -1053,7 +984,6 @@
     <span class='doccomment'>/// }</span>
     <span class='doccomment'>/// ```</span>
     <span class='attribute'>#[<span class='ident'>inline</span>]</span>
-    <span class='attribute'>#[<span class='ident'>unstable</span> <span class='op'>=</span> <span class='string'>&quot;matches collection reform specification, waiting for dust to settle&quot;</span>]</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>iter</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>Iter</span> {
         <span class='ident'>Iter</span> { <span class='ident'>iter</span>: <span class='self'>self</span>.<span class='ident'>map</span>.<span class='ident'>iter</span>() }
     }
@@ -1063,10 +993,8 @@
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// # Examples</span>
     <span class='doccomment'>///</span>
-    <span class='doccomment'>/// ```rust</span>
-    <span class='doccomment'>/// use trie::TrieSet;</span>
-    <span class='doccomment'>///</span>
-    <span class='doccomment'>/// let set: TrieSet = [2, 4, 6, 8].iter().map(|&amp;x| x).collect();</span>
+    <span class='doccomment'>/// ```</span>
+    <span class='doccomment'>/// let set: trie::Set = [2, 4, 6, 8].iter().cloned().collect();</span>
     <span class='doccomment'>/// assert_eq!(set.lower_bound(4).next(), Some(4));</span>
     <span class='doccomment'>/// assert_eq!(set.lower_bound(5).next(), Some(6));</span>
     <span class='doccomment'>/// assert_eq!(set.lower_bound(10).next(), None);</span>
@@ -1080,10 +1008,8 @@
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// # Examples</span>
     <span class='doccomment'>///</span>
-    <span class='doccomment'>/// ```rust</span>
-    <span class='doccomment'>/// use trie::TrieSet;</span>
-    <span class='doccomment'>///</span>
-    <span class='doccomment'>/// let set: TrieSet = [2, 4, 6, 8].iter().map(|&amp;x| x).collect();</span>
+    <span class='doccomment'>/// ```</span>
+    <span class='doccomment'>/// let set: trie::Set = [2, 4, 6, 8].iter().cloned().collect();</span>
     <span class='doccomment'>/// assert_eq!(set.upper_bound(4).next(), Some(6));</span>
     <span class='doccomment'>/// assert_eq!(set.upper_bound(5).next(), Some(6));</span>
     <span class='doccomment'>/// assert_eq!(set.upper_bound(10).next(), None);</span>
@@ -1096,27 +1022,24 @@
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// # Examples</span>
     <span class='doccomment'>///</span>
-    <span class='doccomment'>/// ```rust</span>
-    <span class='doccomment'>/// use trie::TrieSet;</span>
-    <span class='doccomment'>///</span>
-    <span class='doccomment'>/// let a: TrieSet = [1, 2, 3].iter().map(|&amp;x| x).collect();</span>
-    <span class='doccomment'>/// let b: TrieSet = [3, 4, 5].iter().map(|&amp;x| x).collect();</span>
+    <span class='doccomment'>/// ```</span>
+    <span class='doccomment'>/// let a: trie::Set = [1, 2, 3].iter().cloned().collect();</span>
+    <span class='doccomment'>/// let b: trie::Set = [3, 4, 5].iter().cloned().collect();</span>
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// // Can be seen as `a - b`.</span>
     <span class='doccomment'>/// for x in a.difference(&amp;b) {</span>
     <span class='doccomment'>///     println!(&quot;{}&quot;, x); // Print 1 then 2</span>
     <span class='doccomment'>/// }</span>
     <span class='doccomment'>///</span>
-    <span class='doccomment'>/// let diff1: TrieSet = a.difference(&amp;b).collect();</span>
-    <span class='doccomment'>/// assert_eq!(diff1, [1, 2].iter().map(|&amp;x| x).collect());</span>
+    <span class='doccomment'>/// let diff1: trie::Set = a.difference(&amp;b).collect();</span>
+    <span class='doccomment'>/// assert_eq!(diff1, [1, 2].iter().cloned().collect());</span>
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// // Note that difference is not symmetric,</span>
     <span class='doccomment'>/// // and `b - a` means something else:</span>
-    <span class='doccomment'>/// let diff2: TrieSet = b.difference(&amp;a).collect();</span>
-    <span class='doccomment'>/// assert_eq!(diff2, [4, 5].iter().map(|&amp;x| x).collect());</span>
+    <span class='doccomment'>/// let diff2: trie::Set = b.difference(&amp;a).collect();</span>
+    <span class='doccomment'>/// assert_eq!(diff2, [4, 5].iter().cloned().collect());</span>
     <span class='doccomment'>/// ```</span>
-    <span class='attribute'>#[<span class='ident'>unstable</span> <span class='op'>=</span> <span class='string'>&quot;matches collection reform specification, waiting for dust to settle&quot;</span>]</span>
-    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>difference</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='self'>self</span>, <span class='ident'>other</span>: <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>TrieSet</span>) <span class='op'>-&gt;</span> <span class='ident'>Difference</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;</span> {
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>difference</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='self'>self</span>, <span class='ident'>other</span>: <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>Set</span>) <span class='op'>-&gt;</span> <span class='ident'>Difference</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;</span> {
         <span class='ident'>Difference</span> { <span class='ident'>a</span>: <span class='self'>self</span>.<span class='ident'>iter</span>().<span class='ident'>peekable</span>(), <span class='ident'>b</span>: <span class='ident'>other</span>.<span class='ident'>iter</span>().<span class='ident'>peekable</span>() }
     }
 
@@ -1124,25 +1047,22 @@
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// # Examples</span>
     <span class='doccomment'>///</span>
-    <span class='doccomment'>/// ```rust</span>
-    <span class='doccomment'>/// use trie::TrieSet;</span>
-    <span class='doccomment'>///</span>
-    <span class='doccomment'>/// let a: TrieSet = [1, 2, 3].iter().map(|&amp;x| x).collect();</span>
-    <span class='doccomment'>/// let b: TrieSet = [3, 4, 5].iter().map(|&amp;x| x).collect();</span>
+    <span class='doccomment'>/// ```</span>
+    <span class='doccomment'>/// let a: trie::Set = [1, 2, 3].iter().cloned().collect();</span>
+    <span class='doccomment'>/// let b: trie::Set = [3, 4, 5].iter().cloned().collect();</span>
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// // Print 1, 2, 4, 5 in ascending order.</span>
     <span class='doccomment'>/// for x in a.symmetric_difference(&amp;b) {</span>
     <span class='doccomment'>///     println!(&quot;{}&quot;, x);</span>
     <span class='doccomment'>/// }</span>
     <span class='doccomment'>///</span>
-    <span class='doccomment'>/// let diff1: TrieSet = a.symmetric_difference(&amp;b).collect();</span>
-    <span class='doccomment'>/// let diff2: TrieSet = b.symmetric_difference(&amp;a).collect();</span>
+    <span class='doccomment'>/// let diff1: trie::Set = a.symmetric_difference(&amp;b).collect();</span>
+    <span class='doccomment'>/// let diff2: trie::Set = b.symmetric_difference(&amp;a).collect();</span>
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// assert_eq!(diff1, diff2);</span>
-    <span class='doccomment'>/// assert_eq!(diff1, [1, 2, 4, 5].iter().map(|&amp;x| x).collect());</span>
+    <span class='doccomment'>/// assert_eq!(diff1, [1, 2, 4, 5].iter().cloned().collect());</span>
     <span class='doccomment'>/// ```</span>
-    <span class='attribute'>#[<span class='ident'>unstable</span> <span class='op'>=</span> <span class='string'>&quot;matches collection reform specification, waiting for dust to settle.&quot;</span>]</span>
-    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>symmetric_difference</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='self'>self</span>, <span class='ident'>other</span>: <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>TrieSet</span>) <span class='op'>-&gt;</span> <span class='ident'>SymmetricDifference</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;</span> {
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>symmetric_difference</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='self'>self</span>, <span class='ident'>other</span>: <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>Set</span>) <span class='op'>-&gt;</span> <span class='ident'>SymmetricDifference</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;</span> {
         <span class='ident'>SymmetricDifference</span> { <span class='ident'>a</span>: <span class='self'>self</span>.<span class='ident'>iter</span>().<span class='ident'>peekable</span>(), <span class='ident'>b</span>: <span class='ident'>other</span>.<span class='ident'>iter</span>().<span class='ident'>peekable</span>() }
     }
 
@@ -1150,22 +1070,19 @@
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// # Examples</span>
     <span class='doccomment'>///</span>
-    <span class='doccomment'>/// ```rust</span>
-    <span class='doccomment'>/// use trie::TrieSet;</span>
-    <span class='doccomment'>///</span>
-    <span class='doccomment'>/// let a: TrieSet = [1, 2, 3].iter().map(|&amp;x| x).collect();</span>
-    <span class='doccomment'>/// let b: TrieSet = [2, 3, 4].iter().map(|&amp;x| x).collect();</span>
+    <span class='doccomment'>/// ```</span>
+    <span class='doccomment'>/// let a: trie::Set = [1, 2, 3].iter().cloned().collect();</span>
+    <span class='doccomment'>/// let b: trie::Set = [2, 3, 4].iter().cloned().collect();</span>
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// // Print 2, 3 in ascending order.</span>
     <span class='doccomment'>/// for x in a.intersection(&amp;b) {</span>
     <span class='doccomment'>///     println!(&quot;{}&quot;, x);</span>
     <span class='doccomment'>/// }</span>
     <span class='doccomment'>///</span>
-    <span class='doccomment'>/// let diff: TrieSet = a.intersection(&amp;b).collect();</span>
-    <span class='doccomment'>/// assert_eq!(diff, [2, 3].iter().map(|&amp;x| x).collect());</span>
+    <span class='doccomment'>/// let diff: trie::Set = a.intersection(&amp;b).collect();</span>
+    <span class='doccomment'>/// assert_eq!(diff, [2, 3].iter().cloned().collect());</span>
     <span class='doccomment'>/// ```</span>
-    <span class='attribute'>#[<span class='ident'>unstable</span> <span class='op'>=</span> <span class='string'>&quot;matches collection reform specification, waiting for dust to settle&quot;</span>]</span>
-    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>intersection</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='self'>self</span>, <span class='ident'>other</span>: <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>TrieSet</span>) <span class='op'>-&gt;</span> <span class='ident'>Intersection</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;</span> {
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>intersection</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='self'>self</span>, <span class='ident'>other</span>: <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>Set</span>) <span class='op'>-&gt;</span> <span class='ident'>Intersection</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;</span> {
         <span class='ident'>Intersection</span> { <span class='ident'>a</span>: <span class='self'>self</span>.<span class='ident'>iter</span>().<span class='ident'>peekable</span>(), <span class='ident'>b</span>: <span class='ident'>other</span>.<span class='ident'>iter</span>().<span class='ident'>peekable</span>() }
     }
 
@@ -1173,22 +1090,19 @@
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// # Examples</span>
     <span class='doccomment'>///</span>
-    <span class='doccomment'>/// ```rust</span>
-    <span class='doccomment'>/// use trie::TrieSet;</span>
-    <span class='doccomment'>///</span>
-    <span class='doccomment'>/// let a: TrieSet = [1, 2, 3].iter().map(|&amp;x| x).collect();</span>
-    <span class='doccomment'>/// let b: TrieSet = [3, 4, 5].iter().map(|&amp;x| x).collect();</span>
+    <span class='doccomment'>/// ```</span>
+    <span class='doccomment'>/// let a: trie::Set = [1, 2, 3].iter().cloned().collect();</span>
+    <span class='doccomment'>/// let b: trie::Set = [3, 4, 5].iter().cloned().collect();</span>
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// // Print 1, 2, 3, 4, 5 in ascending order.</span>
     <span class='doccomment'>/// for x in a.union(&amp;b) {</span>
     <span class='doccomment'>///     println!(&quot;{}&quot;, x);</span>
     <span class='doccomment'>/// }</span>
     <span class='doccomment'>///</span>
-    <span class='doccomment'>/// let diff: TrieSet = a.union(&amp;b).collect();</span>
-    <span class='doccomment'>/// assert_eq!(diff, [1, 2, 3, 4, 5].iter().map(|&amp;x| x).collect());</span>
+    <span class='doccomment'>/// let diff: trie::Set = a.union(&amp;b).collect();</span>
+    <span class='doccomment'>/// assert_eq!(diff, [1, 2, 3, 4, 5].iter().cloned().collect());</span>
     <span class='doccomment'>/// ```</span>
-    <span class='attribute'>#[<span class='ident'>unstable</span> <span class='op'>=</span> <span class='string'>&quot;matches collection reform specification, waiting for dust to settle&quot;</span>]</span>
-    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>union</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='self'>self</span>, <span class='ident'>other</span>: <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>TrieSet</span>) <span class='op'>-&gt;</span> <span class='ident'>Union</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;</span> {
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>union</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;</span>(<span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='self'>self</span>, <span class='ident'>other</span>: <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>Set</span>) <span class='op'>-&gt;</span> <span class='ident'>Union</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;</span> {
         <span class='ident'>Union</span> { <span class='ident'>a</span>: <span class='self'>self</span>.<span class='ident'>iter</span>().<span class='ident'>peekable</span>(), <span class='ident'>b</span>: <span class='ident'>other</span>.<span class='ident'>iter</span>().<span class='ident'>peekable</span>() }
     }
 
@@ -1196,62 +1110,50 @@
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// # Examples</span>
     <span class='doccomment'>///</span>
-    <span class='doccomment'>/// ```rust</span>
-    <span class='doccomment'>/// use trie::TrieSet;</span>
-    <span class='doccomment'>///</span>
-    <span class='doccomment'>/// let mut v = TrieSet::new();</span>
+    <span class='doccomment'>/// ```</span>
+    <span class='doccomment'>/// let mut v = trie::Set::new();</span>
     <span class='doccomment'>/// assert_eq!(v.len(), 0);</span>
     <span class='doccomment'>/// v.insert(1);</span>
     <span class='doccomment'>/// assert_eq!(v.len(), 1);</span>
     <span class='doccomment'>/// ```</span>
     <span class='attribute'>#[<span class='ident'>inline</span>]</span>
-    <span class='attribute'>#[<span class='ident'>unstable</span> <span class='op'>=</span> <span class='string'>&quot;matches collection reform specification, waiting for dust to settle&quot;</span>]</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>len</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>usize</span> { <span class='self'>self</span>.<span class='ident'>map</span>.<span class='ident'>len</span>() }
 
     <span class='doccomment'>/// Returns true if the set contains no elements</span>
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// # Examples</span>
     <span class='doccomment'>///</span>
-    <span class='doccomment'>/// ```rust</span>
-    <span class='doccomment'>/// use trie::TrieSet;</span>
-    <span class='doccomment'>///</span>
-    <span class='doccomment'>/// let mut v = TrieSet::new();</span>
+    <span class='doccomment'>/// ```</span>
+    <span class='doccomment'>/// let mut v = trie::Set::new();</span>
     <span class='doccomment'>/// assert!(v.is_empty());</span>
     <span class='doccomment'>/// v.insert(1);</span>
     <span class='doccomment'>/// assert!(!v.is_empty());</span>
     <span class='doccomment'>/// ```</span>
-    <span class='attribute'>#[<span class='ident'>unstable</span> <span class='op'>=</span> <span class='string'>&quot;matches collection reform specification, waiting for dust to settle&quot;</span>]</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>is_empty</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>bool</span> { <span class='self'>self</span>.<span class='ident'>map</span>.<span class='ident'>is_empty</span>() }
 
     <span class='doccomment'>/// Clears the set, removing all values.</span>
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// # Examples</span>
     <span class='doccomment'>///</span>
-    <span class='doccomment'>/// ```rust</span>
-    <span class='doccomment'>/// use trie::TrieSet;</span>
-    <span class='doccomment'>///</span>
-    <span class='doccomment'>/// let mut v = TrieSet::new();</span>
+    <span class='doccomment'>/// ```</span>
+    <span class='doccomment'>/// let mut v = trie::Set::new();</span>
     <span class='doccomment'>/// v.insert(1);</span>
     <span class='doccomment'>/// v.clear();</span>
     <span class='doccomment'>/// assert!(v.is_empty());</span>
     <span class='doccomment'>/// ```</span>
     <span class='attribute'>#[<span class='ident'>inline</span>]</span>
-    <span class='attribute'>#[<span class='ident'>unstable</span> <span class='op'>=</span> <span class='string'>&quot;matches collection reform specification, waiting for dust to settle&quot;</span>]</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>clear</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>) { <span class='self'>self</span>.<span class='ident'>map</span>.<span class='ident'>clear</span>() }
 
     <span class='doccomment'>/// Returns `true` if the set contains a value.</span>
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// # Examples</span>
     <span class='doccomment'>///</span>
-    <span class='doccomment'>/// ```rust</span>
-    <span class='doccomment'>/// use trie::TrieSet;</span>
-    <span class='doccomment'>///</span>
-    <span class='doccomment'>/// let set: TrieSet = [1, 2, 3].iter().map(|&amp;x| x).collect();</span>
+    <span class='doccomment'>/// ```</span>
+    <span class='doccomment'>/// let set: trie::Set = [1, 2, 3].iter().cloned().collect();</span>
     <span class='doccomment'>/// assert_eq!(set.contains(&amp;1), true);</span>
     <span class='doccomment'>/// assert_eq!(set.contains(&amp;4), false);</span>
     <span class='doccomment'>/// ```</span>
     <span class='attribute'>#[<span class='ident'>inline</span>]</span>
-    <span class='attribute'>#[<span class='ident'>unstable</span> <span class='op'>=</span> <span class='string'>&quot;matches collection reform specification, waiting for dust to settle&quot;</span>]</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>contains</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>value</span>: <span class='kw-2'>&amp;</span><span class='ident'>usize</span>) <span class='op'>-&gt;</span> <span class='ident'>bool</span> {
         <span class='self'>self</span>.<span class='ident'>map</span>.<span class='ident'>contains_key</span>(<span class='ident'>value</span>)
     }
@@ -1261,11 +1163,9 @@
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// # Examples</span>
     <span class='doccomment'>///</span>
-    <span class='doccomment'>/// ```rust</span>
-    <span class='doccomment'>/// use trie::TrieSet;</span>
-    <span class='doccomment'>///</span>
-    <span class='doccomment'>/// let a: TrieSet = [1, 2, 3].iter().map(|&amp;x| x).collect();</span>
-    <span class='doccomment'>/// let mut b: TrieSet = TrieSet::new();</span>
+    <span class='doccomment'>/// ```</span>
+    <span class='doccomment'>/// let a: trie::Set = [1, 2, 3].iter().cloned().collect();</span>
+    <span class='doccomment'>/// let mut b = trie::Set::new();</span>
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// assert_eq!(a.is_disjoint(&amp;b), true);</span>
     <span class='doccomment'>/// b.insert(4);</span>
@@ -1274,8 +1174,7 @@
     <span class='doccomment'>/// assert_eq!(a.is_disjoint(&amp;b), false);</span>
     <span class='doccomment'>/// ```</span>
     <span class='attribute'>#[<span class='ident'>inline</span>]</span>
-    <span class='attribute'>#[<span class='ident'>unstable</span> <span class='op'>=</span> <span class='string'>&quot;matches collection reform specification, waiting for dust to settle&quot;</span>]</span>
-    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>is_disjoint</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>other</span>: <span class='kw-2'>&amp;</span><span class='ident'>TrieSet</span>) <span class='op'>-&gt;</span> <span class='ident'>bool</span> {
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>is_disjoint</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>other</span>: <span class='kw-2'>&amp;</span><span class='ident'>Set</span>) <span class='op'>-&gt;</span> <span class='ident'>bool</span> {
         <span class='self'>self</span>.<span class='ident'>iter</span>().<span class='ident'>all</span>(<span class='op'>|</span><span class='ident'>v</span><span class='op'>|</span> <span class='op'>!</span><span class='ident'>other</span>.<span class='ident'>contains</span>(<span class='kw-2'>&amp;</span><span class='ident'>v</span>))
     }
 
@@ -1283,11 +1182,9 @@
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// # Examples</span>
     <span class='doccomment'>///</span>
-    <span class='doccomment'>/// ```rust</span>
-    <span class='doccomment'>/// use trie::TrieSet;</span>
-    <span class='doccomment'>///</span>
-    <span class='doccomment'>/// let sup: TrieSet = [1, 2, 3].iter().map(|&amp;x| x).collect();</span>
-    <span class='doccomment'>/// let mut set: TrieSet = TrieSet::new();</span>
+    <span class='doccomment'>/// ```</span>
+    <span class='doccomment'>/// let sup: trie::Set = [1, 2, 3].iter().cloned().collect();</span>
+    <span class='doccomment'>/// let mut set = trie::Set::new();</span>
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// assert_eq!(set.is_subset(&amp;sup), true);</span>
     <span class='doccomment'>/// set.insert(2);</span>
@@ -1296,8 +1193,7 @@
     <span class='doccomment'>/// assert_eq!(set.is_subset(&amp;sup), false);</span>
     <span class='doccomment'>/// ```</span>
     <span class='attribute'>#[<span class='ident'>inline</span>]</span>
-    <span class='attribute'>#[<span class='ident'>unstable</span> <span class='op'>=</span> <span class='string'>&quot;matches collection reform specification, waiting for dust to settle&quot;</span>]</span>
-    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>is_subset</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>other</span>: <span class='kw-2'>&amp;</span><span class='ident'>TrieSet</span>) <span class='op'>-&gt;</span> <span class='ident'>bool</span> {
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>is_subset</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>other</span>: <span class='kw-2'>&amp;</span><span class='ident'>Set</span>) <span class='op'>-&gt;</span> <span class='ident'>bool</span> {
         <span class='self'>self</span>.<span class='ident'>iter</span>().<span class='ident'>all</span>(<span class='op'>|</span><span class='ident'>v</span><span class='op'>|</span> <span class='ident'>other</span>.<span class='ident'>contains</span>(<span class='kw-2'>&amp;</span><span class='ident'>v</span>))
     }
 
@@ -1305,11 +1201,9 @@
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// # Examples</span>
     <span class='doccomment'>///</span>
-    <span class='doccomment'>/// ```rust</span>
-    <span class='doccomment'>/// use trie::TrieSet;</span>
-    <span class='doccomment'>///</span>
-    <span class='doccomment'>/// let sub: TrieSet = [1, 2].iter().map(|&amp;x| x).collect();</span>
-    <span class='doccomment'>/// let mut set: TrieSet = TrieSet::new();</span>
+    <span class='doccomment'>/// ```</span>
+    <span class='doccomment'>/// let sub: trie::Set = [1, 2].iter().cloned().collect();</span>
+    <span class='doccomment'>/// let mut set = trie::Set::new();</span>
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// assert_eq!(set.is_superset(&amp;sub), false);</span>
     <span class='doccomment'>///</span>
@@ -1321,8 +1215,7 @@
     <span class='doccomment'>/// assert_eq!(set.is_superset(&amp;sub), true);</span>
     <span class='doccomment'>/// ```</span>
     <span class='attribute'>#[<span class='ident'>inline</span>]</span>
-    <span class='attribute'>#[<span class='ident'>unstable</span> <span class='op'>=</span> <span class='string'>&quot;matches collection reform specification, waiting for dust to settle&quot;</span>]</span>
-    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>is_superset</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>other</span>: <span class='kw-2'>&amp;</span><span class='ident'>TrieSet</span>) <span class='op'>-&gt;</span> <span class='ident'>bool</span> {
+    <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>is_superset</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>, <span class='ident'>other</span>: <span class='kw-2'>&amp;</span><span class='ident'>Set</span>) <span class='op'>-&gt;</span> <span class='ident'>bool</span> {
         <span class='ident'>other</span>.<span class='ident'>is_subset</span>(<span class='self'>self</span>)
     }
 
@@ -1331,17 +1224,14 @@
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// # Examples</span>
     <span class='doccomment'>///</span>
-    <span class='doccomment'>/// ```rust</span>
-    <span class='doccomment'>/// use trie::TrieSet;</span>
-    <span class='doccomment'>///</span>
-    <span class='doccomment'>/// let mut set = TrieSet::new();</span>
+    <span class='doccomment'>/// ```</span>
+    <span class='doccomment'>/// let mut set = trie::Set::new();</span>
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// assert_eq!(set.insert(2), true);</span>
     <span class='doccomment'>/// assert_eq!(set.insert(2), false);</span>
     <span class='doccomment'>/// assert_eq!(set.len(), 1);</span>
     <span class='doccomment'>/// ```</span>
     <span class='attribute'>#[<span class='ident'>inline</span>]</span>
-    <span class='attribute'>#[<span class='ident'>unstable</span> <span class='op'>=</span> <span class='string'>&quot;matches collection reform specification, waiting for dust to settle&quot;</span>]</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>insert</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>value</span>: <span class='ident'>usize</span>) <span class='op'>-&gt;</span> <span class='ident'>bool</span> {
         <span class='self'>self</span>.<span class='ident'>map</span>.<span class='ident'>insert</span>(<span class='ident'>value</span>, ()).<span class='ident'>is_none</span>()
     }
@@ -1351,31 +1241,28 @@
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// # Examples</span>
     <span class='doccomment'>///</span>
-    <span class='doccomment'>/// ```rust</span>
-    <span class='doccomment'>/// use trie::TrieSet;</span>
-    <span class='doccomment'>///</span>
-    <span class='doccomment'>/// let mut set = TrieSet::new();</span>
+    <span class='doccomment'>/// ```</span>
+    <span class='doccomment'>/// let mut set = trie::Set::new();</span>
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// set.insert(2);</span>
     <span class='doccomment'>/// assert_eq!(set.remove(&amp;2), true);</span>
     <span class='doccomment'>/// assert_eq!(set.remove(&amp;2), false);</span>
     <span class='doccomment'>/// ```</span>
     <span class='attribute'>#[<span class='ident'>inline</span>]</span>
-    <span class='attribute'>#[<span class='ident'>unstable</span> <span class='op'>=</span> <span class='string'>&quot;matches collection reform specification, waiting for dust to settle&quot;</span>]</span>
     <span class='kw'>pub</span> <span class='kw'>fn</span> <span class='ident'>remove</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>value</span>: <span class='kw-2'>&amp;</span><span class='ident'>usize</span>) <span class='op'>-&gt;</span> <span class='ident'>bool</span> {
         <span class='self'>self</span>.<span class='ident'>map</span>.<span class='ident'>remove</span>(<span class='ident'>value</span>).<span class='ident'>is_some</span>()
     }
 }
 
-<span class='kw'>impl</span> <span class='ident'>iter</span>::<span class='ident'>FromIterator</span><span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span> <span class='kw'>for</span> <span class='ident'>TrieSet</span> {
-    <span class='kw'>fn</span> <span class='ident'>from_iter</span><span class='op'>&lt;</span><span class='ident'>I</span>: <span class='ident'>IntoIterator</span><span class='op'>&lt;</span><span class='ident'>Item</span><span class='op'>=</span><span class='ident'>usize</span><span class='op'>&gt;&gt;</span>(<span class='ident'>iter</span>: <span class='ident'>I</span>) <span class='op'>-&gt;</span> <span class='ident'>TrieSet</span> {
-        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>set</span> <span class='op'>=</span> <span class='ident'>TrieSet</span>::<span class='ident'>new</span>();
+<span class='kw'>impl</span> <span class='ident'>iter</span>::<span class='ident'>FromIterator</span><span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span> <span class='kw'>for</span> <span class='ident'>Set</span> {
+    <span class='kw'>fn</span> <span class='ident'>from_iter</span><span class='op'>&lt;</span><span class='ident'>I</span>: <span class='ident'>IntoIterator</span><span class='op'>&lt;</span><span class='ident'>Item</span><span class='op'>=</span><span class='ident'>usize</span><span class='op'>&gt;&gt;</span>(<span class='ident'>iter</span>: <span class='ident'>I</span>) <span class='op'>-&gt;</span> <span class='ident'>Set</span> {
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>set</span> <span class='op'>=</span> <span class='ident'>Set</span>::<span class='ident'>new</span>();
         <span class='ident'>set</span>.<span class='ident'>extend</span>(<span class='ident'>iter</span>);
         <span class='ident'>set</span>
     }
 }
 
-<span class='kw'>impl</span> <span class='ident'>Extend</span><span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span> <span class='kw'>for</span> <span class='ident'>TrieSet</span> {
+<span class='kw'>impl</span> <span class='ident'>Extend</span><span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span> <span class='kw'>for</span> <span class='ident'>Set</span> {
     <span class='kw'>fn</span> <span class='ident'>extend</span><span class='op'>&lt;</span><span class='ident'>I</span>: <span class='ident'>IntoIterator</span><span class='op'>&lt;</span><span class='ident'>Item</span><span class='op'>=</span><span class='ident'>usize</span><span class='op'>&gt;&gt;</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>, <span class='ident'>iter</span>: <span class='ident'>I</span>) {
         <span class='kw'>for</span> <span class='ident'>elem</span> <span class='kw'>in</span> <span class='ident'>iter</span> {
             <span class='self'>self</span>.<span class='ident'>insert</span>(<span class='ident'>elem</span>);
@@ -1383,122 +1270,115 @@
     }
 }
 
-<span class='attribute'>#[<span class='ident'>unstable</span> <span class='op'>=</span> <span class='string'>&quot;matches collection reform specification, waiting for dust to settle&quot;</span>]</span>
-<span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='lifetime'>&#39;b</span><span class='op'>&gt;</span> <span class='ident'>ops</span>::<span class='ident'>BitOr</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='lifetime'>&#39;b</span> <span class='ident'>TrieSet</span><span class='op'>&gt;</span> <span class='kw'>for</span> <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>TrieSet</span> {
-    <span class='kw'>type</span> <span class='ident'>Output</span> <span class='op'>=</span> <span class='ident'>TrieSet</span>;
+<span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='lifetime'>&#39;b</span><span class='op'>&gt;</span> <span class='ident'>ops</span>::<span class='ident'>BitOr</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='lifetime'>&#39;b</span> <span class='ident'>Set</span><span class='op'>&gt;</span> <span class='kw'>for</span> <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>Set</span> {
+    <span class='kw'>type</span> <span class='ident'>Output</span> <span class='op'>=</span> <span class='ident'>Set</span>;
 
-    <span class='doccomment'>/// Returns the union of `self` and `rhs` as a new `TrieSet`.</span>
+    <span class='doccomment'>/// Returns the union of `self` and `rhs` as a new set.</span>
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// # Example</span>
     <span class='doccomment'>///</span>
-    <span class='doccomment'>/// ```rust</span>
-    <span class='doccomment'>/// use trie::TrieSet;</span>
-    <span class='doccomment'>///</span>
-    <span class='doccomment'>/// let a: TrieSet = vec![1, 2, 3].into_iter().collect();</span>
-    <span class='doccomment'>/// let b: TrieSet = vec![3, 4, 5].into_iter().collect();</span>
-    <span class='doccomment'>///</span>
-    <span class='doccomment'>/// let set: TrieSet = &amp;a | &amp;b;</span>
-    <span class='doccomment'>/// let v: Vec&lt;usize&gt; = set.iter().collect();</span>
-    <span class='doccomment'>/// assert_eq!(v, vec![1, 2, 3, 4, 5]);</span>
     <span class='doccomment'>/// ```</span>
-    <span class='kw'>fn</span> <span class='ident'>bitor</span>(<span class='self'>self</span>, <span class='ident'>rhs</span>: <span class='kw-2'>&amp;</span><span class='ident'>TrieSet</span>) <span class='op'>-&gt;</span> <span class='ident'>TrieSet</span> {
+    <span class='doccomment'>/// let a: trie::Set = [1, 2, 3].iter().cloned().collect();</span>
+    <span class='doccomment'>/// let b: trie::Set = [3, 4, 5].iter().cloned().collect();</span>
+    <span class='doccomment'>///</span>
+    <span class='doccomment'>/// let set: trie::Set = &amp;a | &amp;b;</span>
+    <span class='doccomment'>/// let v: Vec&lt;usize&gt; = set.iter().collect();</span>
+    <span class='doccomment'>/// assert_eq!(v, [1, 2, 3, 4, 5]);</span>
+    <span class='doccomment'>/// ```</span>
+    <span class='kw'>fn</span> <span class='ident'>bitor</span>(<span class='self'>self</span>, <span class='ident'>rhs</span>: <span class='kw-2'>&amp;</span><span class='ident'>Set</span>) <span class='op'>-&gt;</span> <span class='ident'>Set</span> {
         <span class='self'>self</span>.<span class='ident'>union</span>(<span class='ident'>rhs</span>).<span class='ident'>collect</span>()
     }
 }
 
-<span class='attribute'>#[<span class='ident'>unstable</span> <span class='op'>=</span> <span class='string'>&quot;matches collection reform specification, waiting for dust to settle&quot;</span>]</span>
-<span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='lifetime'>&#39;b</span><span class='op'>&gt;</span> <span class='ident'>ops</span>::<span class='ident'>BitAnd</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='lifetime'>&#39;b</span> <span class='ident'>TrieSet</span><span class='op'>&gt;</span> <span class='kw'>for</span> <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>TrieSet</span> {
-    <span class='kw'>type</span> <span class='ident'>Output</span> <span class='op'>=</span> <span class='ident'>TrieSet</span>;
+<span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='lifetime'>&#39;b</span><span class='op'>&gt;</span> <span class='ident'>ops</span>::<span class='ident'>BitAnd</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='lifetime'>&#39;b</span> <span class='ident'>Set</span><span class='op'>&gt;</span> <span class='kw'>for</span> <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>Set</span> {
+    <span class='kw'>type</span> <span class='ident'>Output</span> <span class='op'>=</span> <span class='ident'>Set</span>;
 
-    <span class='doccomment'>/// Returns the intersection of `self` and `rhs` as a new `TrieSet`.</span>
+    <span class='doccomment'>/// Returns the intersection of `self` and `rhs` as a new set.</span>
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// # Example</span>
     <span class='doccomment'>///</span>
-    <span class='doccomment'>/// ```rust</span>
-    <span class='doccomment'>/// use trie::TrieSet;</span>
-    <span class='doccomment'>///</span>
-    <span class='doccomment'>/// let a: TrieSet = vec![1, 2, 3].into_iter().collect();</span>
-    <span class='doccomment'>/// let b: TrieSet = vec![2, 3, 4].into_iter().collect();</span>
-    <span class='doccomment'>///</span>
-    <span class='doccomment'>/// let set: TrieSet = &amp;a &amp; &amp;b;</span>
-    <span class='doccomment'>/// let v: Vec&lt;usize&gt; = set.iter().collect();</span>
-    <span class='doccomment'>/// assert_eq!(v, vec![2, 3]);</span>
     <span class='doccomment'>/// ```</span>
-    <span class='kw'>fn</span> <span class='ident'>bitand</span>(<span class='self'>self</span>, <span class='ident'>rhs</span>: <span class='kw-2'>&amp;</span><span class='ident'>TrieSet</span>) <span class='op'>-&gt;</span> <span class='ident'>TrieSet</span> {
+    <span class='doccomment'>/// let a: trie::Set = [1, 2, 3].iter().cloned().collect();</span>
+    <span class='doccomment'>/// let b: trie::Set = [2, 3, 4].iter().cloned().collect();</span>
+    <span class='doccomment'>///</span>
+    <span class='doccomment'>/// let set: trie::Set = &amp;a &amp; &amp;b;</span>
+    <span class='doccomment'>/// let v: Vec&lt;usize&gt; = set.iter().collect();</span>
+    <span class='doccomment'>/// assert_eq!(v, [2, 3]);</span>
+    <span class='doccomment'>/// ```</span>
+    <span class='kw'>fn</span> <span class='ident'>bitand</span>(<span class='self'>self</span>, <span class='ident'>rhs</span>: <span class='kw-2'>&amp;</span><span class='ident'>Set</span>) <span class='op'>-&gt;</span> <span class='ident'>Set</span> {
         <span class='self'>self</span>.<span class='ident'>intersection</span>(<span class='ident'>rhs</span>).<span class='ident'>collect</span>()
     }
 }
 
-<span class='attribute'>#[<span class='ident'>unstable</span> <span class='op'>=</span> <span class='string'>&quot;matches collection reform specification, waiting for dust to settle&quot;</span>]</span>
-<span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='lifetime'>&#39;b</span><span class='op'>&gt;</span> <span class='ident'>ops</span>::<span class='ident'>BitXor</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='lifetime'>&#39;b</span> <span class='ident'>TrieSet</span><span class='op'>&gt;</span> <span class='kw'>for</span> <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>TrieSet</span> {
-    <span class='kw'>type</span> <span class='ident'>Output</span> <span class='op'>=</span> <span class='ident'>TrieSet</span>;
+<span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='lifetime'>&#39;b</span><span class='op'>&gt;</span> <span class='ident'>ops</span>::<span class='ident'>BitXor</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='lifetime'>&#39;b</span> <span class='ident'>Set</span><span class='op'>&gt;</span> <span class='kw'>for</span> <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>Set</span> {
+    <span class='kw'>type</span> <span class='ident'>Output</span> <span class='op'>=</span> <span class='ident'>Set</span>;
 
-    <span class='doccomment'>/// Returns the symmetric difference of `self` and `rhs` as a new `TrieSet`.</span>
+    <span class='doccomment'>/// Returns the symmetric difference of `self` and `rhs` as a new set.</span>
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// # Example</span>
     <span class='doccomment'>///</span>
-    <span class='doccomment'>/// ```rust</span>
-    <span class='doccomment'>/// use trie::TrieSet;</span>
-    <span class='doccomment'>///</span>
-    <span class='doccomment'>/// let a: TrieSet = vec![1, 2, 3].into_iter().collect();</span>
-    <span class='doccomment'>/// let b: TrieSet = vec![3, 4, 5].into_iter().collect();</span>
-    <span class='doccomment'>///</span>
-    <span class='doccomment'>/// let set: TrieSet = &amp;a ^ &amp;b;</span>
-    <span class='doccomment'>/// let v: Vec&lt;usize&gt; = set.iter().collect();</span>
-    <span class='doccomment'>/// assert_eq!(v, vec![1, 2, 4, 5]);</span>
     <span class='doccomment'>/// ```</span>
-    <span class='kw'>fn</span> <span class='ident'>bitxor</span>(<span class='self'>self</span>, <span class='ident'>rhs</span>: <span class='kw-2'>&amp;</span><span class='ident'>TrieSet</span>) <span class='op'>-&gt;</span> <span class='ident'>TrieSet</span> {
+    <span class='doccomment'>/// let a: trie::Set = [1, 2, 3].iter().cloned().collect();</span>
+    <span class='doccomment'>/// let b: trie::Set = [3, 4, 5].iter().cloned().collect();</span>
+    <span class='doccomment'>///</span>
+    <span class='doccomment'>/// let set: trie::Set = &amp;a ^ &amp;b;</span>
+    <span class='doccomment'>/// let v: Vec&lt;usize&gt; = set.iter().collect();</span>
+    <span class='doccomment'>/// assert_eq!(v, [1, 2, 4, 5]);</span>
+    <span class='doccomment'>/// ```</span>
+    <span class='kw'>fn</span> <span class='ident'>bitxor</span>(<span class='self'>self</span>, <span class='ident'>rhs</span>: <span class='kw-2'>&amp;</span><span class='ident'>Set</span>) <span class='op'>-&gt;</span> <span class='ident'>Set</span> {
         <span class='self'>self</span>.<span class='ident'>symmetric_difference</span>(<span class='ident'>rhs</span>).<span class='ident'>collect</span>()
     }
 }
 
-<span class='attribute'>#[<span class='ident'>unstable</span> <span class='op'>=</span> <span class='string'>&quot;matches collection reform specification, waiting for dust to settle&quot;</span>]</span>
-<span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='lifetime'>&#39;b</span><span class='op'>&gt;</span> <span class='ident'>ops</span>::<span class='ident'>Sub</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='lifetime'>&#39;b</span> <span class='ident'>TrieSet</span><span class='op'>&gt;</span> <span class='kw'>for</span> <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>TrieSet</span> {
-    <span class='kw'>type</span> <span class='ident'>Output</span> <span class='op'>=</span> <span class='ident'>TrieSet</span>;
+<span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, <span class='lifetime'>&#39;b</span><span class='op'>&gt;</span> <span class='ident'>ops</span>::<span class='ident'>Sub</span><span class='op'>&lt;</span><span class='kw-2'>&amp;</span><span class='lifetime'>&#39;b</span> <span class='ident'>Set</span><span class='op'>&gt;</span> <span class='kw'>for</span> <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>Set</span> {
+    <span class='kw'>type</span> <span class='ident'>Output</span> <span class='op'>=</span> <span class='ident'>Set</span>;
 
-    <span class='doccomment'>/// Returns the difference of `self` and `rhs` as a new `TrieSet`.</span>
+    <span class='doccomment'>/// Returns the difference of `self` and `rhs` as a new set.</span>
     <span class='doccomment'>///</span>
     <span class='doccomment'>/// # Example</span>
     <span class='doccomment'>///</span>
-    <span class='doccomment'>/// ```rust</span>
-    <span class='doccomment'>/// use trie::TrieSet;</span>
-    <span class='doccomment'>///</span>
-    <span class='doccomment'>/// let a: TrieSet = vec![1, 2, 3].into_iter().collect();</span>
-    <span class='doccomment'>/// let b: TrieSet = vec![3, 4, 5].into_iter().collect();</span>
-    <span class='doccomment'>///</span>
-    <span class='doccomment'>/// let set: TrieSet = &amp;a - &amp;b;</span>
-    <span class='doccomment'>/// let v: Vec&lt;usize&gt; = set.iter().collect();</span>
-    <span class='doccomment'>/// assert_eq!(v, vec![1, 2]);</span>
     <span class='doccomment'>/// ```</span>
-    <span class='kw'>fn</span> <span class='ident'>sub</span>(<span class='self'>self</span>, <span class='ident'>rhs</span>: <span class='kw-2'>&amp;</span><span class='ident'>TrieSet</span>) <span class='op'>-&gt;</span> <span class='ident'>TrieSet</span> {
+    <span class='doccomment'>/// let a: trie::Set = [1, 2, 3].iter().cloned().collect();</span>
+    <span class='doccomment'>/// let b: trie::Set = [3, 4, 5].iter().cloned().collect();</span>
+    <span class='doccomment'>///</span>
+    <span class='doccomment'>/// let set: trie::Set = &amp;a - &amp;b;</span>
+    <span class='doccomment'>/// let v: Vec&lt;usize&gt; = set.iter().collect();</span>
+    <span class='doccomment'>/// assert_eq!(v, [1, 2]);</span>
+    <span class='doccomment'>/// ```</span>
+    <span class='kw'>fn</span> <span class='ident'>sub</span>(<span class='self'>self</span>, <span class='ident'>rhs</span>: <span class='kw-2'>&amp;</span><span class='ident'>Set</span>) <span class='op'>-&gt;</span> <span class='ident'>Set</span> {
         <span class='self'>self</span>.<span class='ident'>difference</span>(<span class='ident'>rhs</span>).<span class='ident'>collect</span>()
     }
 }
 
 <span class='doccomment'>/// A forward iterator over a set.</span>
+<span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>Clone</span>)]</span>
 <span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>Iter</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;</span> {
     <span class='ident'>iter</span>: <span class='ident'>map</span>::<span class='ident'>Iter</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span>, ()<span class='op'>&gt;</span>
 }
 
 <span class='doccomment'>/// An iterator producing elements in the set difference (in-order).</span>
+<span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>Clone</span>)]</span>
 <span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>Difference</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;</span> {
     <span class='ident'>a</span>: <span class='ident'>Peekable</span><span class='op'>&lt;</span><span class='ident'>Iter</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;&gt;</span>,
     <span class='ident'>b</span>: <span class='ident'>Peekable</span><span class='op'>&lt;</span><span class='ident'>Iter</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;&gt;</span>,
 }
 
 <span class='doccomment'>/// An iterator producing elements in the set symmetric difference (in-order).</span>
+<span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>Clone</span>)]</span>
 <span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>SymmetricDifference</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;</span> {
     <span class='ident'>a</span>: <span class='ident'>Peekable</span><span class='op'>&lt;</span><span class='ident'>Iter</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;&gt;</span>,
     <span class='ident'>b</span>: <span class='ident'>Peekable</span><span class='op'>&lt;</span><span class='ident'>Iter</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;&gt;</span>,
 }
 
 <span class='doccomment'>/// An iterator producing elements in the set intersection (in-order).</span>
+<span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>Clone</span>)]</span>
 <span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>Intersection</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;</span> {
     <span class='ident'>a</span>: <span class='ident'>Peekable</span><span class='op'>&lt;</span><span class='ident'>Iter</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;&gt;</span>,
     <span class='ident'>b</span>: <span class='ident'>Peekable</span><span class='op'>&lt;</span><span class='ident'>Iter</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;&gt;</span>,
 }
 
 <span class='doccomment'>/// An iterator producing elements in the set union (in-order).</span>
+<span class='attribute'>#[<span class='ident'>derive</span>(<span class='ident'>Clone</span>)]</span>
 <span class='kw'>pub</span> <span class='kw'>struct</span> <span class='ident'>Union</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;</span> {
     <span class='ident'>a</span>: <span class='ident'>Peekable</span><span class='op'>&lt;</span><span class='ident'>Iter</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;&gt;</span>,
     <span class='ident'>b</span>: <span class='ident'>Peekable</span><span class='op'>&lt;</span><span class='ident'>Iter</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;&gt;</span>,
@@ -1572,17 +1452,15 @@
 <span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;</span> <span class='ident'>Iterator</span> <span class='kw'>for</span> <span class='ident'>Union</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;</span> {
     <span class='kw'>type</span> <span class='ident'>Item</span> <span class='op'>=</span> <span class='ident'>usize</span>;
     <span class='kw'>fn</span> <span class='ident'>next</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span> {
-        <span class='kw'>loop</span> {
-            <span class='kw'>match</span> <span class='ident'>cmp_opt</span>(<span class='self'>self</span>.<span class='ident'>a</span>.<span class='ident'>peek</span>(), <span class='self'>self</span>.<span class='ident'>b</span>.<span class='ident'>peek</span>(), <span class='ident'>Greater</span>, <span class='ident'>Less</span>) {
-                <span class='ident'>Less</span>    <span class='op'>=&gt;</span> <span class='kw'>return</span> <span class='self'>self</span>.<span class='ident'>a</span>.<span class='ident'>next</span>(),
-                <span class='ident'>Equal</span>   <span class='op'>=&gt;</span> { <span class='self'>self</span>.<span class='ident'>b</span>.<span class='ident'>next</span>(); <span class='kw'>return</span> <span class='self'>self</span>.<span class='ident'>a</span>.<span class='ident'>next</span>() }
-                <span class='ident'>Greater</span> <span class='op'>=&gt;</span> <span class='kw'>return</span> <span class='self'>self</span>.<span class='ident'>b</span>.<span class='ident'>next</span>(),
-            }
+        <span class='kw'>match</span> <span class='ident'>cmp_opt</span>(<span class='self'>self</span>.<span class='ident'>a</span>.<span class='ident'>peek</span>(), <span class='self'>self</span>.<span class='ident'>b</span>.<span class='ident'>peek</span>(), <span class='ident'>Greater</span>, <span class='ident'>Less</span>) {
+            <span class='ident'>Less</span>    <span class='op'>=&gt;</span> <span class='self'>self</span>.<span class='ident'>a</span>.<span class='ident'>next</span>(),
+            <span class='ident'>Equal</span>   <span class='op'>=&gt;</span> { <span class='self'>self</span>.<span class='ident'>b</span>.<span class='ident'>next</span>(); <span class='self'>self</span>.<span class='ident'>a</span>.<span class='ident'>next</span>() }
+            <span class='ident'>Greater</span> <span class='op'>=&gt;</span> <span class='self'>self</span>.<span class='ident'>b</span>.<span class='ident'>next</span>(),
         }
     }
 }
 
-<span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;</span> <span class='ident'>IntoIterator</span> <span class='kw'>for</span> <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>TrieSet</span> {
+<span class='kw'>impl</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;</span> <span class='ident'>IntoIterator</span> <span class='kw'>for</span> <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='ident'>Set</span> {
     <span class='kw'>type</span> <span class='ident'>Item</span> <span class='op'>=</span> <span class='ident'>usize</span>;
     <span class='kw'>type</span> <span class='ident'>IntoIter</span> <span class='op'>=</span> <span class='ident'>Iter</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;</span>;
     <span class='kw'>fn</span> <span class='ident'>into_iter</span>(<span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='ident'>Iter</span><span class='op'>&lt;</span><span class='lifetime'>&#39;a</span><span class='op'>&gt;</span> { <span class='self'>self</span>.<span class='ident'>iter</span>() }
@@ -1592,14 +1470,14 @@
 <span class='kw'>mod</span> <span class='ident'>test</span> {
     <span class='kw'>use</span> <span class='ident'>std</span>::<span class='ident'>usize</span>;
 
-    <span class='kw'>use</span> <span class='ident'>super</span>::<span class='ident'>TrieSet</span>;
+    <span class='kw'>use</span> <span class='ident'>super</span>::<span class='ident'>Set</span>;
 
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
     <span class='kw'>fn</span> <span class='ident'>test_sane_chunk</span>() {
         <span class='kw'>let</span> <span class='ident'>x</span> <span class='op'>=</span> <span class='number'>1</span>;
         <span class='kw'>let</span> <span class='ident'>y</span> <span class='op'>=</span> <span class='number'>1</span> <span class='op'>&lt;&lt;</span> (<span class='ident'>usize</span>::<span class='ident'>BITS</span> <span class='op'>-</span> <span class='number'>1</span>);
 
-        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>trie</span> <span class='op'>=</span> <span class='ident'>TrieSet</span>::<span class='ident'>new</span>();
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>trie</span> <span class='op'>=</span> <span class='ident'>Set</span>::<span class='ident'>new</span>();
 
         <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>trie</span>.<span class='ident'>insert</span>(<span class='ident'>x</span>));
         <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>trie</span>.<span class='ident'>insert</span>(<span class='ident'>y</span>));
@@ -1615,9 +1493,9 @@
 
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
     <span class='kw'>fn</span> <span class='ident'>test_from_iter</span>() {
-        <span class='kw'>let</span> <span class='ident'>xs</span> <span class='op'>=</span> <span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>9</span>, <span class='number'>8</span>, <span class='number'>7</span>, <span class='number'>6</span>, <span class='number'>5</span>, <span class='number'>4</span>, <span class='number'>3</span>, <span class='number'>2</span>, <span class='number'>1</span>];
+        <span class='kw'>let</span> <span class='ident'>xs</span> <span class='op'>=</span> [<span class='number'>9</span>, <span class='number'>8</span>, <span class='number'>7</span>, <span class='number'>6</span>, <span class='number'>5</span>, <span class='number'>4</span>, <span class='number'>3</span>, <span class='number'>2</span>, <span class='number'>1</span>];
 
-        <span class='kw'>let</span> <span class='ident'>set</span>: <span class='ident'>TrieSet</span> <span class='op'>=</span> <span class='ident'>xs</span>.<span class='ident'>iter</span>().<span class='ident'>map</span>(<span class='op'>|</span><span class='kw-2'>&amp;</span><span class='ident'>x</span><span class='op'>|</span> <span class='ident'>x</span>).<span class='ident'>collect</span>();
+        <span class='kw'>let</span> <span class='ident'>set</span>: <span class='ident'>Set</span> <span class='op'>=</span> <span class='ident'>xs</span>.<span class='ident'>iter</span>().<span class='ident'>cloned</span>().<span class='ident'>collect</span>();
 
         <span class='kw'>for</span> <span class='ident'>x</span> <span class='kw'>in</span> <span class='ident'>xs</span>.<span class='ident'>iter</span>() {
             <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>set</span>.<span class='ident'>contains</span>(<span class='ident'>x</span>));
@@ -1626,8 +1504,8 @@
 
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
     <span class='kw'>fn</span> <span class='ident'>test_debug</span>() {
-        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>set</span> <span class='op'>=</span> <span class='ident'>TrieSet</span>::<span class='ident'>new</span>();
-        <span class='kw'>let</span> <span class='ident'>empty</span> <span class='op'>=</span> <span class='ident'>TrieSet</span>::<span class='ident'>new</span>();
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>set</span> <span class='op'>=</span> <span class='ident'>Set</span>::<span class='ident'>new</span>();
+        <span class='kw'>let</span> <span class='ident'>empty</span> <span class='op'>=</span> <span class='ident'>Set</span>::<span class='ident'>new</span>();
 
         <span class='ident'>set</span>.<span class='ident'>insert</span>(<span class='number'>1</span>);
         <span class='ident'>set</span>.<span class='ident'>insert</span>(<span class='number'>2</span>);
@@ -1638,7 +1516,7 @@
 
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
     <span class='kw'>fn</span> <span class='ident'>test_clone</span>() {
-        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>a</span> <span class='op'>=</span> <span class='ident'>TrieSet</span>::<span class='ident'>new</span>();
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>a</span> <span class='op'>=</span> <span class='ident'>Set</span>::<span class='ident'>new</span>();
 
         <span class='ident'>a</span>.<span class='ident'>insert</span>(<span class='number'>1</span>);
         <span class='ident'>a</span>.<span class='ident'>insert</span>(<span class='number'>2</span>);
@@ -1649,8 +1527,8 @@
 
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
     <span class='kw'>fn</span> <span class='ident'>test_lt</span>() {
-        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>a</span> <span class='op'>=</span> <span class='ident'>TrieSet</span>::<span class='ident'>new</span>();
-        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>b</span> <span class='op'>=</span> <span class='ident'>TrieSet</span>::<span class='ident'>new</span>();
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>a</span> <span class='op'>=</span> <span class='ident'>Set</span>::<span class='ident'>new</span>();
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>b</span> <span class='op'>=</span> <span class='ident'>Set</span>::<span class='ident'>new</span>();
 
         <span class='macro'>assert</span><span class='macro'>!</span>(<span class='op'>!</span>(<span class='ident'>a</span> <span class='op'>&lt;</span> <span class='ident'>b</span>) <span class='op'>&amp;&amp;</span> <span class='op'>!</span>(<span class='ident'>b</span> <span class='op'>&lt;</span> <span class='ident'>a</span>));
         <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>b</span>.<span class='ident'>insert</span>(<span class='number'>2</span>));
@@ -1667,8 +1545,8 @@
 
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
     <span class='kw'>fn</span> <span class='ident'>test_ord</span>() {
-        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>a</span> <span class='op'>=</span> <span class='ident'>TrieSet</span>::<span class='ident'>new</span>();
-        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>b</span> <span class='op'>=</span> <span class='ident'>TrieSet</span>::<span class='ident'>new</span>();
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>a</span> <span class='op'>=</span> <span class='ident'>Set</span>::<span class='ident'>new</span>();
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>b</span> <span class='op'>=</span> <span class='ident'>Set</span>::<span class='ident'>new</span>();
 
         <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>a</span> <span class='op'>&lt;=</span> <span class='ident'>b</span> <span class='op'>&amp;&amp;</span> <span class='ident'>a</span> <span class='op'>&gt;=</span> <span class='ident'>b</span>);
         <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>a</span>.<span class='ident'>insert</span>(<span class='number'>1</span>));
@@ -1695,10 +1573,10 @@
 
     <span class='kw'>fn</span> <span class='ident'>check</span><span class='op'>&lt;</span><span class='ident'>F</span><span class='op'>&gt;</span>(<span class='ident'>a</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>usize</span>], <span class='ident'>b</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>usize</span>], <span class='ident'>expected</span>: <span class='kw-2'>&amp;</span>[<span class='ident'>usize</span>], <span class='ident'>f</span>: <span class='ident'>F</span>) <span class='kw'>where</span>
         <span class='comment'>// FIXME Replace `Counter` with `Box&lt;FnMut(&amp;usize) -&gt; bool&gt;`</span>
-        <span class='ident'>F</span>: <span class='ident'>FnOnce</span>(<span class='kw-2'>&amp;</span><span class='ident'>TrieSet</span>, <span class='kw-2'>&amp;</span><span class='ident'>TrieSet</span>, <span class='ident'>Counter</span>) <span class='op'>-&gt;</span> <span class='ident'>bool</span>,
+        <span class='ident'>F</span>: <span class='ident'>FnOnce</span>(<span class='kw-2'>&amp;</span><span class='ident'>Set</span>, <span class='kw-2'>&amp;</span><span class='ident'>Set</span>, <span class='ident'>Counter</span>) <span class='op'>-&gt;</span> <span class='ident'>bool</span>,
     {
-        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>set_a</span> <span class='op'>=</span> <span class='ident'>TrieSet</span>::<span class='ident'>new</span>();
-        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>set_b</span> <span class='op'>=</span> <span class='ident'>TrieSet</span>::<span class='ident'>new</span>();
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>set_a</span> <span class='op'>=</span> <span class='ident'>Set</span>::<span class='ident'>new</span>();
+        <span class='kw'>let</span> <span class='kw-2'>mut</span> <span class='ident'>set_b</span> <span class='op'>=</span> <span class='ident'>Set</span>::<span class='ident'>new</span>();
 
         <span class='kw'>for</span> <span class='ident'>x</span> <span class='kw'>in</span> <span class='ident'>a</span>.<span class='ident'>iter</span>() { <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>set_a</span>.<span class='ident'>insert</span>(<span class='op'>*</span><span class='ident'>x</span>)) }
         <span class='kw'>for</span> <span class='ident'>y</span> <span class='kw'>in</span> <span class='ident'>b</span>.<span class='ident'>iter</span>() { <span class='macro'>assert</span><span class='macro'>!</span>(<span class='ident'>set_b</span>.<span class='ident'>insert</span>(<span class='op'>*</span><span class='ident'>y</span>)) }
@@ -1771,42 +1649,42 @@
 
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
     <span class='kw'>fn</span> <span class='ident'>test_bit_or</span>() {
-        <span class='kw'>let</span> <span class='ident'>a</span>: <span class='ident'>TrieSet</span> <span class='op'>=</span> <span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>1</span>, <span class='number'>2</span>, <span class='number'>3</span>].<span class='ident'>into_iter</span>().<span class='ident'>collect</span>();
-        <span class='kw'>let</span> <span class='ident'>b</span>: <span class='ident'>TrieSet</span> <span class='op'>=</span> <span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>3</span>, <span class='number'>4</span>, <span class='number'>5</span>].<span class='ident'>into_iter</span>().<span class='ident'>collect</span>();
+        <span class='kw'>let</span> <span class='ident'>a</span>: <span class='ident'>Set</span> <span class='op'>=</span> [<span class='number'>1</span>, <span class='number'>2</span>, <span class='number'>3</span>].<span class='ident'>iter</span>().<span class='ident'>cloned</span>().<span class='ident'>collect</span>();
+        <span class='kw'>let</span> <span class='ident'>b</span>: <span class='ident'>Set</span> <span class='op'>=</span> [<span class='number'>3</span>, <span class='number'>4</span>, <span class='number'>5</span>].<span class='ident'>iter</span>().<span class='ident'>cloned</span>().<span class='ident'>collect</span>();
 
-        <span class='kw'>let</span> <span class='ident'>set</span>: <span class='ident'>TrieSet</span> <span class='op'>=</span> <span class='kw-2'>&amp;</span><span class='ident'>a</span> <span class='op'>|</span> <span class='kw-2'>&amp;</span><span class='ident'>b</span>;
+        <span class='kw'>let</span> <span class='ident'>set</span>: <span class='ident'>Set</span> <span class='op'>=</span> <span class='kw-2'>&amp;</span><span class='ident'>a</span> <span class='op'>|</span> <span class='kw-2'>&amp;</span><span class='ident'>b</span>;
         <span class='kw'>let</span> <span class='ident'>v</span>: <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span> <span class='op'>=</span> <span class='ident'>set</span>.<span class='ident'>iter</span>().<span class='ident'>collect</span>();
-        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>v</span>, <span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>1</span>, <span class='number'>2</span>, <span class='number'>3</span>, <span class='number'>4</span>, <span class='number'>5</span>]);
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>v</span>, [<span class='number'>1</span>, <span class='number'>2</span>, <span class='number'>3</span>, <span class='number'>4</span>, <span class='number'>5</span>]);
     }
 
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
     <span class='kw'>fn</span> <span class='ident'>test_bit_and</span>() {
-        <span class='kw'>let</span> <span class='ident'>a</span>: <span class='ident'>TrieSet</span> <span class='op'>=</span> <span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>1</span>, <span class='number'>2</span>, <span class='number'>3</span>].<span class='ident'>into_iter</span>().<span class='ident'>collect</span>();
-        <span class='kw'>let</span> <span class='ident'>b</span>: <span class='ident'>TrieSet</span> <span class='op'>=</span> <span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>2</span>, <span class='number'>3</span>, <span class='number'>4</span>].<span class='ident'>into_iter</span>().<span class='ident'>collect</span>();
+        <span class='kw'>let</span> <span class='ident'>a</span>: <span class='ident'>Set</span> <span class='op'>=</span> [<span class='number'>1</span>, <span class='number'>2</span>, <span class='number'>3</span>].<span class='ident'>iter</span>().<span class='ident'>cloned</span>().<span class='ident'>collect</span>();
+        <span class='kw'>let</span> <span class='ident'>b</span>: <span class='ident'>Set</span> <span class='op'>=</span> [<span class='number'>2</span>, <span class='number'>3</span>, <span class='number'>4</span>].<span class='ident'>iter</span>().<span class='ident'>cloned</span>().<span class='ident'>collect</span>();
 
-        <span class='kw'>let</span> <span class='ident'>set</span>: <span class='ident'>TrieSet</span> <span class='op'>=</span> <span class='kw-2'>&amp;</span><span class='ident'>a</span> <span class='kw-2'>&amp;</span> <span class='kw-2'>&amp;</span><span class='ident'>b</span>;
+        <span class='kw'>let</span> <span class='ident'>set</span>: <span class='ident'>Set</span> <span class='op'>=</span> <span class='kw-2'>&amp;</span><span class='ident'>a</span> <span class='kw-2'>&amp;</span> <span class='kw-2'>&amp;</span><span class='ident'>b</span>;
         <span class='kw'>let</span> <span class='ident'>v</span>: <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span> <span class='op'>=</span> <span class='ident'>set</span>.<span class='ident'>iter</span>().<span class='ident'>collect</span>();
-        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>v</span>, <span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>2</span>, <span class='number'>3</span>]);
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>v</span>, [<span class='number'>2</span>, <span class='number'>3</span>]);
     }
 
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
     <span class='kw'>fn</span> <span class='ident'>test_bit_xor</span>() {
-        <span class='kw'>let</span> <span class='ident'>a</span>: <span class='ident'>TrieSet</span> <span class='op'>=</span> <span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>1</span>, <span class='number'>2</span>, <span class='number'>3</span>].<span class='ident'>into_iter</span>().<span class='ident'>collect</span>();
-        <span class='kw'>let</span> <span class='ident'>b</span>: <span class='ident'>TrieSet</span> <span class='op'>=</span> <span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>3</span>, <span class='number'>4</span>, <span class='number'>5</span>].<span class='ident'>into_iter</span>().<span class='ident'>collect</span>();
+        <span class='kw'>let</span> <span class='ident'>a</span>: <span class='ident'>Set</span> <span class='op'>=</span> [<span class='number'>1</span>, <span class='number'>2</span>, <span class='number'>3</span>].<span class='ident'>iter</span>().<span class='ident'>cloned</span>().<span class='ident'>collect</span>();
+        <span class='kw'>let</span> <span class='ident'>b</span>: <span class='ident'>Set</span> <span class='op'>=</span> [<span class='number'>3</span>, <span class='number'>4</span>, <span class='number'>5</span>].<span class='ident'>iter</span>().<span class='ident'>cloned</span>().<span class='ident'>collect</span>();
 
-        <span class='kw'>let</span> <span class='ident'>set</span>: <span class='ident'>TrieSet</span> <span class='op'>=</span> <span class='kw-2'>&amp;</span><span class='ident'>a</span> <span class='op'>^</span> <span class='kw-2'>&amp;</span><span class='ident'>b</span>;
+        <span class='kw'>let</span> <span class='ident'>set</span>: <span class='ident'>Set</span> <span class='op'>=</span> <span class='kw-2'>&amp;</span><span class='ident'>a</span> <span class='op'>^</span> <span class='kw-2'>&amp;</span><span class='ident'>b</span>;
         <span class='kw'>let</span> <span class='ident'>v</span>: <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span> <span class='op'>=</span> <span class='ident'>set</span>.<span class='ident'>iter</span>().<span class='ident'>collect</span>();
-        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>v</span>, <span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>1</span>, <span class='number'>2</span>, <span class='number'>4</span>, <span class='number'>5</span>]);
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>v</span>, [<span class='number'>1</span>, <span class='number'>2</span>, <span class='number'>4</span>, <span class='number'>5</span>]);
     }
 
     <span class='attribute'>#[<span class='ident'>test</span>]</span>
     <span class='kw'>fn</span> <span class='ident'>test_sub</span>() {
-        <span class='kw'>let</span> <span class='ident'>a</span>: <span class='ident'>TrieSet</span> <span class='op'>=</span> <span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>1</span>, <span class='number'>2</span>, <span class='number'>3</span>].<span class='ident'>into_iter</span>().<span class='ident'>collect</span>();
-        <span class='kw'>let</span> <span class='ident'>b</span>: <span class='ident'>TrieSet</span> <span class='op'>=</span> <span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>3</span>, <span class='number'>4</span>, <span class='number'>5</span>].<span class='ident'>into_iter</span>().<span class='ident'>collect</span>();
+        <span class='kw'>let</span> <span class='ident'>a</span>: <span class='ident'>Set</span> <span class='op'>=</span> [<span class='number'>1</span>, <span class='number'>2</span>, <span class='number'>3</span>].<span class='ident'>iter</span>().<span class='ident'>cloned</span>().<span class='ident'>collect</span>();
+        <span class='kw'>let</span> <span class='ident'>b</span>: <span class='ident'>Set</span> <span class='op'>=</span> [<span class='number'>3</span>, <span class='number'>4</span>, <span class='number'>5</span>].<span class='ident'>iter</span>().<span class='ident'>cloned</span>().<span class='ident'>collect</span>();
 
-        <span class='kw'>let</span> <span class='ident'>set</span>: <span class='ident'>TrieSet</span> <span class='op'>=</span> <span class='kw-2'>&amp;</span><span class='ident'>a</span> <span class='op'>-</span> <span class='kw-2'>&amp;</span><span class='ident'>b</span>;
+        <span class='kw'>let</span> <span class='ident'>set</span>: <span class='ident'>Set</span> <span class='op'>=</span> <span class='kw-2'>&amp;</span><span class='ident'>a</span> <span class='op'>-</span> <span class='kw-2'>&amp;</span><span class='ident'>b</span>;
         <span class='kw'>let</span> <span class='ident'>v</span>: <span class='ident'>Vec</span><span class='op'>&lt;</span><span class='ident'>usize</span><span class='op'>&gt;</span> <span class='op'>=</span> <span class='ident'>set</span>.<span class='ident'>iter</span>().<span class='ident'>collect</span>();
-        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>v</span>, <span class='macro'>vec</span><span class='macro'>!</span>[<span class='number'>1</span>, <span class='number'>2</span>]);
+        <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>v</span>, [<span class='number'>1</span>, <span class='number'>2</span>]);
     }
 }
 </pre>

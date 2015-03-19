@@ -67,6 +67,9 @@
 <span id="25">25</span>
 <span id="26">26</span>
 <span id="27">27</span>
+<span id="28">28</span>
+<span id="29">29</span>
+<span id="30">30</span>
 </pre><pre class='rust '>
 <span class='comment'>// Copyright 2014 The Rust Project Developers. See the COPYRIGHT</span>
 <span class='comment'>// file at the top-level directory of this distribution and at</span>
@@ -88,13 +91,16 @@
 <span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>test</span>)]</span> <span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>rand</span>;
 <span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>test</span>)]</span> <span class='kw'>extern</span> <span class='kw'>crate</span> <span class='ident'>test</span>;
 
-<span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>map</span>::<span class='ident'>TrieMap</span>;
-<span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>set</span>::<span class='ident'>TrieSet</span>;
+<span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>map</span>::<span class='ident'>Map</span>;
+<span class='kw'>pub</span> <span class='kw'>use</span> <span class='ident'>set</span>::<span class='ident'>Set</span>;
 
 <span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>test</span>)]</span> <span class='attribute'>#[<span class='ident'>macro_use</span>]</span> <span class='kw'>mod</span> <span class='ident'>bench</span>;
 
 <span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>map</span>;
 <span class='kw'>pub</span> <span class='kw'>mod</span> <span class='ident'>set</span>;
+
+<span class='attribute'>#[<span class='ident'>cfg</span>(<span class='ident'>feature</span><span class='op'>=</span><span class='string'>&quot;ordered_iter&quot;</span>)]</span>
+<span class='kw'>mod</span> <span class='ident'>ordered_iter</span>;
 </pre>
 </section>
     <section id='search' class="content hidden"></section>

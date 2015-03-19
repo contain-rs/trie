@@ -43,7 +43,7 @@
     <section id='main' class="content mod">
 <h1 class='fqn'><span class='in-band'>Module <a href='../index.html'>trie</a>::<wbr><a class='mod' href=''>map</a><wbr></span><span class='out-of-band'><span id='render-detail'>
             <a id="collapse-all" href="#">[-]</a>&nbsp;<a id="expand-all" href="#">[+]</a>
-        </span><a id='src-6' href='../../src/trie/map.rs.html#11-1965'>[src]</a></span></h1>
+        </span><a id='src-6' href='../../src/trie/map.rs.html#11-1960'>[src]</a></span></h1>
 <div class='docblock'><p>An ordered map based on a trie.</p>
 </div><h2 id='reexports' class='section-header'><a href="#reexports">Reexports</a></h2>
 <table><tr><td><code>pub use self::<a class='enum' href='../../trie/map/enum.Entry.html' title='trie::map::Entry'>Entry</a>::*;</code></td></tr></table><h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
@@ -64,23 +64,37 @@ values being mutable.</p>
                     </tr>
                 
                     <tr>
-                        <td><a class='stability Unmarked' title='No stability level'></a><a class='struct' href='struct.OccupiedEntry.html'
-                               title='trie::map::OccupiedEntry'>OccupiedEntry</a></td>
-                        <td class='docblock short'><p>A view into an occupied entry in a TrieMap.</p>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='struct' href='struct.Keys.html'
+                               title='trie::map::Keys'>Keys</a></td>
+                        <td class='docblock short'><p>A forward iterator over the keys of a map.</p>
 </td>
                     </tr>
                 
                     <tr>
-                        <td><a class='stability Unmarked' title='No stability level'></a><a class='struct' href='struct.TrieMap.html'
-                               title='trie::map::TrieMap'>TrieMap</a></td>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='struct' href='struct.Map.html'
+                               title='trie::map::Map'>Map</a></td>
                         <td class='docblock short'><p>A map implemented as a radix trie.</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='struct' href='struct.OccupiedEntry.html'
+                               title='trie::map::OccupiedEntry'>OccupiedEntry</a></td>
+                        <td class='docblock short'><p>A view into an occupied entry in a map.</p>
 </td>
                     </tr>
                 
                     <tr>
                         <td><a class='stability Unmarked' title='No stability level'></a><a class='struct' href='struct.VacantEntry.html'
                                title='trie::map::VacantEntry'>VacantEntry</a></td>
-                        <td class='docblock short'><p>A view into a vacant entry in a TrieMap.</p>
+                        <td class='docblock short'><p>A view into a vacant entry in a map.</p>
+</td>
+                    </tr>
+                
+                    <tr>
+                        <td><a class='stability Unmarked' title='No stability level'></a><a class='struct' href='struct.Values.html'
+                               title='trie::map::Values'>Values</a></td>
+                        <td class='docblock short'><p>A forward iterator over the values of a map.</p>
 </td>
                     </tr>
                 </table><h2 id='enums' class='section-header'><a href="#enums">Enums</a></h2>
@@ -88,22 +102,7 @@ values being mutable.</p>
                     <tr>
                         <td><a class='stability Unmarked' title='No stability level'></a><a class='enum' href='enum.Entry.html'
                                title='trie::map::Entry'>Entry</a></td>
-                        <td class='docblock short'><p>A view into a single entry in a TrieMap, which may be vacant or occupied.</p>
-</td>
-                    </tr>
-                </table><h2 id='types' class='section-header'><a href="#types">Type Definitions</a></h2>
-<table>
-                    <tr>
-                        <td><a class='stability Unmarked' title='No stability level'></a><a class='type' href='type.Keys.html'
-                               title='trie::map::Keys'>Keys</a></td>
-                        <td class='docblock short'><p>A forward iterator over the keys of a map.</p>
-</td>
-                    </tr>
-                
-                    <tr>
-                        <td><a class='stability Unmarked' title='No stability level'></a><a class='type' href='type.Values.html'
-                               title='trie::map::Values'>Values</a></td>
-                        <td class='docblock short'><p>A forward iterator over the values of a map.</p>
+                        <td class='docblock short'><p>A view into a single entry in a map, which may be vacant or occupied.</p>
 </td>
                     </tr>
                 </table></section>
