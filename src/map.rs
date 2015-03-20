@@ -1214,7 +1214,6 @@ impl<'a, T> IntoIterator for &'a mut Map<T> {
 
 #[cfg(test)]
 mod test {
-    use std::iter::range_step;
     use std::usize;
     use std::hash;
 
@@ -1269,31 +1268,31 @@ mod test {
         let mut trie = Map::new();
         let n = 300;
 
-        for x in range_step(1, n, 2) {
+        for x in (1..n).step_by(2) {
             assert!(trie.insert(x, x + 1).is_none());
             assert!(trie.contains_key(&x));
             check_integrity(&trie.root);
         }
 
-        for x in range_step(0, n, 2) {
+        for x in (0..n).step_by(2) {
             assert!(!trie.contains_key(&x));
             assert!(trie.insert(x, x + 1).is_none());
             check_integrity(&trie.root);
         }
 
-        for x in range(0, n) {
+        for x in 0..n {
             assert!(trie.contains_key(&x));
             assert!(!trie.insert(x, x + 1).is_none());
             check_integrity(&trie.root);
         }
 
-        for x in range_step(1, n, 2) {
+        for x in (1..n).step_by(2) {
             assert!(trie.remove(&x).is_some());
             assert!(!trie.contains_key(&x));
             check_integrity(&trie.root);
         }
 
-        for x in range_step(0, n, 2) {
+        for x in (0..n).step_by(2) {
             assert!(trie.contains_key(&x));
             assert!(!trie.insert(x, x + 1).is_none());
             check_integrity(&trie.root);
@@ -1325,7 +1324,7 @@ mod test {
     fn test_each_reverse_break() {
         let mut m = Map::new();
 
-        for x in range(usize::MAX - 10000, usize::MAX).rev() {
+        for x in (usize::MAX - 10000..usize::MAX).rev() {
             m.insert(x, x / 2);
         }
 
@@ -1400,7 +1399,7 @@ mod test {
         let last = usize::MAX;
 
         let mut map = Map::new();
-        for x in range(first, last).rev() {
+        for x in (first..last).rev() {
             map.insert(x, x / 2);
         }
 
@@ -1422,7 +1421,7 @@ mod test {
         let last = usize::MAX;
 
         let mut map = Map::new();
-        for x in range(first, last).rev() {
+        for x in (first..last).rev() {
             map.insert(x, x / 2);
         }
 
@@ -1448,12 +1447,12 @@ mod test {
         let value = 42;
 
         let mut map : Map<usize> = Map::new();
-        for x in range_step(0, last, step) {
+        for x in (0..last).step_by(step) {
             assert!(x % step == 0);
             map.insert(x, value);
         }
 
-        for i in range(0, last - step) {
+        for i in 0..last - step {
             let mut lb = map.lower_bound(i);
             let mut ub = map.upper_bound(i);
             let next_key = i - i % step + step;
@@ -1471,7 +1470,7 @@ mod test {
         let mut ub = map.upper_bound(last - step);
         assert_eq!(ub.next(), None);
 
-        for i in range(last - step + 1, last) {
+        for i in last - step + 1..last {
             let mut lb = map.lower_bound(i);
             assert_eq!(lb.next(), None);
             let mut ub = map.upper_bound(i);
@@ -1487,12 +1486,12 @@ mod test {
 
         let mut m_lower = Map::new();
         let mut m_upper = Map::new();
-        for i in range(0, 100) {
+        for i in 0..100 {
             m_lower.insert(2 * i, 4 * i);
             m_upper.insert(2 * i, 4 * i);
         }
 
-        for i in range(0, 199) {
+        for i in 0..199 {
             let mut lb_it = m_lower.lower_bound_mut(i);
             let (k, v) = lb_it.next().unwrap();
             let lb = i + i % 2;
@@ -1500,7 +1499,7 @@ mod test {
             *v -= k;
         }
 
-        for i in range(0, 198) {
+        for i in 0..198 {
             let mut ub_it = m_upper.upper_bound_mut(i);
             let (k, v) = ub_it.next().unwrap();
             let ub = i + 2 - i % 2;
@@ -1635,7 +1634,7 @@ mod test {
     /// Make a map storing i^2 for i in [0, 128)
     fn squares_map() -> Map<usize> {
         let mut map = Map::new();
-        for i in range(0, SQUARES_UPPER_LIM) {
+        for i in 0..SQUARES_UPPER_LIM {
             map.insert(i, i * i);
         }
         map
@@ -1645,7 +1644,7 @@ mod test {
     fn test_entry_get() {
         let mut map = squares_map();
 
-        for i in range(0, SQUARES_UPPER_LIM) {
+        for i in 0..SQUARES_UPPER_LIM {
             match map.entry(i) {
                 Occupied(slot) => assert_eq!(slot.get(), &(i * i)),
                 Vacant(_) => panic!("Key not found.")
@@ -1659,7 +1658,7 @@ mod test {
         let mut map = squares_map();
 
         // Change the entries to cubes.
-        for i in range(0, SQUARES_UPPER_LIM) {
+        for i in 0..SQUARES_UPPER_LIM {
             match map.entry(i) {
                 Occupied(mut e) => {
                     *e.get_mut() = i * i * i;
@@ -1691,7 +1690,7 @@ mod test {
         assert_eq!(map.len(), SQUARES_UPPER_LIM);
 
         // Remove every odd key, checking that the correct value is returned.
-        for i in range_step(1, SQUARES_UPPER_LIM, 2) {
+        for i in (1..SQUARES_UPPER_LIM).step_by(2) {
             match map.entry(i) {
                 Occupied(e) => assert_eq!(e.remove(), i * i),
                 Vacant(_) => panic!("Key not found.")
@@ -1701,7 +1700,7 @@ mod test {
         check_integrity(&map.root);
 
         // Check that the values for even keys remain unmodified.
-        for i in range_step(0, SQUARES_UPPER_LIM, 2) {
+        for i in (0..SQUARES_UPPER_LIM).step_by(2) {
             assert_eq!(map.get(&i).unwrap(), &(i * i));
         }
 
@@ -1713,7 +1712,7 @@ mod test {
         let mut map = squares_map();
 
         // Change all the entries to cubes.
-        for i in range(0, SQUARES_UPPER_LIM) {
+        for i in 0..SQUARES_UPPER_LIM {
             match map.entry(i) {
                 Occupied(mut e) => assert_eq!(e.insert(i * i * i), i * i),
                 Vacant(_) => panic!("Key not found.")
@@ -1727,7 +1726,7 @@ mod test {
     fn test_vacant_entry_set() {
         let mut map = Map::new();
 
-        for i in range(0, SQUARES_UPPER_LIM) {
+        for i in 0..SQUARES_UPPER_LIM {
             match map.entry(i) {
                 Vacant(e) => {
                     // Insert i^2.
@@ -1783,7 +1782,7 @@ mod bench {
         let mut map = Map::<usize>::new();
         let mut rng = weak_rng();
 
-        for _ in range(0, size) {
+        for _ in 0..size {
             map.insert(rng.gen(), rng.gen());
         }
         map
@@ -1817,12 +1816,12 @@ mod bench {
     fn bench_lower_bound(b: &mut Bencher) {
         let mut m = Map::<usize>::new();
         let mut rng = weak_rng();
-        for _ in range(0, MAP_SIZE) {
+        for _ in 0..MAP_SIZE {
             m.insert(rng.gen(), rng.gen());
         }
 
         b.iter(|| {
-            for _ in range(0, 10) {
+            for _ in 0..10 {
                 m.lower_bound(rng.gen());
             }
         });
@@ -1832,12 +1831,12 @@ mod bench {
     fn bench_upper_bound(b: &mut Bencher) {
         let mut m = Map::<usize>::new();
         let mut rng = weak_rng();
-        for _ in range(0, MAP_SIZE) {
+        for _ in 0..MAP_SIZE {
             m.insert(rng.gen(), rng.gen());
         }
 
         b.iter(|| {
-            for _ in range(0, 10) {
+            for _ in 0..10 {
                 m.upper_bound(rng.gen());
             }
         });
@@ -1849,7 +1848,7 @@ mod bench {
         let mut rng = weak_rng();
 
         b.iter(|| {
-            for _ in range(0, MAP_SIZE) {
+            for _ in 0..MAP_SIZE {
                 m.insert(rng.gen(), [1; 10]);
             }
         });
@@ -1861,7 +1860,7 @@ mod bench {
         let mut rng = weak_rng();
 
         b.iter(|| {
-            for _ in range(0, MAP_SIZE) {
+            for _ in 0..MAP_SIZE {
                 match m.entry(rng.gen()) {
                     Occupied(mut e) => { e.insert([1; 10]); },
                     Vacant(e) => { e.insert([1; 10]); }
@@ -1876,7 +1875,7 @@ mod bench {
         let mut rng = weak_rng();
 
         b.iter(|| {
-            for _ in range(0, MAP_SIZE) {
+            for _ in 0..MAP_SIZE {
                 // only have the last few bits set.
                 m.insert(rng.gen::<usize>() & 0xff_ff, [1; 10]);
             }
@@ -1889,7 +1888,7 @@ mod bench {
         let mut rng = weak_rng();
 
         b.iter(|| {
-            for _ in range(0, MAP_SIZE) {
+            for _ in 0..MAP_SIZE {
                 m.insert(rng.gen(), ());
             }
         });
@@ -1901,7 +1900,7 @@ mod bench {
         let mut rng = weak_rng();
 
         b.iter(|| {
-            for _ in range(0, MAP_SIZE) {
+            for _ in 0..MAP_SIZE {
                 // only have the last few bits set.
                 m.insert(rng.gen::<usize>() & 0xff_ff, ());
             }

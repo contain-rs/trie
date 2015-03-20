@@ -13,7 +13,7 @@
 #![feature(box_patterns, box_syntax)]
 #![feature(core)]
 #![feature(unboxed_closures)]
-#![cfg_attr(test, feature(hash, test))]
+#![cfg_attr(test, feature(hash, step_by, test))]
 
 #[cfg(test)] extern crate rand;
 #[cfg(test)] extern crate test;
