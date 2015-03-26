@@ -133,8 +133,8 @@ impl Set {
     /// assert_eq!(set.lower_bound(5).next(), Some(6));
     /// assert_eq!(set.lower_bound(10).next(), None);
     /// ```
-    pub fn lower_bound(&self, val: usize) -> Iter {
-        Iter { iter: self.map.lower_bound(val) }
+    pub fn lower_bound(&self, val: usize) -> Range {
+        Range { iter: self.map.lower_bound(val) }
     }
 
     /// Gets an iterator pointing to the first value that key is greater than `val`.
@@ -148,8 +148,8 @@ impl Set {
     /// assert_eq!(set.upper_bound(5).next(), Some(6));
     /// assert_eq!(set.upper_bound(10).next(), None);
     /// ```
-    pub fn upper_bound(&self, val: usize) -> Iter {
-        Iter { iter: self.map.upper_bound(val) }
+    pub fn upper_bound(&self, val: usize) -> Range {
+        Range { iter: self.map.upper_bound(val) }
     }
 
     /// Visits the values representing the difference, in ascending order.
@@ -490,6 +490,12 @@ pub struct Iter<'a> {
     iter: map::Iter<'a, ()>
 }
 
+/// A bounded forward iterator over a set.
+#[derive(Clone)]
+pub struct Range<'a> {
+    iter: map::Range<'a, ()>
+}
+
 /// An iterator producing elements in the set difference (in-order).
 #[derive(Clone)]
 pub struct Difference<'a> {
@@ -536,6 +542,14 @@ impl<'a> Iterator for Iter<'a> {
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.iter.size_hint()
     }
+}
+
+impl<'a> ExactSizeIterator for Iter<'a> {}
+
+impl<'a> Iterator for Range<'a> {
+    type Item = usize;
+    fn next(&mut self) -> Option<usize> { self.iter.next().map(|(key, _)| key) }
+    fn size_hint(&self) -> (usize, Option<usize>) { self.iter.size_hint() }
 }
 
 impl<'a> Iterator for Difference<'a> {

@@ -208,8 +208,7 @@ impl<T> Map<T> {
         let mut iter = unsafe {Iter::new()};
         iter.stack[0] = self.root.children.iter();
         iter.length = 1;
-        iter.remaining_min = self.length;
-        iter.remaining_max = self.length;
+        iter.remaining = self.length;
 
         iter
     }
@@ -234,8 +233,7 @@ impl<T> Map<T> {
         let mut iter = unsafe {IterMut::new()};
         iter.stack[0] = self.root.children.iter_mut();
         iter.length = 1;
-        iter.remaining_min = self.length;
-        iter.remaining_max = self.length;
+        iter.remaining = self.length;
 
         iter
     }
@@ -435,7 +433,7 @@ macro_rules! bound {
 
             let mut it = unsafe {$iterator_name::new()};
             // everything else is zero'd, as we want.
-            it.remaining_max = this.length;
+            it.remaining = this.length;
 
             // this addr is necessary for the `Internal` pattern.
             addr!(loop {
@@ -465,8 +463,10 @@ macro_rules! bound {
                     // push to the stack.
                     it.stack[it.length] = children[slice_idx..].$iter();
                     it.length += 1;
-                    if ret { return it }
-                })
+                    if ret { break }
+                });
+
+            it
         }
     }
 }
@@ -474,11 +474,11 @@ macro_rules! bound {
 impl<T> Map<T> {
     // If `upper` is true then returns upper_bound else returns lower_bound.
     #[inline]
-    fn bound(&self, key: usize, upper: bool) -> Iter<T> {
-        bound!(Iter, self = self,
+    fn bound(&self, key: usize, upper: bool) -> Range<T> {
+        Range(bound!(Iter, self = self,
                key = key, is_upper = upper,
                iter = iter,
-               mutability = )
+               mutability = ))
     }
 
     /// Gets an iterator pointing to the first key-value pair whose key is not less than `key`.
@@ -493,7 +493,7 @@ impl<T> Map<T> {
     /// assert_eq!(map.lower_bound(5).next(), Some((6, &"c")));
     /// assert_eq!(map.lower_bound(10).next(), None);
     /// ```
-    pub fn lower_bound(&self, key: usize) -> Iter<T> {
+    pub fn lower_bound(&self, key: usize) -> Range<T> {
         self.bound(key, false)
     }
 
@@ -509,16 +509,16 @@ impl<T> Map<T> {
     /// assert_eq!(map.upper_bound(5).next(), Some((6, &"c")));
     /// assert_eq!(map.upper_bound(10).next(), None);
     /// ```
-    pub fn upper_bound(&self, key: usize) -> Iter<T> {
+    pub fn upper_bound(&self, key: usize) -> Range<T> {
         self.bound(key, true)
     }
     // If `upper` is true then returns upper_bound else returns lower_bound.
     #[inline]
-    fn bound_mut(&mut self, key: usize, upper: bool) -> IterMut<T> {
-        bound!(IterMut, self = self,
+    fn bound_mut(&mut self, key: usize, upper: bool) -> RangeMut<T> {
+        RangeMut(bound!(IterMut, self = self,
                key = key, is_upper = upper,
                iter = iter_mut,
-               mutability = mut)
+               mutability = mut))
     }
 
     /// Gets an iterator pointing to the first key-value pair whose key is not less than `key`.
@@ -541,7 +541,7 @@ impl<T> Map<T> {
     /// assert_eq!(map.get(&4), Some(&"changed"));
     /// assert_eq!(map.get(&6), Some(&"changed"));
     /// ```
-    pub fn lower_bound_mut(&mut self, key: usize) -> IterMut<T> {
+    pub fn lower_bound_mut(&mut self, key: usize) -> RangeMut<T> {
         self.bound_mut(key, false)
     }
 
@@ -565,7 +565,7 @@ impl<T> Map<T> {
     /// assert_eq!(map.get(&4), Some(&"b"));
     /// assert_eq!(map.get(&6), Some(&"changed"));
     /// ```
-    pub fn upper_bound_mut(&mut self, key: usize) -> IterMut<T> {
+    pub fn upper_bound_mut(&mut self, key: usize) -> RangeMut<T> {
         self.bound_mut(key, true)
     }
 }
@@ -1019,8 +1019,7 @@ impl<'a, T> VacantEntry<'a, T> {
 pub struct Iter<'a, T:'a> {
     stack: [slice::Iter<'a, TrieNode<T>>; MAX_DEPTH],
     length: usize,
-    remaining_min: usize,
-    remaining_max: usize
+    remaining: usize,
 }
 
 impl<'a, T> Clone for Iter<'a, T> {
@@ -1052,8 +1051,7 @@ impl<'a, T> Clone for Iter<'a, T> {
 pub struct IterMut<'a, T:'a> {
     stack: [slice::IterMut<'a, TrieNode<T>>; MAX_DEPTH],
     length: usize,
-    remaining_min: usize,
-    remaining_max: usize
+    remaining: usize,
 }
 
 /// A forward iterator over the keys of a map.
@@ -1069,6 +1067,8 @@ impl<'a, T> Iterator for Keys<'a, T> {
     fn size_hint(&self) -> (usize, Option<usize>) { self.0.size_hint() }
 }
 
+impl<'a, T> ExactSizeIterator for Keys<'a, T> {}
+
 /// A forward iterator over the values of a map.
 pub struct Values<'a, T: 'a>(Iter<'a, T>);
 
@@ -1081,6 +1081,8 @@ impl<'a, T> Iterator for Values<'a, T> {
     fn next(&mut self) -> Option<&'a T> { self.0.next().map(|e| e.1) }
     fn size_hint(&self) -> (usize, Option<usize>) { self.0.size_hint() }
 }
+
+impl<'a, T> ExactSizeIterator for Values<'a, T> {}
 
 // FIXME #5846: see `addr!` above.
 macro_rules! item { ($i:item) => {$i}}
@@ -1097,8 +1099,7 @@ macro_rules! iterator_impl {
             #[cfg(target_pointer_width="32")]
             unsafe fn new() -> $name<'a, T> {
                 $name {
-                    remaining_min: 0,
-                    remaining_max: 0,
+                    remaining: 0,
                     length: 0,
                     // ick :( ... at least the compiler will tell us if we screwed up.
                     stack: [zeroed(), zeroed(), zeroed(), zeroed(), zeroed(),
@@ -1109,8 +1110,7 @@ macro_rules! iterator_impl {
             #[cfg(target_pointer_width="64")]
             unsafe fn new() -> $name<'a, T> {
                 $name {
-                    remaining_min: 0,
-                    remaining_max: 0,
+                    remaining: 0,
                     length: 0,
                     stack: [zeroed(), zeroed(), zeroed(), zeroed(),
                             zeroed(), zeroed(), zeroed(), zeroed(),
@@ -1167,10 +1167,7 @@ macro_rules! iterator_impl {
                                                 write_ptr = write_ptr.offset(1);
                                             }
                                             External(key, ref $($mut_)* value) => {
-                                                self.remaining_max -= 1;
-                                                if self.remaining_min > 0 {
-                                                    self.remaining_min -= 1;
-                                                }
+                                                self.remaining -= 1;
                                                 // store the new length of the
                                                 // stack, based on our current
                                                 // position.
@@ -1191,14 +1188,39 @@ macro_rules! iterator_impl {
 
                 #[inline]
                 fn size_hint(&self) -> (usize, Option<usize>) {
-                    (self.remaining_min, Some(self.remaining_max))
+                    (self.remaining, Some(self.remaining))
                 }
             });
+
+        impl<'a, T> ExactSizeIterator for $name<'a, T> {}
     }
 }
 
 iterator_impl! { Iter, iter = iter, mutability = }
 iterator_impl! { IterMut, iter = iter_mut, mutability = mut }
+
+/// A bounded forward iterator over a map.
+pub struct Range<'a, T: 'a>(Iter<'a, T>);
+
+impl<'a, T> Clone for Range<'a, T> {
+    fn clone(&self) -> Range<'a, T> { Range(self.0.clone()) }
+}
+
+impl<'a, T> Iterator for Range<'a, T> {
+    type Item = (usize, &'a T);
+    fn next(&mut self) -> Option<(usize, &'a T)> { self.0.next() }
+    fn size_hint(&self) -> (usize, Option<usize>) { (0, Some(self.0.remaining)) }
+}
+
+/// A bounded forward iterator over the key-value pairs of a map, with the
+/// values being mutable.
+pub struct RangeMut<'a, T: 'a>(IterMut<'a, T>);
+
+impl<'a, T> Iterator for RangeMut<'a, T> {
+    type Item = (usize, &'a mut T);
+    fn next(&mut self) -> Option<(usize, &'a mut T)> { self.0.next() }
+    fn size_hint(&self) -> (usize, Option<usize>) { (0, Some(self.0.remaining)) }
+}
 
 impl<'a, T> IntoIterator for &'a Map<T> {
     type Item = (usize, &'a T);
