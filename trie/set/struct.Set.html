@@ -43,7 +43,7 @@
     <section id='main' class="content struct">
 <h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>trie</a>::<wbr><a href='index.html'>set</a>::<wbr><a class='struct' href=''>Set</a><wbr></span><span class='out-of-band'><span id='render-detail'>
             <a id="collapse-all" href="#">[-]</a>&nbsp;<a id="expand-all" href="#">[+]</a>
-        </span><a id='src-3754' href='../../src/trie/set.rs.html#52-54'>[src]</a></span></h1>
+        </span><a id='src-3892' href='../../src/trie/set.rs.html#52-54'>[src]</a></span></h1>
 <pre class='rust struct'>pub struct Set {
     // some fields omitted
 }</pre><div class='docblock'><p>A set implemented as a radix trie.</p>
@@ -112,7 +112,7 @@ Returns <code>true</code> if <code>f</code> returns <code>true</code> for all el
     <span class='macro'>println</span><span class='macro'>!</span>(<span class='string'>&quot;{}&quot;</span>, <span class='ident'>x</span>);
 }
 </pre>
-</div><h4 id='method.lower_bound' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.lower_bound' class='fnname'>lower_bound</a>(&amp;self, val: <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a class='struct' href='../../trie/set/struct.Iter.html' title='trie::set::Iter'>Iter</a></code></h4>
+</div><h4 id='method.lower_bound' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.lower_bound' class='fnname'>lower_bound</a>(&amp;self, val: <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a class='struct' href='../../trie/set/struct.Range.html' title='trie::set::Range'>Range</a></code></h4>
 <div class='docblock'><p>Gets an iterator pointing to the first value that is not less than <code>val</code>.
 If all values in the set are less than <code>val</code> an empty iterator is returned.</p>
 
@@ -123,7 +123,7 @@ If all values in the set are less than <code>val</code> an empty iterator is ret
 <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>set</span>.<span class='ident'>lower_bound</span>(<span class='number'>5</span>).<span class='ident'>next</span>(), <span class='prelude-val'>Some</span>(<span class='number'>6</span>));
 <span class='macro'>assert_eq</span><span class='macro'>!</span>(<span class='ident'>set</span>.<span class='ident'>lower_bound</span>(<span class='number'>10</span>).<span class='ident'>next</span>(), <span class='prelude-val'>None</span>);
 </pre>
-</div><h4 id='method.upper_bound' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.upper_bound' class='fnname'>upper_bound</a>(&amp;self, val: <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a class='struct' href='../../trie/set/struct.Iter.html' title='trie::set::Iter'>Iter</a></code></h4>
+</div><h4 id='method.upper_bound' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.upper_bound' class='fnname'>upper_bound</a>(&amp;self, val: <a href='http://doc.rust-lang.org/nightly/std/primitive.usize.html'>usize</a>) -&gt; <a class='struct' href='../../trie/set/struct.Range.html' title='trie::set::Range'>Range</a></code></h4>
 <div class='docblock'><p>Gets an iterator pointing to the first value that key is greater than <code>val</code>.
 If all values in the set are less than or equal to <code>val</code> an empty iterator is returned.</p>
 
