@@ -338,7 +338,7 @@ impl<T> Map<T> {
     ///     Some(x) => *x = "b",
     ///     None => (),
     /// }
-    /// assert_eq!(map[1], "b");
+    /// assert_eq!(map[&1], "b");
     /// ```
     #[inline]
     pub fn get_mut(&mut self, key: &usize) -> Option<&mut T> {
@@ -357,7 +357,7 @@ impl<T> Map<T> {
     ///
     /// map.insert(37, "b");
     /// assert_eq!(map.insert(37, "c"), Some("b"));
-    /// assert_eq!(map[37], "c");
+    /// assert_eq!(map[&37], "c");
     /// ```
     pub fn insert(&mut self, key: usize, value: T) -> Option<T> {
         let (_, old_val) = insert(&mut self.root.count,
@@ -594,17 +594,17 @@ impl<T: Hash> Hash for Map<T> {
     }
 }
 
-impl<T> ops::Index<usize> for Map<T> {
+impl<'a, T> ops::Index<&'a usize> for Map<T> {
     type Output = T;
     #[inline]
-    fn index(&self, i: &usize) -> &T {
+    fn index(&self, i: &'a usize) -> &T {
         self.get(i).expect("key not present")
     }
 }
 
-impl<T> ops::IndexMut<usize> for Map<T> {
+impl<'a, T> ops::IndexMut<&'a usize> for Map<T> {
     #[inline]
-    fn index_mut(&mut self, i: &usize) -> &mut T {
+    fn index_mut(&mut self, i: &'a usize) -> &mut T {
         self.get_mut(i).expect("key not present")
     }
 }
@@ -1612,7 +1612,7 @@ mod test {
         map.insert(2, 1);
         map.insert(3, 4);
 
-        assert_eq!(map[2], 1);
+        assert_eq!(map[&2], 1);
     }
 
     #[test]
@@ -1624,7 +1624,7 @@ mod test {
         map.insert(2, 1);
         map.insert(3, 4);
 
-        map[4];
+        map[&4];
     }
 
     // Number of items to insert into the map during entry tests.
