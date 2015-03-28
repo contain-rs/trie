@@ -758,12 +758,21 @@ pub enum Entry<'a, T: 'a> {
 }
 
 impl<'a, T> Entry<'a, T> {
-    /// Returns a mutable reference to the value if occupied, or the `VacantEntry` if
-    /// vacant.
-    pub fn get(self) -> Result<&'a mut T, VacantEntry<'a, T>> {
+    /// Ensures a value is in the entry by inserting the default if empty, and returns
+    /// a mutable reference to the value in the entry.
+    pub fn or_insert(self, default: T) -> &'a mut T {
         match self {
-            Occupied(entry) => Ok(entry.into_mut()),
-            Vacant(entry) => Err(entry),
+            Occupied(entry) => entry.into_mut(),
+            Vacant(entry) => entry.insert(default),
+        }
+    }
+
+    /// Ensures a value is in the entry by inserting the result of the default function if empty,
+    /// and returns a mutable reference to the value in the entry.
+    pub fn or_insert_with<F: FnOnce() -> T>(self, default: F) -> &'a mut T {
+        match self {
+            Occupied(entry) => entry.into_mut(),
+            Vacant(entry) => entry.insert(default()),
         }
     }
 }
