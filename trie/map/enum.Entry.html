@@ -43,7 +43,7 @@
     <section id='main' class="content enum">
 <h1 class='fqn'><span class='in-band'>Enum <a href='../index.html'>trie</a>::<wbr><a href='index.html'>map</a>::<wbr><a class='enum' href=''>Entry</a><wbr></span><span class='out-of-band'><span id='render-detail'>
             <a id="collapse-all" href="#">[-]</a>&nbsp;<a id="expand-all" href="#">[+]</a>
-        </span><a id='src-2123' href='../../src/trie/map.rs.html#753-758'>[src]</a></span></h1>
+        </span><a id='src-2129' href='../../src/trie/map.rs.html#753-758'>[src]</a></span></h1>
 <pre class='rust enum'>pub enum Entry&lt;'a, T: 'a&gt; {
     Occupied(<a class='struct' href='../../trie/map/struct.OccupiedEntry.html' title='trie::map::OccupiedEntry'>OccupiedEntry</a>&lt;'a, T&gt;),
     Vacant(<a class='struct' href='../../trie/map/struct.VacantEntry.html' title='trie::map::VacantEntry'>VacantEntry</a>&lt;'a, T&gt;),
@@ -51,9 +51,12 @@
 </div><h2 class='variants'>Variants</h2>
 <table><tr><td id='variant.Occupied'><a class='stability Unmarked' title='No stability level'></a><code>Occupied</code></td><td><div class='docblock'><p>An occupied entry.</p>
 </div></td></tr><tr><td id='variant.Vacant'><a class='stability Unmarked' title='No stability level'></a><code>Vacant</code></td><td><div class='docblock'><p>A vacant entry.</p>
-</div></td></tr></table><h2 id='methods'>Methods</h2><h3 class='impl'><a class='stability Unmarked' title='No stability level'></a><code>impl&lt;'a, T&gt; <a class='enum' href='../../trie/map/enum.Entry.html' title='trie::map::Entry'>Entry</a>&lt;'a, T&gt;</code></h3><div class='impl-items'><h4 id='method.get' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.get' class='fnname'>get</a>(self) -&gt; <a class='enum' href='http://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;&amp;'a mut T, <a class='struct' href='../../trie/map/struct.VacantEntry.html' title='trie::map::VacantEntry'>VacantEntry</a>&lt;'a, T&gt;&gt;</code></h4>
-<div class='docblock'><p>Returns a mutable reference to the value if occupied, or the <code>VacantEntry</code> if
-vacant.</p>
+</div></td></tr></table><h2 id='methods'>Methods</h2><h3 class='impl'><a class='stability Unmarked' title='No stability level'></a><code>impl&lt;'a, T&gt; <a class='enum' href='../../trie/map/enum.Entry.html' title='trie::map::Entry'>Entry</a>&lt;'a, T&gt;</code></h3><div class='impl-items'><h4 id='method.or_insert' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.or_insert' class='fnname'>or_insert</a>(self, default: T) -&gt; &amp;'a mut T</code></h4>
+<div class='docblock'><p>Ensures a value is in the entry by inserting the default if empty, and returns
+a mutable reference to the value in the entry.</p>
+</div><h4 id='method.or_insert_with' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.or_insert_with' class='fnname'>or_insert_with</a>&lt;F: <a class='trait' href='http://doc.rust-lang.org/nightly/core/ops/trait.FnOnce.html' title='core::ops::FnOnce'>FnOnce</a>() -&gt; T&gt;(self, default: F) -&gt; &amp;'a mut T</code></h4>
+<div class='docblock'><p>Ensures a value is in the entry by inserting the result of the default function if empty,
+and returns a mutable reference to the value in the entry.</p>
 </div></div></section>
     <section id='search' class="content hidden"></section>
 
