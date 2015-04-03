@@ -2030,6 +2030,9 @@
 <span id="1988">1988</span>
 <span id="1989">1989</span>
 <span id="1990">1990</span>
+<span id="1991">1991</span>
+<span id="1992">1992</span>
+<span id="1993">1993</span>
 </pre><pre class='rust '>
 <span class='comment'>// Copyright 2013-2014 The Rust Project Developers. See the COPYRIGHT</span>
 <span class='comment'>// file at the top-level directory of this distribution and at</span>
@@ -2721,7 +2724,8 @@
                 _ <span class='op'>=&gt;</span> <span class='macro'>unreachable</span><span class='macro'>!</span>()
             }
         }
-        <span class='ident'>Internal</span>(<span class='kw'>box</span> <span class='kw-2'>ref</span> <span class='kw-2'>mut</span> <span class='ident'>x</span>) <span class='op'>=&gt;</span> {
+        <span class='ident'>Internal</span>(<span class='kw-2'>ref</span> <span class='kw-2'>mut</span> <span class='ident'>x</span>) <span class='op'>=&gt;</span> {
+            <span class='kw'>let</span> <span class='ident'>x</span> <span class='op'>=</span> <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='op'>*</span><span class='op'>*</span><span class='ident'>x</span>;
             <span class='kw'>return</span> <span class='ident'>insert</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>x</span>.<span class='ident'>count</span>, <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>x</span>.<span class='ident'>children</span>[<span class='ident'>chunk</span>(<span class='ident'>key</span>, <span class='ident'>idx</span>)], <span class='ident'>key</span>, <span class='ident'>value</span>, <span class='ident'>idx</span> <span class='op'>+</span> <span class='number'>1</span>);
         }
         <span class='ident'>External</span>(<span class='ident'>stored_key</span>, <span class='kw-2'>ref</span> <span class='kw-2'>mut</span> <span class='ident'>stored_value</span>) <span class='kw'>if</span> <span class='ident'>stored_key</span> <span class='op'>==</span> <span class='ident'>key</span> <span class='op'>=&gt;</span> {
@@ -2734,10 +2738,11 @@
 
     <span class='comment'>// Conflict, an external node with differing keys.</span>
     <span class='comment'>// We replace the old node by an internal one, then re-insert the two values beneath it.</span>
-    <span class='kw'>match</span> <span class='ident'>mem</span>::<span class='ident'>replace</span>(<span class='ident'>start_node</span>, <span class='ident'>Internal</span>(<span class='kw'>box</span> <span class='ident'>InternalNode</span>::<span class='ident'>new</span>())) {
+    <span class='kw'>match</span> <span class='ident'>mem</span>::<span class='ident'>replace</span>(<span class='ident'>start_node</span>, <span class='ident'>Internal</span>(<span class='ident'>Box</span>::<span class='ident'>new</span>(<span class='ident'>InternalNode</span>::<span class='ident'>new</span>()))) {
         <span class='ident'>External</span>(<span class='ident'>stored_key</span>, <span class='ident'>stored_value</span>) <span class='op'>=&gt;</span> {
             <span class='kw'>match</span> <span class='op'>*</span><span class='ident'>start_node</span> {
-                <span class='ident'>Internal</span>(<span class='kw'>box</span> <span class='kw-2'>ref</span> <span class='kw-2'>mut</span> <span class='ident'>new_node</span>) <span class='op'>=&gt;</span> {
+                <span class='ident'>Internal</span>(<span class='kw-2'>ref</span> <span class='kw-2'>mut</span> <span class='ident'>new_node</span>) <span class='op'>=&gt;</span> {
+                    <span class='kw'>let</span> <span class='ident'>new_node</span> <span class='op'>=</span> <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='op'>*</span><span class='op'>*</span><span class='ident'>new_node</span>;
                     <span class='comment'>// Re-insert the old value.</span>
                     <span class='ident'>insert</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>new_node</span>.<span class='ident'>count</span>,
                            <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>new_node</span>.<span class='ident'>children</span>[<span class='ident'>chunk</span>(<span class='ident'>stored_key</span>, <span class='ident'>idx</span>)],
@@ -2767,7 +2772,8 @@
         }
       }
       <span class='ident'>External</span>(..) <span class='op'>=&gt;</span> (<span class='prelude-val'>None</span>, <span class='boolval'>false</span>),
-      <span class='ident'>Internal</span>(<span class='kw'>box</span> <span class='kw-2'>ref</span> <span class='kw-2'>mut</span> <span class='ident'>x</span>) <span class='op'>=&gt;</span> {
+      <span class='ident'>Internal</span>(<span class='kw-2'>ref</span> <span class='kw-2'>mut</span> <span class='ident'>x</span>) <span class='op'>=&gt;</span> {
+          <span class='kw'>let</span> <span class='ident'>x</span> <span class='op'>=</span> <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='op'>*</span><span class='op'>*</span><span class='ident'>x</span>;
           <span class='kw'>let</span> <span class='ident'>ret</span> <span class='op'>=</span> <span class='ident'>remove</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>x</span>.<span class='ident'>count</span>, <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>x</span>.<span class='ident'>children</span>[<span class='ident'>chunk</span>(<span class='ident'>key</span>, <span class='ident'>idx</span>)],
                            <span class='ident'>key</span>, <span class='ident'>idx</span> <span class='op'>+</span> <span class='number'>1</span>);
           (<span class='ident'>ret</span>, <span class='ident'>x</span>.<span class='ident'>count</span> <span class='op'>==</span> <span class='number'>0</span>)
@@ -2853,9 +2859,8 @@
     }
 
     <span class='kw'>fn</span> <span class='ident'>peek_ref</span>(<span class='kw-2'>&amp;</span><span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='kw-2'>mut</span> <span class='ident'>TrieNode</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {
-        <span class='kw'>unsafe</span> {
-            <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='op'>*</span><span class='self'>self</span>.<span class='ident'>items</span>[<span class='self'>self</span>.<span class='ident'>length</span> <span class='op'>-</span> <span class='number'>1</span>]
-        }
+        <span class='kw'>let</span> <span class='ident'>item</span> <span class='op'>=</span> <span class='self'>self</span>.<span class='ident'>items</span>[<span class='self'>self</span>.<span class='ident'>length</span> <span class='op'>-</span> <span class='number'>1</span>];
+        <span class='kw'>unsafe</span> { <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='op'>*</span><span class='ident'>item</span> }
     }
 
     <span class='kw'>fn</span> <span class='ident'>pop_ref</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='self'>self</span>) <span class='op'>-&gt;</span> <span class='kw-2'>&amp;</span><span class='lifetime'>&#39;a</span> <span class='kw-2'>mut</span> <span class='ident'>TrieNode</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;</span> {
@@ -2925,7 +2930,7 @@
     <span class='op'>-&gt;</span> (<span class='prelude-ty'>Option</span><span class='op'>&lt;</span><span class='op'>*</span><span class='kw-2'>mut</span> <span class='ident'>TrieNode</span><span class='op'>&lt;</span><span class='ident'>T</span><span class='op'>&gt;&gt;</span>, <span class='ident'>bool</span>) {
     <span class='kw'>match</span> <span class='op'>*</span><span class='ident'>node</span> {
         <span class='comment'>// If the node is internal, tell the caller to descend further.</span>
-        <span class='ident'>Internal</span>(<span class='kw'>box</span> <span class='kw-2'>ref</span> <span class='kw-2'>mut</span> <span class='ident'>node_internal</span>) <span class='op'>=&gt;</span> {
+        <span class='ident'>Internal</span>(<span class='kw-2'>ref</span> <span class='kw-2'>mut</span> <span class='ident'>node_internal</span>) <span class='op'>=&gt;</span> {
             (<span class='prelude-val'>Some</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>node_internal</span>.<span class='ident'>children</span>[<span class='ident'>chunk</span>(<span class='ident'>key</span>, <span class='ident'>idx</span>)] <span class='kw'>as</span> <span class='op'>*</span><span class='kw-2'>mut</span> _), <span class='boolval'>false</span>)
         },
         <span class='comment'>// If the node is external or empty, the search is complete.</span>
@@ -3044,7 +3049,8 @@
         <span class='comment'>// Otherwise, find the predecessor of the last stack node, and insert as normal.</span>
         <span class='kw'>else</span> {
             <span class='kw'>match</span> <span class='op'>*</span><span class='ident'>search_stack</span>.<span class='ident'>get_ref</span>(<span class='ident'>old_length</span> <span class='op'>-</span> <span class='number'>2</span>) {
-                <span class='ident'>Internal</span>(<span class='kw'>box</span> <span class='kw-2'>ref</span> <span class='kw-2'>mut</span> <span class='ident'>parent</span>) <span class='op'>=&gt;</span> {
+                <span class='ident'>Internal</span>(<span class='kw-2'>ref</span> <span class='kw-2'>mut</span> <span class='ident'>parent</span>) <span class='op'>=&gt;</span> {
+                    <span class='kw'>let</span> <span class='ident'>parent</span> <span class='op'>=</span> <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='op'>*</span><span class='op'>*</span><span class='ident'>parent</span>;
                     <span class='kw'>let</span> (<span class='ident'>value_ref</span>, _) <span class='op'>=</span> <span class='ident'>insert</span>(<span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>parent</span>.<span class='ident'>count</span>,
                                                 <span class='kw-2'>&amp;</span><span class='kw-2'>mut</span> <span class='ident'>parent</span>.<span class='ident'>children</span>[<span class='ident'>chunk</span>(<span class='ident'>key</span>, <span class='ident'>old_length</span> <span class='op'>-</span> <span class='number'>1</span>)],
                                                 <span class='ident'>key</span>, <span class='ident'>value</span>, <span class='ident'>old_length</span>);
