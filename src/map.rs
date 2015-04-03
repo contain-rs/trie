@@ -688,7 +688,8 @@ fn insert<'a, T>(count: &mut usize, start_node: &'a mut TrieNode<T>, key: usize,
                 _ => unreachable!()
             }
         }
-        Internal(box ref mut x) => {
+        Internal(ref mut x) => {
+            let x = &mut **x;
             return insert(&mut x.count, &mut x.children[chunk(key, idx)], key, value, idx + 1);
         }
         External(stored_key, ref mut stored_value) if stored_key == key => {
@@ -701,10 +702,11 @@ fn insert<'a, T>(count: &mut usize, start_node: &'a mut TrieNode<T>, key: usize,
 
     // Conflict, an external node with differing keys.
     // We replace the old node by an internal one, then re-insert the two values beneath it.
-    match mem::replace(start_node, Internal(box InternalNode::new())) {
+    match mem::replace(start_node, Internal(Box::new(InternalNode::new()))) {
         External(stored_key, stored_value) => {
             match *start_node {
-                Internal(box ref mut new_node) => {
+                Internal(ref mut new_node) => {
+                    let new_node = &mut **new_node;
                     // Re-insert the old value.
                     insert(&mut new_node.count,
                            &mut new_node.children[chunk(stored_key, idx)],
@@ -734,7 +736,8 @@ fn remove<T>(count: &mut usize, child: &mut TrieNode<T>, key: usize,
         }
       }
       External(..) => (None, false),
-      Internal(box ref mut x) => {
+      Internal(ref mut x) => {
+          let x = &mut **x;
           let ret = remove(&mut x.count, &mut x.children[chunk(key, idx)],
                            key, idx + 1);
           (ret, x.count == 0)
@@ -820,9 +823,8 @@ impl<'a, T> SearchStack<'a, T> {
     }
 
     fn peek_ref(&self) -> &'a mut TrieNode<T> {
-        unsafe {
-            &mut *self.items[self.length - 1]
-        }
+        let item = self.items[self.length - 1];
+        unsafe { &mut *item }
     }
 
     fn pop_ref(&mut self) -> &'a mut TrieNode<T> {
@@ -892,7 +894,7 @@ unsafe fn next_child<T>(node: *mut TrieNode<T>, key: usize, idx: usize)
     -> (Option<*mut TrieNode<T>>, bool) {
     match *node {
         // If the node is internal, tell the caller to descend further.
-        Internal(box ref mut node_internal) => {
+        Internal(ref mut node_internal) => {
             (Some(&mut node_internal.children[chunk(key, idx)] as *mut _), false)
         },
         // If the node is external or empty, the search is complete.
@@ -1011,7 +1013,8 @@ impl<'a, T> VacantEntry<'a, T> {
         // Otherwise, find the predecessor of the last stack node, and insert as normal.
         else {
             match *search_stack.get_ref(old_length - 2) {
-                Internal(box ref mut parent) => {
+                Internal(ref mut parent) => {
+                    let parent = &mut **parent;
                     let (value_ref, _) = insert(&mut parent.count,
                                                 &mut parent.children[chunk(key, old_length - 1)],
                                                 key, value, old_length);
