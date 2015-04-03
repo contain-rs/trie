@@ -820,9 +820,8 @@ impl<'a, T> SearchStack<'a, T> {
     }
 
     fn peek_ref(&self) -> &'a mut TrieNode<T> {
-        unsafe {
-            &mut *self.items[self.length - 1]
-        }
+        let item = self.items[self.length - 1];
+        unsafe { &mut *item }
     }
 
     fn pop_ref(&mut self) -> &'a mut TrieNode<T> {
