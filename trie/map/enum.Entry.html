@@ -34,27 +34,29 @@
             <div class="search-container">
                 <input class="search-input" name="search"
                        autocomplete="off"
-                       placeholder="Click or press 'S' to search, '?' for more options..."
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
                        type="search">
             </div>
         </form>
     </nav>
 
     <section id='main' class="content enum">
-<h1 class='fqn'><span class='in-band'>Enum <a href='../index.html'>trie</a>::<wbr><a href='index.html'>map</a>::<wbr><a class='enum' href=''>Entry</a><wbr></span><span class='out-of-band'><span id='render-detail'>
-            <a id="collapse-all" href="#">[-]</a>&nbsp;<a id="expand-all" href="#">[+]</a>
-        </span><a id='src-2148' href='../../src/trie/map.rs.html#756-761'>[src]</a></span></h1>
+<h1 class='fqn'><span class='in-band'>Enum <a href='../index.html'>trie</a>::<wbr><a href='index.html'>map</a>::<wbr><a class='enum' href=''>Entry</a></span><span class='out-of-band'><span id='render-detail'>
+            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                [<span class='inner'>&#x2212;</span>]
+            </a>
+        </span><a id='src-1941' class='srclink' href='../../src/trie/map.rs.html#748-753' title='goto source code'>[src]</a></span></h1>
 <pre class='rust enum'>pub enum Entry&lt;'a, T: 'a&gt; {
     Occupied(<a class='struct' href='../../trie/map/struct.OccupiedEntry.html' title='trie::map::OccupiedEntry'>OccupiedEntry</a>&lt;'a, T&gt;),
     Vacant(<a class='struct' href='../../trie/map/struct.VacantEntry.html' title='trie::map::VacantEntry'>VacantEntry</a>&lt;'a, T&gt;),
 }</pre><div class='docblock'><p>A view into a single entry in a map, which may be vacant or occupied.</p>
 </div><h2 class='variants'>Variants</h2>
-<table><tr><td id='variant.Occupied'><a class='stability Unmarked' title='No stability level'></a><code>Occupied</code></td><td><div class='docblock'><p>An occupied entry.</p>
-</div></td></tr><tr><td id='variant.Vacant'><a class='stability Unmarked' title='No stability level'></a><code>Vacant</code></td><td><div class='docblock'><p>A vacant entry.</p>
-</div></td></tr></table><h2 id='methods'>Methods</h2><h3 class='impl'><a class='stability Unmarked' title='No stability level'></a><code>impl&lt;'a, T&gt; <a class='enum' href='../../trie/map/enum.Entry.html' title='trie::map::Entry'>Entry</a>&lt;'a, T&gt;</code></h3><div class='impl-items'><h4 id='method.or_insert' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.or_insert' class='fnname'>or_insert</a>(self, default: T) -&gt; &amp;'a mut T</code></h4>
+<table><tr><td id='variant.Occupied'><code>Occupied</code></td><td><div class='docblock'><p>An occupied entry.</p>
+</div></td></tr><tr><td id='variant.Vacant'><code>Vacant</code></td><td><div class='docblock'><p>A vacant entry.</p>
+</div></td></tr></table><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl&lt;'a, T&gt; <a class='enum' href='../../trie/map/enum.Entry.html' title='trie::map::Entry'>Entry</a>&lt;'a, T&gt;</code></h3><div class='impl-items'><h4 id='method.or_insert' class='method'><code>fn <a href='#method.or_insert' class='fnname'>or_insert</a>(self, default: T) -&gt; &amp;'a mut T</code></h4>
 <div class='docblock'><p>Ensures a value is in the entry by inserting the default if empty, and returns
 a mutable reference to the value in the entry.</p>
-</div><h4 id='method.or_insert_with' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.or_insert_with' class='fnname'>or_insert_with</a>&lt;F: <a class='trait' href='http://doc.rust-lang.org/nightly/core/ops/trait.FnOnce.html' title='core::ops::FnOnce'>FnOnce</a>() -&gt; T&gt;(self, default: F) -&gt; &amp;'a mut T</code></h4>
+</div><h4 id='method.or_insert_with' class='method'><code>fn <a href='#method.or_insert_with' class='fnname'>or_insert_with</a>&lt;F: <a class='trait' href='http://doc.rust-lang.org/nightly/core/ops/trait.FnOnce.html' title='core::ops::FnOnce'>FnOnce</a>() -&gt; T&gt;(self, default: F) -&gt; &amp;'a mut T</code></h4>
 <div class='docblock'><p>Ensures a value is in the entry by inserting the result of the default function if empty,
 and returns a mutable reference to the value in the entry.</p>
 </div></div></section>
@@ -64,7 +66,7 @@ and returns a mutable reference to the value in the entry.</p>
 
     <div id="help" class="hidden">
         <div class="shortcuts">
-            <h1>Keyboard shortcuts</h1>
+            <h1>Keyboard Shortcuts</h1>
             <dl>
                 <dt>?</dt>
                 <dd>Show this help dialog</dd>
@@ -79,7 +81,7 @@ and returns a mutable reference to the value in the entry.</p>
             </dl>
         </div>
         <div class="infos">
-            <h1>Search tricks</h1>
+            <h1>Search Tricks</h1>
             <p>
                 Prefix searches with a type followed by a colon (e.g.
                 <code>fn:</code>) to restrict the search to a given type.
@@ -89,6 +91,10 @@ and returns a mutable reference to the value in the entry.</p>
                 <code>struct</code>, <code>enum</code>,
                 <code>trait</code>, <code>typedef</code> (or
                 <code>tdef</code>).
+            </p>
+            <p>
+                Search functions by type signature (e.g.
+                <code>vec -> usize</code>)
             </p>
         </div>
     </div>

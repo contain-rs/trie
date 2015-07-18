@@ -34,29 +34,31 @@
             <div class="search-container">
                 <input class="search-input" name="search"
                        autocomplete="off"
-                       placeholder="Click or press 'S' to search, '?' for more options..."
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
                        type="search">
             </div>
         </form>
     </nav>
 
     <section id='main' class="content struct">
-<h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>trie</a>::<wbr><a href='index.html'>map</a>::<wbr><a class='struct' href=''>OccupiedEntry</a><wbr></span><span class='out-of-band'><span id='render-detail'>
-            <a id="collapse-all" href="#">[-]</a>&nbsp;<a id="expand-all" href="#">[+]</a>
-        </span><a id='src-2220' href='../../src/trie/map.rs.html#784-786'>[src]</a></span></h1>
+<h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>trie</a>::<wbr><a href='index.html'>map</a>::<wbr><a class='struct' href=''>OccupiedEntry</a></span><span class='out-of-band'><span id='render-detail'>
+            <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                [<span class='inner'>&#x2212;</span>]
+            </a>
+        </span><a id='src-2013' class='srclink' href='../../src/trie/map.rs.html#776-778' title='goto source code'>[src]</a></span></h1>
 <pre class='rust struct'>pub struct OccupiedEntry&lt;'a, T: 'a&gt; {
     // some fields omitted
 }</pre><div class='docblock'><p>A view into an occupied entry in a map.</p>
-</div><h2 id='methods'>Methods</h2><h3 class='impl'><a class='stability Unmarked' title='No stability level'></a><code>impl&lt;'a, T&gt; <a class='struct' href='../../trie/map/struct.OccupiedEntry.html' title='trie::map::OccupiedEntry'>OccupiedEntry</a>&lt;'a, T&gt;</code></h3><div class='impl-items'><h4 id='method.get' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.get' class='fnname'>get</a>(&amp;self) -&gt; &amp;T</code></h4>
+</div><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl&lt;'a, T&gt; <a class='struct' href='../../trie/map/struct.OccupiedEntry.html' title='trie::map::OccupiedEntry'>OccupiedEntry</a>&lt;'a, T&gt;</code></h3><div class='impl-items'><h4 id='method.get' class='method'><code>fn <a href='#method.get' class='fnname'>get</a>(&amp;self) -&gt; &amp;T</code></h4>
 <div class='docblock'><p>Gets a reference to the value in the entry.</p>
-</div><h4 id='method.get_mut' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.get_mut' class='fnname'>get_mut</a>(&amp;mut self) -&gt; &amp;mut T</code></h4>
+</div><h4 id='method.get_mut' class='method'><code>fn <a href='#method.get_mut' class='fnname'>get_mut</a>(&amp;mut self) -&gt; &amp;mut T</code></h4>
 <div class='docblock'><p>Gets a mutable reference to the value in the entry.</p>
-</div><h4 id='method.into_mut' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.into_mut' class='fnname'>into_mut</a>(self) -&gt; &amp;'a mut T</code></h4>
+</div><h4 id='method.into_mut' class='method'><code>fn <a href='#method.into_mut' class='fnname'>into_mut</a>(self) -&gt; &amp;'a mut T</code></h4>
 <div class='docblock'><p>Converts the OccupiedEntry into a mutable reference to the value in the entry,
 with a lifetime bound to the map itself.</p>
-</div><h4 id='method.insert' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.insert' class='fnname'>insert</a>(&amp;mut self, value: T) -&gt; T</code></h4>
+</div><h4 id='method.insert' class='method'><code>fn <a href='#method.insert' class='fnname'>insert</a>(&amp;mut self, value: T) -&gt; T</code></h4>
 <div class='docblock'><p>Sets the value of the entry, and returns the entry&#39;s old value.</p>
-</div><h4 id='method.remove' class='method'><a class='stability Unmarked' title='No stability level'></a><code>fn <a href='#method.remove' class='fnname'>remove</a>(self) -&gt; T</code></h4>
+</div><h4 id='method.remove' class='method'><code>fn <a href='#method.remove' class='fnname'>remove</a>(self) -&gt; T</code></h4>
 <div class='docblock'><p>Takes the value out of the entry, and returns it.</p>
 </div></div></section>
     <section id='search' class="content hidden"></section>
@@ -65,7 +67,7 @@ with a lifetime bound to the map itself.</p>
 
     <div id="help" class="hidden">
         <div class="shortcuts">
-            <h1>Keyboard shortcuts</h1>
+            <h1>Keyboard Shortcuts</h1>
             <dl>
                 <dt>?</dt>
                 <dd>Show this help dialog</dd>
@@ -80,7 +82,7 @@ with a lifetime bound to the map itself.</p>
             </dl>
         </div>
         <div class="infos">
-            <h1>Search tricks</h1>
+            <h1>Search Tricks</h1>
             <p>
                 Prefix searches with a type followed by a colon (e.g.
                 <code>fn:</code>) to restrict the search to a given type.
@@ -90,6 +92,10 @@ with a lifetime bound to the map itself.</p>
                 <code>struct</code>, <code>enum</code>,
                 <code>trait</code>, <code>typedef</code> (or
                 <code>tdef</code>).
+            </p>
+            <p>
+                Search functions by type signature (e.g.
+                <code>vec -> usize</code>)
             </p>
         </div>
     </div>
