@@ -1196,7 +1196,9 @@ macro_rules! iterator_impl {
                 }
             });
 
-        impl<'a, T> ExactSizeIterator for $name<'a, T> {}
+        impl<'a, T> ExactSizeIterator for $name<'a, T> {
+            fn len(&self) -> usize { self.remaining }
+        }
     }
 }
 

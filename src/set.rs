@@ -537,7 +537,9 @@ impl<'a> Iterator for Iter<'a> {
     }
 }
 
-impl<'a> ExactSizeIterator for Iter<'a> {}
+impl<'a> ExactSizeIterator for Iter<'a> {
+    fn len(&self) -> usize { self.iter.len() }
+}
 
 impl<'a> Iterator for Range<'a> {
     type Item = usize;
