@@ -14,10 +14,9 @@ pub use self::Entry::*;
 use self::TrieNode::*;
 
 use std::cmp::Ordering;
-use std::default::Default;
 use std::fmt::{self, Debug};
 use std::hash::{Hash, Hasher};
-use std::iter::{self, IntoIterator};
+use std::iter;
 use std::mem::{self, zeroed};
 use std::ops;
 use std::ptr;
@@ -133,14 +132,7 @@ impl<T: Ord> Ord for Map<T> {
 
 impl<T: Debug> Debug for Map<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        try!(write!(f, "{{"));
-
-        for (i, (k, v)) in self.iter().enumerate() {
-            if i != 0 { try!(write!(f, ", ")); }
-            try!(write!(f, "{:?}: {:?}", k, *v));
-        }
-
-        write!(f, "}}")
+        f.debug_map().entries(self.iter()).finish()
     }
 }
 
@@ -1204,7 +1196,9 @@ macro_rules! iterator_impl {
                 }
             });
 
-        impl<'a, T> ExactSizeIterator for $name<'a, T> {}
+        impl<'a, T> ExactSizeIterator for $name<'a, T> {
+            fn len(&self) -> usize { self.remaining }
+        }
     }
 }
 
