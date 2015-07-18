@@ -55,14 +55,7 @@ pub struct Set {
 
 impl Debug for Set {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        try!(write!(f, "{{"));
-
-        for (i, x) in self.iter().enumerate() {
-            if i != 0 { try!(write!(f, ", ")); }
-            try!(write!(f, "{:?}", x));
-        }
-
-        write!(f, "}}")
+        f.debug_set().entries(self.iter()).finish()
     }
 }
 
