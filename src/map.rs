@@ -14,10 +14,9 @@ pub use self::Entry::*;
 use self::TrieNode::*;
 
 use std::cmp::Ordering;
-use std::default::Default;
 use std::fmt::{self, Debug};
 use std::hash::{Hash, Hasher};
-use std::iter::{self, IntoIterator};
+use std::iter;
 use std::mem::{self, zeroed};
 use std::ops;
 use std::ptr;

@@ -16,7 +16,7 @@
 
 use std::cmp::Ordering::{self, Less, Equal, Greater};
 use std::fmt::{self, Debug};
-use std::iter::{self, Peekable, IntoIterator};
+use std::iter::{self, Peekable};
 use std::ops;
 
 use super::map::{Map, self};
