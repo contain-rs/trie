@@ -11,7 +11,7 @@
 //! An ordered map and set based on a trie.
 
 #![feature(iter_order, num_bits_bytes)]
-#![cfg_attr(test, feature(core, hash_default, step_by, test, unboxed_closures))]
+#![cfg_attr(test, feature(core, step_by, test, unboxed_closures))]
 
 #[cfg(test)] extern crate rand;
 #[cfg(test)] extern crate test;

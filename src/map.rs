@@ -1243,7 +1243,7 @@ impl<'a, T> IntoIterator for &'a mut Map<T> {
 #[cfg(test)]
 mod test {
     use std::usize;
-    use std::hash;
+    use std::hash::{Hash, Hasher, SipHasher};
 
     use super::{Map, InternalNode};
     use super::Entry::*;
@@ -1605,10 +1605,16 @@ mod test {
 
     #[test]
     fn test_hash() {
+        fn hash<T: Hash>(t: &T) -> u64 {
+            let mut s = SipHasher::new();
+            t.hash(&mut s);
+            s.finish()
+        }
+
       let mut x = Map::new();
       let mut y = Map::new();
 
-      assert!(hash::hash::<_, hash::SipHasher>(&x) == hash::hash::<_, hash::SipHasher>(&y));
+      assert!(hash(&x) == hash(&y));
       x.insert(1, 'a');
       x.insert(2, 'b');
       x.insert(3, 'c');
@@ -1617,7 +1623,7 @@ mod test {
       y.insert(2, 'b');
       y.insert(1, 'a');
 
-      assert!(hash::hash::<_, hash::SipHasher>(&x) == hash::hash::<_, hash::SipHasher>(&y));
+      assert!(hash(&x) == hash(&y));
     }
 
     #[test]
