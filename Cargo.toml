@@ -23,6 +23,7 @@ default = ["ordered_iter"]
 [dependencies.ordered_iter]
 
 optional = true
+version = "0.1"
 
 [dev-dependencies]
 
