@@ -21,7 +21,12 @@ use std::mem::{self, zeroed};
 use std::ops;
 use std::ptr;
 use std::slice;
-use std::usize;
+
+#[cfg(target_pointer_width = "32")]
+pub const USIZE_BITS: usize = 32;
+
+#[cfg(target_pointer_width = "64")]
+pub const USIZE_BITS: usize = 64;
 
 // FIXME(conventions): implement bounded iterators
 // FIXME(conventions): implement into_iter
@@ -32,7 +37,7 @@ const SHIFT: usize = 4;
 const SIZE: usize = 1 << SHIFT;
 const MASK: usize = SIZE - 1;
 // The number of chunks that the key is divided into. Also the maximum depth of the map.
-const MAX_DEPTH: usize = usize::BITS as usize / SHIFT;
+const MAX_DEPTH: usize = USIZE_BITS / SHIFT;
 
 /// A map implemented as a radix trie.
 ///
@@ -119,14 +124,14 @@ impl<T: Eq> Eq for Map<T> {}
 impl<T: PartialOrd> PartialOrd for Map<T> {
     #[inline]
     fn partial_cmp(&self, other: &Map<T>) -> Option<Ordering> {
-        iter::order::partial_cmp(self.iter(), other.iter())
+        self.iter().partial_cmp(other.iter())
     }
 }
 
 impl<T: Ord> Ord for Map<T> {
     #[inline]
     fn cmp(&self, other: &Map<T>) -> Ordering {
-        iter::order::cmp(self.iter(), other.iter())
+        self.iter().cmp(other.iter())
     }
 }
 
@@ -644,7 +649,7 @@ impl<T> InternalNode<T> {
 // if this was done via a trait, the key could be generic
 #[inline]
 fn chunk(n: usize, idx: usize) -> usize {
-    let sh = usize::BITS as usize - (SHIFT * (idx + 1));
+    let sh = USIZE_BITS - (SHIFT * (idx + 1));
     (n >> sh) & MASK
 }
 
@@ -1243,7 +1248,8 @@ impl<'a, T> IntoIterator for &'a mut Map<T> {
 #[cfg(test)]
 mod test {
     use std::usize;
-    use std::hash::{Hash, Hasher, SipHasher};
+    use std::hash::{Hash, Hasher};
+    use std::collections::hash_map::DefaultHasher;
 
     use super::{Map, InternalNode};
     use super::Entry::*;
@@ -1606,7 +1612,7 @@ mod test {
     #[test]
     fn test_hash() {
         fn hash<T: Hash>(t: &T) -> u64 {
-            let mut s = SipHasher::new();
+            let mut s = DefaultHasher::new();
             t.hash(&mut s);
             s.finish()
         }
