@@ -17,7 +17,7 @@ use std::cmp::Ordering;
 use std::fmt::{self, Debug};
 use std::hash::{Hash, Hasher};
 use std::iter;
-use std::mem::{self, zeroed};
+use std::mem;
 use std::ops;
 use std::ptr;
 use std::slice;
@@ -676,6 +676,8 @@ fn insert<'a, T>(count: &mut usize, start_node: &'a mut TrieNode<T>, key: usize,
     // We branch twice to avoid having to do the `replace` when we
     // don't need to; this is much faster, especially for keys that
     // have long shared prefixes.
+
+    let mut hack = false;
     match *start_node {
         Nothing => {
             *count += 1;
@@ -689,38 +691,46 @@ fn insert<'a, T>(count: &mut usize, start_node: &'a mut TrieNode<T>, key: usize,
             let x = &mut **x;
             return insert(&mut x.count, &mut x.children[chunk(key, idx)], key, value, idx + 1);
         }
-        External(stored_key, ref mut stored_value) if stored_key == key => {
-            // Swap in the new value and return the old.
-            let old_value = mem::replace(stored_value, value);
-            return (stored_value, Some(old_value));
+        External(stored_key, _) if stored_key == key => {
+            hack = true;
         }
         _ => {}
     }
 
-    // Conflict, an external node with differing keys.
-    // We replace the old node by an internal one, then re-insert the two values beneath it.
-    match mem::replace(start_node, Internal(Box::new(InternalNode::new()))) {
-        External(stored_key, stored_value) => {
-            match *start_node {
-                Internal(ref mut new_node) => {
-                    let new_node = &mut **new_node;
-                    // Re-insert the old value.
-                    insert(&mut new_node.count,
-                           &mut new_node.children[chunk(stored_key, idx)],
-                           stored_key, stored_value, idx + 1);
+    if !hack {
+        // Conflict, an external node with differing keys.
+        // We replace the old node by an internal one, then re-insert the two values beneath it.
+        match mem::replace(start_node, Internal(Box::new(InternalNode::new()))) {
+            External(stored_key, stored_value) => {
+                match *start_node {
+                    Internal(ref mut new_node) => {
+                        let new_node = &mut **new_node;
+                        // Re-insert the old value.
+                        insert(&mut new_node.count,
+                               &mut new_node.children[chunk(stored_key, idx)],
+                               stored_key, stored_value, idx + 1);
 
-                    // Insert the new value, and return a reference to it directly.
-                    insert(&mut new_node.count,
-                           &mut new_node.children[chunk(key, idx)],
-                           key, value, idx + 1)
+                        // Insert the new value, and return a reference to it directly.
+                        return insert(&mut new_node.count,
+                               &mut new_node.children[chunk(key, idx)],
+                               key, value, idx + 1);
+                    }
+                    // Value that was just copied disappeared.
+                    _ => unreachable!()
                 }
-                // Value that was just copied disappeared.
-                _ => unreachable!()
             }
+            // Logic error in previous match.
+            _ => unreachable!(),
         }
-        // Logic error in previous match.
-        _ => unreachable!(),
     }
+
+    if let External(_, ref mut stored_value) = *start_node {
+            // Swap in the new value and return the old.
+            let old_value = mem::replace(stored_value, value);
+            return (stored_value, Some(old_value));
+    }
+
+    unreachable!();
 }
 
 fn remove<T>(count: &mut usize, child: &mut TrieNode<T>, key: usize,
@@ -1111,8 +1121,16 @@ macro_rules! iterator_impl {
                     remaining: 0,
                     length: 0,
                     // ick :( ... at least the compiler will tell us if we screwed up.
-                    stack: [zeroed(), zeroed(), zeroed(), zeroed(), zeroed(),
-                            zeroed(), zeroed(), zeroed()]
+                    stack: [IntoIterator::into_iter((& $($mut_)*[])),
+                            IntoIterator::into_iter((& $($mut_)*[])),
+                            IntoIterator::into_iter((& $($mut_)*[])),
+                            IntoIterator::into_iter((& $($mut_)*[])),
+
+                            IntoIterator::into_iter((& $($mut_)*[])),
+                            IntoIterator::into_iter((& $($mut_)*[])),
+                            IntoIterator::into_iter((& $($mut_)*[])),
+                            IntoIterator::into_iter((& $($mut_)*[])),
+                            ]
                 }
             }
 
@@ -1121,10 +1139,26 @@ macro_rules! iterator_impl {
                 $name {
                     remaining: 0,
                     length: 0,
-                    stack: [zeroed(), zeroed(), zeroed(), zeroed(),
-                            zeroed(), zeroed(), zeroed(), zeroed(),
-                            zeroed(), zeroed(), zeroed(), zeroed(),
-                            zeroed(), zeroed(), zeroed(), zeroed()]
+                    stack: [IntoIterator::into_iter((& $($mut_)*[])),
+                            IntoIterator::into_iter((& $($mut_)*[])),
+                            IntoIterator::into_iter((& $($mut_)*[])),
+                            IntoIterator::into_iter((& $($mut_)*[])),
+
+                            IntoIterator::into_iter((& $($mut_)*[])),
+                            IntoIterator::into_iter((& $($mut_)*[])),
+                            IntoIterator::into_iter((& $($mut_)*[])),
+                            IntoIterator::into_iter((& $($mut_)*[])),
+
+                            IntoIterator::into_iter((& $($mut_)*[])),
+                            IntoIterator::into_iter((& $($mut_)*[])),
+                            IntoIterator::into_iter((& $($mut_)*[])),
+                            IntoIterator::into_iter((& $($mut_)*[])),
+
+                            IntoIterator::into_iter((& $($mut_)*[])),
+                            IntoIterator::into_iter((& $($mut_)*[])),
+                            IntoIterator::into_iter((& $($mut_)*[])),
+                            IntoIterator::into_iter((& $($mut_)*[])),
+                            ]
                 }
             }
         }

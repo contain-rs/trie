@@ -10,7 +10,7 @@
 
 //! An ordered map and set based on a trie.
 
-#![cfg_attr(test, feature(fn_traits, step_by, test, unboxed_closures))]
+#![cfg_attr(test, feature(fn_traits, test, unboxed_closures))]
 
 #[cfg(test)] extern crate rand;
 #[cfg(test)] extern crate test;
