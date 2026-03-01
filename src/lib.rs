@@ -16,10 +16,6 @@
 pub use map::Map;
 pub use set::Set;
 
-#[cfg(test)]
-#[macro_use]
-mod bench;
-
 pub mod map;
 pub mod set;
 

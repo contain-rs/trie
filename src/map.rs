@@ -100,7 +100,7 @@ pub struct Map<T> {
 struct InternalNode<T> {
     // The number of direct children which are external (i.e. that store a value).
     count: usize,
-    children: [TrieNode<T>; SIZE]
+    children: [TrieNode<T>; SIZE],
 }
 
 // Each child of an InternalNode may be internal, in which case nesting continues,
@@ -109,13 +109,12 @@ struct InternalNode<T> {
 enum TrieNode<T> {
     Internal(Box<InternalNode<T>>),
     External(usize, T),
-    Nothing
+    Nothing,
 }
 
 impl<T: PartialEq> PartialEq for Map<T> {
     fn eq(&self, other: &Map<T>) -> bool {
-        self.len() == other.len() &&
-            self.iter().zip(other.iter()).all(|(a, b)| a == b)
+        self.len() == other.len() && self.iter().zip(other.iter()).all(|(a, b)| a == b)
     }
 }
 
@@ -143,7 +142,9 @@ impl<T: Debug> Debug for Map<T> {
 
 impl<T> Default for Map<T> {
     #[inline]
-    fn default() -> Map<T> { Map::new() }
+    fn default() -> Map<T> {
+        Map::new()
+    }
 }
 
 impl<T> Map<T> {
@@ -156,7 +157,10 @@ impl<T> Map<T> {
     /// ```
     #[inline]
     pub fn new() -> Map<T> {
-        Map{root: InternalNode::new(), length: 0}
+        Map {
+            root: InternalNode::new(),
+            length: 0,
+        }
     }
 
     /// Visits all key-value pairs in reverse order. Aborts traversal when `f` returns `false`.
@@ -178,17 +182,23 @@ impl<T> Map<T> {
     /// ```
     #[inline]
     pub fn each_reverse<'a, F>(&'a self, mut f: F) -> bool
-        where F: FnMut(&usize, &'a T) -> bool {
+    where
+        F: FnMut(&usize, &'a T) -> bool,
+    {
         self.root.each_reverse(&mut f)
     }
 
     /// Gets an iterator visiting all keys in ascending order by the keys.
     /// The iterator's element type is `usize`.
-    pub fn keys(&self) -> Keys<'_, T> { Keys(self.iter()) }
+    pub fn keys(&self) -> Keys<'_, T> {
+        Keys(self.iter())
+    }
 
     /// Gets an iterator visiting all values in ascending order by the keys.
     /// The iterator's element type is `&'r T`.
-    pub fn values(&self) -> Values<'_, T> { Values(self.iter()) }
+    pub fn values(&self) -> Values<'_, T> {
+        Values(self.iter())
+    }
 
     /// Gets an iterator over the key-value pairs in the map, ordered by keys.
     ///
@@ -202,7 +212,7 @@ impl<T> Map<T> {
     /// }
     /// ```
     pub fn iter(&self) -> Iter<'_, T> {
-        let mut iter = unsafe {Iter::new()};
+        let mut iter = unsafe { Iter::new() };
         iter.stack[0] = self.root.children.iter();
         iter.length = 1;
         iter.remaining = self.length;
@@ -227,7 +237,7 @@ impl<T> Map<T> {
     /// assert_eq!(map.get(&3), Some(&-3));
     /// ```
     pub fn iter_mut(&mut self) -> IterMut<'_, T> {
-        let mut iter = unsafe {IterMut::new()};
+        let mut iter = unsafe { IterMut::new() };
         iter.stack[0] = self.root.children.iter_mut();
         iter.length = 1;
         iter.remaining = self.length;
@@ -246,7 +256,9 @@ impl<T> Map<T> {
     /// assert_eq!(a.len(), 1);
     /// ```
     #[inline]
-    pub fn len(&self) -> usize { self.length }
+    pub fn len(&self) -> usize {
+        self.length
+    }
 
     /// Return true if the map contains no elements.
     ///
@@ -259,7 +271,9 @@ impl<T> Map<T> {
     /// assert!(!a.is_empty());
     /// ```
     #[inline]
-    pub fn is_empty(&self) -> bool { self.len() == 0 }
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 
     /// Clears the map, removing all values.
     ///
@@ -293,15 +307,15 @@ impl<T> Map<T> {
         let mut idx = 0;
         loop {
             match node.children[chunk(*key, idx)] {
-              Internal(ref x) => node = &**x,
-              External(stored, ref value) => {
-                if stored == *key {
-                    return Some(value)
-                } else {
-                    return None
+                Internal(ref x) => node = &**x,
+                External(stored, ref value) => {
+                    if stored == *key {
+                        return Some(value);
+                    } else {
+                        return None;
+                    }
                 }
-              }
-              Nothing => return None
+                Nothing => return None,
             }
             idx += 1;
         }
@@ -355,10 +369,16 @@ impl<T> Map<T> {
     /// assert_eq!(map[&37], "c");
     /// ```
     pub fn insert(&mut self, key: usize, value: T) -> Option<T> {
-        let (_, old_val) = insert(&mut self.root.count,
-                                    &mut self.root.children[chunk(key, 0)],
-                                    key, value, 1);
-        if old_val.is_none() { self.length += 1 }
+        let (_, old_val) = insert(
+            &mut self.root.count,
+            &mut self.root.children[chunk(key, 0)],
+            key,
+            value,
+            1,
+        );
+        if old_val.is_none() {
+            self.length += 1
+        }
         old_val
     }
 
@@ -374,10 +394,15 @@ impl<T> Map<T> {
     /// assert_eq!(map.remove(&1), None);
     /// ```
     pub fn remove(&mut self, key: &usize) -> Option<T> {
-        let ret = remove(&mut self.root.count,
-                         &mut self.root.children[chunk(*key, 0)],
-                         *key, 1);
-        if ret.is_some() { self.length -= 1 }
+        let ret = remove(
+            &mut self.root.count,
+            &mut self.root.children[chunk(*key, 0)],
+            *key,
+            1,
+        );
+        if ret.is_some() {
+            self.length -= 1
+        }
         ret
     }
 }
@@ -388,7 +413,11 @@ impl<T> Map<T> {
 // other macros, so this takes the `& <mutability> <operand>` token
 // sequence and forces their evaluation as an expression. (see also
 // `item!` below.)
-macro_rules! addr { ($e:expr) => { $e } }
+macro_rules! addr {
+    ($e:expr) => {
+        $e
+    };
+}
 
 macro_rules! bound {
     ($iterator_name:ident,
@@ -423,7 +452,7 @@ macro_rules! bound {
             // stop us.
             let this = $this;
             let mut node = unsafe {
-                mem::transmute::<_, usize>(&this.root) as *mut InternalNode<T>
+                mem::transmute::<&InternalNode<T>, usize>(&this.root) as *mut InternalNode<T>
             };
 
             let key = $key;
@@ -441,7 +470,7 @@ macro_rules! bound {
                     let (slice_idx, ret) = match children[child_id] {
                         Internal(ref $($mut_)* n) => {
                             node = unsafe {
-                                mem::transmute::<_, usize>(&**n)
+                                mem::transmute::<&InternalNode<T>, usize>(&**n)
                                     as *mut InternalNode<T>
                             };
                             (child_id + 1, false)
@@ -568,7 +597,7 @@ impl<T> Map<T> {
 }
 
 impl<T> iter::FromIterator<(usize, T)> for Map<T> {
-    fn from_iter<I: IntoIterator<Item=(usize, T)>>(iter: I) -> Map<T> {
+    fn from_iter<I: IntoIterator<Item = (usize, T)>>(iter: I) -> Map<T> {
         let mut map = Map::new();
         map.extend(iter);
         map
@@ -576,7 +605,7 @@ impl<T> iter::FromIterator<(usize, T)> for Map<T> {
 }
 
 impl<T> Extend<(usize, T)> for Map<T> {
-    fn extend<I: IntoIterator<Item=(usize, T)>>(&mut self, iter: I) {
+    fn extend<I: IntoIterator<Item = (usize, T)>>(&mut self, iter: I) {
         for (k, v) in iter {
             self.insert(k, v);
         }
@@ -606,16 +635,31 @@ impl<'a, T> ops::IndexMut<&'a usize> for Map<T> {
     }
 }
 
-impl<T:Clone> Clone for InternalNode<T> {
+impl<T: Clone> Clone for InternalNode<T> {
     #[inline]
     fn clone(&self) -> InternalNode<T> {
         let ch = &self.children;
         InternalNode {
             count: self.count,
-             children: [ch[0].clone(), ch[1].clone(), ch[2].clone(), ch[3].clone(),
-                        ch[4].clone(), ch[5].clone(), ch[6].clone(), ch[7].clone(),
-                        ch[8].clone(), ch[9].clone(), ch[10].clone(), ch[11].clone(),
-                        ch[12].clone(), ch[13].clone(), ch[14].clone(), ch[15].clone()]}
+            children: [
+                ch[0].clone(),
+                ch[1].clone(),
+                ch[2].clone(),
+                ch[3].clone(),
+                ch[4].clone(),
+                ch[5].clone(),
+                ch[6].clone(),
+                ch[7].clone(),
+                ch[8].clone(),
+                ch[9].clone(),
+                ch[10].clone(),
+                ch[11].clone(),
+                ch[12].clone(),
+                ch[13].clone(),
+                ch[14].clone(),
+                ch[15].clone(),
+            ],
+        }
     }
 }
 
@@ -624,22 +668,34 @@ impl<T> InternalNode<T> {
     fn new() -> InternalNode<T> {
         // FIXME: #5244: [Nothing, ..SIZE] should be possible without implicit
         // copyability
-        InternalNode{count: 0,
-                 children: [Nothing, Nothing, Nothing, Nothing,
-                            Nothing, Nothing, Nothing, Nothing,
-                            Nothing, Nothing, Nothing, Nothing,
-                            Nothing, Nothing, Nothing, Nothing]}
+        InternalNode {
+            count: 0,
+            children: [
+                Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing,
+                Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing,
+            ],
+        }
     }
 }
 
 impl<T> InternalNode<T> {
     fn each_reverse<'a, F>(&'a self, f: &mut F) -> bool
-        where F: FnMut(&usize, &'a T) -> bool {
+    where
+        F: FnMut(&usize, &'a T) -> bool,
+    {
         for elt in self.children.iter().rev() {
             match *elt {
-                Internal(ref x) => if !x.each_reverse(f) { return false },
-                External(k, ref v) => if !f(&k, v) { return false },
-                Nothing => ()
+                Internal(ref x) => {
+                    if !x.each_reverse(f) {
+                        return false;
+                    }
+                }
+                External(k, ref v) => {
+                    if !f(&k, v) {
+                        return false;
+                    }
+                }
+                Nothing => (),
             }
         }
         true
@@ -658,7 +714,7 @@ fn find_mut<T>(child: &mut TrieNode<T>, key: usize, idx: usize) -> Option<&mut T
         External(stored, ref mut value) if stored == key => Some(value),
         External(..) => None,
         Internal(ref mut x) => find_mut(&mut x.children[chunk(key, idx)], key, idx + 1),
-        Nothing => None
+        Nothing => None,
     }
 }
 
@@ -671,8 +727,13 @@ fn find_mut<T>(child: &mut TrieNode<T>, key: usize, idx: usize) -> Option<&mut T
 /// which will be incremented only if `start_node` is transformed into a *new* external node.
 ///
 /// Returns a mutable reference to the inserted value and an optional previous value.
-fn insert<'a, T>(count: &mut usize, start_node: &'a mut TrieNode<T>, key: usize, value: T, idx: usize)
-    -> (&'a mut T, Option<T>) {
+fn insert<'a, T>(
+    count: &mut usize,
+    start_node: &'a mut TrieNode<T>,
+    key: usize,
+    value: T,
+    idx: usize,
+) -> (&'a mut T, Option<T>) {
     // We branch twice to avoid having to do the `replace` when we
     // don't need to; this is much faster, especially for keys that
     // have long shared prefixes.
@@ -684,12 +745,18 @@ fn insert<'a, T>(count: &mut usize, start_node: &'a mut TrieNode<T>, key: usize,
             *start_node = External(key, value);
             match *start_node {
                 External(_, ref mut value_ref) => return (value_ref, None),
-                _ => unreachable!()
+                _ => unreachable!(),
             }
         }
         Internal(ref mut x) => {
             let x = &mut **x;
-            return insert(&mut x.count, &mut x.children[chunk(key, idx)], key, value, idx + 1);
+            return insert(
+                &mut x.count,
+                &mut x.children[chunk(key, idx)],
+                key,
+                value,
+                idx + 1,
+            );
         }
         External(stored_key, _) if stored_key == key => {
             hack = true;
@@ -706,17 +773,25 @@ fn insert<'a, T>(count: &mut usize, start_node: &'a mut TrieNode<T>, key: usize,
                     Internal(ref mut new_node) => {
                         let new_node = &mut **new_node;
                         // Re-insert the old value.
-                        insert(&mut new_node.count,
-                               &mut new_node.children[chunk(stored_key, idx)],
-                               stored_key, stored_value, idx + 1);
+                        insert(
+                            &mut new_node.count,
+                            &mut new_node.children[chunk(stored_key, idx)],
+                            stored_key,
+                            stored_value,
+                            idx + 1,
+                        );
 
                         // Insert the new value, and return a reference to it directly.
-                        return insert(&mut new_node.count,
-                               &mut new_node.children[chunk(key, idx)],
-                               key, value, idx + 1);
+                        return insert(
+                            &mut new_node.count,
+                            &mut new_node.children[chunk(key, idx)],
+                            key,
+                            value,
+                            idx + 1,
+                        );
                     }
                     // Value that was just copied disappeared.
-                    _ => unreachable!()
+                    _ => unreachable!(),
                 }
             }
             // Logic error in previous match.
@@ -725,38 +800,34 @@ fn insert<'a, T>(count: &mut usize, start_node: &'a mut TrieNode<T>, key: usize,
     }
 
     if let External(_, ref mut stored_value) = *start_node {
-            // Swap in the new value and return the old.
-            let old_value = mem::replace(stored_value, value);
-            return (stored_value, Some(old_value));
+        // Swap in the new value and return the old.
+        let old_value = mem::replace(stored_value, value);
+        return (stored_value, Some(old_value));
     }
 
     unreachable!();
 }
 
-fn remove<T>(count: &mut usize, child: &mut TrieNode<T>, key: usize,
-             idx: usize) -> Option<T> {
+fn remove<T>(count: &mut usize, child: &mut TrieNode<T>, key: usize, idx: usize) -> Option<T> {
     let (ret, this) = match *child {
-      External(stored, _) if stored == key => {
-        match mem::replace(child, Nothing) {
+        External(stored, _) if stored == key => match mem::replace(child, Nothing) {
             External(_, value) => (Some(value), true),
-            _ => unreachable!()
+            _ => unreachable!(),
+        },
+        External(..) => (None, false),
+        Internal(ref mut x) => {
+            let x = &mut **x;
+            let ret = remove(&mut x.count, &mut x.children[chunk(key, idx)], key, idx + 1);
+            (ret, x.count == 0)
         }
-      }
-      External(..) => (None, false),
-      Internal(ref mut x) => {
-          let x = &mut **x;
-          let ret = remove(&mut x.count, &mut x.children[chunk(key, idx)],
-                           key, idx + 1);
-          (ret, x.count == 0)
-      }
-      Nothing => (None, false)
+        Nothing => (None, false),
     };
 
     if this {
         *child = Nothing;
         *count -= 1;
     }
-    return ret;
+    ret
 }
 
 /// A view into a single entry in a map, which may be vacant or occupied.
@@ -764,7 +835,7 @@ pub enum Entry<'a, T: 'a> {
     /// An occupied entry.
     Occupied(OccupiedEntry<'a, T>),
     /// A vacant entry.
-    Vacant(VacantEntry<'a, T>)
+    Vacant(VacantEntry<'a, T>),
 }
 
 impl<'a, T> Entry<'a, T> {
@@ -789,12 +860,12 @@ impl<'a, T> Entry<'a, T> {
 
 /// A view into an occupied entry in a map.
 pub struct OccupiedEntry<'a, T: 'a> {
-    search_stack: SearchStack<'a, T>
+    search_stack: SearchStack<'a, T>,
 }
 
 /// A view into a vacant entry in a map.
 pub struct VacantEntry<'a, T: 'a> {
-    search_stack: SearchStack<'a, T>
+    search_stack: SearchStack<'a, T>,
 }
 
 /// A list of nodes encoding a path from the root of a map to a node.
@@ -806,17 +877,17 @@ struct SearchStack<'a, T: 'a> {
     map: &'a mut Map<T>,
     length: usize,
     key: usize,
-    items: [*mut TrieNode<T>; MAX_DEPTH]
+    items: [*mut TrieNode<T>; MAX_DEPTH],
 }
 
 impl<'a, T> SearchStack<'a, T> {
     /// Creates a new search-stack with empty entries.
     fn new(map: &'a mut Map<T>, key: usize) -> SearchStack<'a, T> {
         SearchStack {
-            map: map,
+            map,
             length: 0,
-            key: key,
-            items: [ptr::null_mut(); MAX_DEPTH]
+            key,
+            items: [ptr::null_mut(); MAX_DEPTH],
         }
     }
 
@@ -836,9 +907,7 @@ impl<'a, T> SearchStack<'a, T> {
 
     fn pop_ref(&mut self) -> &'a mut TrieNode<T> {
         self.length -= 1;
-        unsafe {
-            &mut *self.items[self.length]
-        }
+        unsafe { &mut *self.items[self.length] }
     }
 
     fn is_empty(&self) -> bool {
@@ -847,9 +916,7 @@ impl<'a, T> SearchStack<'a, T> {
 
     fn get_ref(&self, idx: usize) -> &'a mut TrieNode<T> {
         assert!(idx < self.length);
-        unsafe {
-            &mut *self.items[idx]
-        }
+        unsafe { &mut *self.items[idx] }
     }
 }
 
@@ -880,9 +947,9 @@ impl<T> Map<T> {
         }
 
         if search_successful {
-            Occupied(OccupiedEntry { search_stack: search_stack })
+            Occupied(OccupiedEntry { search_stack })
         } else {
-            Vacant(VacantEntry { search_stack: search_stack })
+            Vacant(VacantEntry { search_stack })
         }
     }
 }
@@ -897,18 +964,22 @@ impl<T> Map<T> {
 ///
 /// This function is safe only if `node` points to a valid `TrieNode`.
 #[inline]
-unsafe fn next_child<T>(node: *mut TrieNode<T>, key: usize, idx: usize)
-    -> (Option<*mut TrieNode<T>>, bool) {
+unsafe fn next_child<T>(
+    node: *mut TrieNode<T>,
+    key: usize,
+    idx: usize,
+) -> (Option<*mut TrieNode<T>>, bool) {
     match *node {
         // If the node is internal, tell the caller to descend further.
-        Internal(ref mut node_internal) => {
-            (Some(&mut node_internal.children[chunk(key, idx)] as *mut _), false)
-        },
+        Internal(ref mut node_internal) => (
+            Some(&mut node_internal.children[chunk(key, idx)] as *mut _),
+            false,
+        ),
         // If the node is external or empty, the search is complete.
         // If the key doesn't match, node expansion will be done upon
         // insertion. If it does match, we've found our node.
         External(stored_key, _) if stored_key == key => (None, true),
-        External(..) | Nothing => (None, false)
+        External(..) | Nothing => (None, false),
     }
 }
 
@@ -920,7 +991,7 @@ impl<'a, T> OccupiedEntry<'a, T> {
         match *self.search_stack.peek_ref() {
             External(_, ref value) => value,
             // Invalid SearchStack, non-external last node.
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
 
@@ -930,7 +1001,7 @@ impl<'a, T> OccupiedEntry<'a, T> {
         match *self.search_stack.peek_ref() {
             External(_, ref mut value) => value,
             // Invalid SearchStack, non-external last node.
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
 
@@ -941,7 +1012,7 @@ impl<'a, T> OccupiedEntry<'a, T> {
         match *self.search_stack.peek_ref() {
             External(_, ref mut value) => value,
             // Invalid SearchStack, non-external last node.
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
 
@@ -949,11 +1020,9 @@ impl<'a, T> OccupiedEntry<'a, T> {
     #[inline]
     pub fn insert(&mut self, value: T) -> T {
         match *self.search_stack.peek_ref() {
-            External(_, ref mut stored_value) => {
-                mem::replace(stored_value, value)
-            }
+            External(_, ref mut stored_value) => mem::replace(stored_value, value),
             // Invalid SearchStack, non-external last node.
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
 
@@ -970,7 +1039,7 @@ impl<'a, T> OccupiedEntry<'a, T> {
         let value = match leaf_node {
             External(_, value) => value,
             // Invalid SearchStack, non-external last node.
-            _ => unreachable!()
+            _ => unreachable!(),
         };
 
         // Iterate backwards through the search stack, deleting nodes if they are childless.
@@ -987,7 +1056,7 @@ impl<'a, T> OccupiedEntry<'a, T> {
                     }
                 }
                 // Invalid SearchStack, non-internal ancestor node.
-                _ => unreachable!()
+                _ => unreachable!(),
             }
             *ancestor = Nothing;
         }
@@ -1022,52 +1091,76 @@ impl<'a, T> VacantEntry<'a, T> {
             match *search_stack.get_ref(old_length - 2) {
                 Internal(ref mut parent) => {
                     let parent = &mut **parent;
-                    let (value_ref, _) = insert(&mut parent.count,
-                                                &mut parent.children[chunk(key, old_length - 1)],
-                                                key, value, old_length);
+                    let (value_ref, _) = insert(
+                        &mut parent.count,
+                        &mut parent.children[chunk(key, old_length - 1)],
+                        key,
+                        value,
+                        old_length,
+                    );
                     value_ref
                 }
                 // Invalid SearchStack, non-internal ancestor node.
-                _ => unreachable!()
+                _ => unreachable!(),
             }
         }
     }
 }
 
 /// A forward iterator over a map.
-pub struct Iter<'a, T:'a> {
+pub struct Iter<'a, T: 'a> {
     stack: [slice::Iter<'a, TrieNode<T>>; MAX_DEPTH],
     length: usize,
     remaining: usize,
 }
 
 impl<'a, T> Clone for Iter<'a, T> {
-    #[cfg(target_pointer_width="32")]
+    #[cfg(target_pointer_width = "32")]
     fn clone(&self) -> Iter<'a, T> {
         Iter {
-            stack: [self.stack[0].clone(), self.stack[1].clone(),
-                    self.stack[2].clone(), self.stack[3].clone(),
-                    self.stack[4].clone(), self.stack[5].clone(),
-                    self.stack[6].clone(), self.stack[7].clone()], ..*self }
+            stack: [
+                self.stack[0].clone(),
+                self.stack[1].clone(),
+                self.stack[2].clone(),
+                self.stack[3].clone(),
+                self.stack[4].clone(),
+                self.stack[5].clone(),
+                self.stack[6].clone(),
+                self.stack[7].clone(),
+            ],
+            ..*self
+        }
     }
 
-    #[cfg(target_pointer_width="64")]
+    #[cfg(target_pointer_width = "64")]
     fn clone(&self) -> Iter<'a, T> {
         Iter {
-            stack: [self.stack[0].clone(), self.stack[1].clone(),
-                    self.stack[2].clone(), self.stack[3].clone(),
-                    self.stack[4].clone(), self.stack[5].clone(),
-                    self.stack[6].clone(), self.stack[7].clone(),
-                    self.stack[8].clone(), self.stack[9].clone(),
-                    self.stack[10].clone(), self.stack[11].clone(),
-                    self.stack[12].clone(), self.stack[13].clone(),
-                    self.stack[14].clone(), self.stack[15].clone()], ..*self }
+            stack: [
+                self.stack[0].clone(),
+                self.stack[1].clone(),
+                self.stack[2].clone(),
+                self.stack[3].clone(),
+                self.stack[4].clone(),
+                self.stack[5].clone(),
+                self.stack[6].clone(),
+                self.stack[7].clone(),
+                self.stack[8].clone(),
+                self.stack[9].clone(),
+                self.stack[10].clone(),
+                self.stack[11].clone(),
+                self.stack[12].clone(),
+                self.stack[13].clone(),
+                self.stack[14].clone(),
+                self.stack[15].clone(),
+            ],
+            ..*self
+        }
     }
 }
 
 /// A forward iterator over the key-value pairs of a map, with the
 /// values being mutable.
-pub struct IterMut<'a, T:'a> {
+pub struct IterMut<'a, T: 'a> {
     stack: [slice::IterMut<'a, TrieNode<T>>; MAX_DEPTH],
     length: usize,
     remaining: usize,
@@ -1077,13 +1170,19 @@ pub struct IterMut<'a, T:'a> {
 pub struct Keys<'a, T: 'a>(Iter<'a, T>);
 
 impl<'a, T> Clone for Keys<'a, T> {
-    fn clone(&self) -> Keys<'a, T> { Keys(self.0.clone()) }
+    fn clone(&self) -> Keys<'a, T> {
+        Keys(self.0.clone())
+    }
 }
 
 impl<'a, T> Iterator for Keys<'a, T> {
     type Item = usize;
-    fn next(&mut self) -> Option<usize> { self.0.next().map(|e| e.0) }
-    fn size_hint(&self) -> (usize, Option<usize>) { self.0.size_hint() }
+    fn next(&mut self) -> Option<usize> {
+        self.0.next().map(|e| e.0)
+    }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.0.size_hint()
+    }
 }
 
 impl<'a, T> ExactSizeIterator for Keys<'a, T> {}
@@ -1092,19 +1191,29 @@ impl<'a, T> ExactSizeIterator for Keys<'a, T> {}
 pub struct Values<'a, T: 'a>(Iter<'a, T>);
 
 impl<'a, T> Clone for Values<'a, T> {
-    fn clone(&self) -> Values<'a, T> { Values(self.0.clone()) }
+    fn clone(&self) -> Values<'a, T> {
+        Values(self.0.clone())
+    }
 }
 
 impl<'a, T> Iterator for Values<'a, T> {
     type Item = &'a T;
-    fn next(&mut self) -> Option<&'a T> { self.0.next().map(|e| e.1) }
-    fn size_hint(&self) -> (usize, Option<usize>) { self.0.size_hint() }
+    fn next(&mut self) -> Option<&'a T> {
+        self.0.next().map(|e| e.1)
+    }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.0.size_hint()
+    }
 }
 
 impl<'a, T> ExactSizeIterator for Values<'a, T> {}
 
 // FIXME #5846: see `addr!` above.
-macro_rules! item { ($i:item) => {$i}}
+macro_rules! item {
+    ($i:item) => {
+        $i
+    };
+}
 
 macro_rules! iterator_impl {
     ($name:ident,
@@ -1139,25 +1248,25 @@ macro_rules! iterator_impl {
                 $name {
                     remaining: 0,
                     length: 0,
-                    stack: [IntoIterator::into_iter((& $($mut_)*[])),
-                            IntoIterator::into_iter((& $($mut_)*[])),
-                            IntoIterator::into_iter((& $($mut_)*[])),
-                            IntoIterator::into_iter((& $($mut_)*[])),
+                    stack: [IntoIterator::into_iter(& $($mut_)*[]),
+                            IntoIterator::into_iter(& $($mut_)*[]),
+                            IntoIterator::into_iter(& $($mut_)*[]),
+                            IntoIterator::into_iter(& $($mut_)*[]),
 
-                            IntoIterator::into_iter((& $($mut_)*[])),
-                            IntoIterator::into_iter((& $($mut_)*[])),
-                            IntoIterator::into_iter((& $($mut_)*[])),
-                            IntoIterator::into_iter((& $($mut_)*[])),
+                            IntoIterator::into_iter(& $($mut_)*[]),
+                            IntoIterator::into_iter(& $($mut_)*[]),
+                            IntoIterator::into_iter(& $($mut_)*[]),
+                            IntoIterator::into_iter(& $($mut_)*[]),
 
-                            IntoIterator::into_iter((& $($mut_)*[])),
-                            IntoIterator::into_iter((& $($mut_)*[])),
-                            IntoIterator::into_iter((& $($mut_)*[])),
-                            IntoIterator::into_iter((& $($mut_)*[])),
+                            IntoIterator::into_iter(& $($mut_)*[]),
+                            IntoIterator::into_iter(& $($mut_)*[]),
+                            IntoIterator::into_iter(& $($mut_)*[]),
+                            IntoIterator::into_iter(& $($mut_)*[]),
 
-                            IntoIterator::into_iter((& $($mut_)*[])),
-                            IntoIterator::into_iter((& $($mut_)*[])),
-                            IntoIterator::into_iter((& $($mut_)*[])),
-                            IntoIterator::into_iter((& $($mut_)*[])),
+                            IntoIterator::into_iter(& $($mut_)*[]),
+                            IntoIterator::into_iter(& $($mut_)*[]),
+                            IntoIterator::into_iter(& $($mut_)*[]),
+                            IntoIterator::into_iter(& $($mut_)*[]),
                             ]
                 }
             }
@@ -1248,13 +1357,19 @@ iterator_impl! { IterMut, iter = iter_mut, mutability = mut }
 pub struct Range<'a, T: 'a>(Iter<'a, T>);
 
 impl<'a, T> Clone for Range<'a, T> {
-    fn clone(&self) -> Range<'a, T> { Range(self.0.clone()) }
+    fn clone(&self) -> Range<'a, T> {
+        Range(self.0.clone())
+    }
 }
 
 impl<'a, T> Iterator for Range<'a, T> {
     type Item = (usize, &'a T);
-    fn next(&mut self) -> Option<(usize, &'a T)> { self.0.next() }
-    fn size_hint(&self) -> (usize, Option<usize>) { (0, Some(self.0.remaining)) }
+    fn next(&mut self) -> Option<(usize, &'a T)> {
+        self.0.next()
+    }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (0, Some(self.0.remaining))
+    }
 }
 
 /// A bounded forward iterator over the key-value pairs of a map, with the
@@ -1263,31 +1378,39 @@ pub struct RangeMut<'a, T: 'a>(IterMut<'a, T>);
 
 impl<'a, T> Iterator for RangeMut<'a, T> {
     type Item = (usize, &'a mut T);
-    fn next(&mut self) -> Option<(usize, &'a mut T)> { self.0.next() }
-    fn size_hint(&self) -> (usize, Option<usize>) { (0, Some(self.0.remaining)) }
+    fn next(&mut self) -> Option<(usize, &'a mut T)> {
+        self.0.next()
+    }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (0, Some(self.0.remaining))
+    }
 }
 
 impl<'a, T> IntoIterator for &'a Map<T> {
     type Item = (usize, &'a T);
     type IntoIter = Iter<'a, T>;
-    fn into_iter(self) -> Iter<'a, T> { self.iter() }
+    fn into_iter(self) -> Iter<'a, T> {
+        self.iter()
+    }
 }
 
 impl<'a, T> IntoIterator for &'a mut Map<T> {
     type Item = (usize, &'a mut T);
     type IntoIter = IterMut<'a, T>;
-    fn into_iter(self) -> IterMut<'a, T> { self.iter_mut() }
+    fn into_iter(self) -> IterMut<'a, T> {
+        self.iter_mut()
+    }
 }
 
 #[cfg(test)]
 mod test {
-    use std::usize;
-    use std::hash::{Hash, Hasher};
     use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+    use std::hint::black_box;
 
-    use super::{Map, InternalNode};
     use super::Entry::*;
     use super::TrieNode::*;
+    use super::{InternalNode, Map};
 
     fn check_integrity<T>(trie: &InternalNode<T>) {
         assert!(trie.count != 0);
@@ -1296,12 +1419,12 @@ mod test {
 
         for x in trie.children.iter() {
             match *x {
-              Nothing => (),
-              Internal(ref y) => {
-                  check_integrity(&**y);
-                  sum += 1
-              }
-              External(_, _) => { sum += 1 }
+                Nothing => (),
+                Internal(ref y) => {
+                    check_integrity(&**y);
+                    sum += 1
+                }
+                External(_, _) => sum += 1,
             }
         }
 
@@ -1316,7 +1439,8 @@ mod test {
         assert!(m.insert(5, 14).is_none());
         let new = 100;
         match m.get_mut(&5) {
-            None => panic!(), Some(x) => *x = new
+            None => panic!(),
+            Some(x) => *x = new,
         }
         assert_eq!(m.get(&5), Some(&new));
     }
@@ -1350,7 +1474,7 @@ mod test {
 
         for x in 0..n {
             assert!(trie.contains_key(&x));
-            assert!(!trie.insert(x, x + 1).is_none());
+            assert!(trie.insert(x, x + 1).is_some());
             check_integrity(&trie.root);
         }
 
@@ -1362,7 +1486,7 @@ mod test {
 
         for x in (0..n).step_by(2) {
             assert!(trie.contains_key(&x));
-            assert!(!trie.insert(x, x + 1).is_none());
+            assert!(trie.insert(x, x + 1).is_some());
             check_integrity(&trie.root);
         }
     }
@@ -1398,7 +1522,9 @@ mod test {
 
         let mut n = usize::MAX - 1;
         m.each_reverse(|k, v| {
-            if n == usize::MAX - 5000 { false } else {
+            if n == usize::MAX - 5000 {
+                false
+            } else {
                 assert!(n > usize::MAX - 5000);
 
                 assert_eq!(*k, n);
@@ -1460,7 +1586,7 @@ mod test {
 
     #[test]
     fn test_iteration() {
-        let empty_map : Map<usize> = Map::new();
+        let empty_map: Map<usize> = Map::new();
         assert_eq!(empty_map.iter().next(), None);
 
         let first = usize::MAX - 10000;
@@ -1482,7 +1608,7 @@ mod test {
 
     #[test]
     fn test_mut_iter() {
-        let mut empty_map : Map<usize> = Map::new();
+        let mut empty_map: Map<usize> = Map::new();
         assert!(empty_map.iter_mut().next().is_none());
 
         let first = usize::MAX - 10000;
@@ -1506,7 +1632,7 @@ mod test {
 
     #[test]
     fn test_bound() {
-        let empty_map : Map<usize> = Map::new();
+        let empty_map: Map<usize> = Map::new();
         assert_eq!(empty_map.lower_bound(0).next(), None);
         assert_eq!(empty_map.upper_bound(0).next(), None);
 
@@ -1514,7 +1640,7 @@ mod test {
         let step = 3;
         let value = 42;
 
-        let mut map : Map<usize> = Map::new();
+        let mut map: Map<usize> = Map::new();
         for x in (0..last).step_by(step) {
             assert!(x % step == 0);
             map.insert(x, value);
@@ -1548,7 +1674,7 @@ mod test {
 
     #[test]
     fn test_mut_bound() {
-        let empty_map : Map<usize> = Map::new();
+        let empty_map: Map<usize> = Map::new();
         assert_eq!(empty_map.lower_bound(0).next(), None);
         assert_eq!(empty_map.upper_bound(0).next(), None);
 
@@ -1605,7 +1731,7 @@ mod test {
         assert!(a != b);
         assert!(a.insert(5, 19).is_none());
         assert!(a != b);
-        assert!(!b.insert(0, 5).is_none());
+        assert!(b.insert(0, 5).is_some());
         assert!(a != b);
         assert!(b.insert(5, 19).is_none());
         assert!(a == b);
@@ -1616,17 +1742,17 @@ mod test {
         let mut a = Map::new();
         let mut b = Map::new();
 
-        assert!(!(a < b) && !(b < a));
+        assert!((a >= b) && (b >= a));
         assert!(b.insert(2, 5).is_none());
         assert!(a < b);
         assert!(a.insert(2, 7).is_none());
-        assert!(!(a < b) && b < a);
+        assert!((a >= b) && b < a);
         assert!(b.insert(1, 0).is_none());
         assert!(b < a);
         assert!(a.insert(0, 6).is_none());
         assert!(a < b);
         assert!(a.insert(6, 2).is_none());
-        assert!(a < b && !(b < a));
+        assert!(a < b && (b >= a));
     }
 
     #[test]
@@ -1634,7 +1760,7 @@ mod test {
         let mut a = Map::new();
         let mut b = Map::new();
 
-        assert!(a <= b && a >= b);
+        assert!(a == b);
         assert!(a.insert(1, 1).is_none());
         assert!(a > b && a >= b);
         assert!(b < a && b <= a);
@@ -1651,19 +1777,19 @@ mod test {
             s.finish()
         }
 
-      let mut x = Map::new();
-      let mut y = Map::new();
+        let mut x = Map::new();
+        let mut y = Map::new();
 
-      assert!(hash(&x) == hash(&y));
-      x.insert(1, 'a');
-      x.insert(2, 'b');
-      x.insert(3, 'c');
+        assert!(hash(&x) == hash(&y));
+        x.insert(1, 'a');
+        x.insert(2, 'b');
+        x.insert(3, 'c');
 
-      y.insert(3, 'c');
-      y.insert(2, 'b');
-      y.insert(1, 'a');
+        y.insert(3, 'c');
+        y.insert(2, 'b');
+        y.insert(1, 'a');
 
-      assert!(hash(&x) == hash(&y));
+        assert!(hash(&x) == hash(&y));
     }
 
     #[test]
@@ -1698,7 +1824,7 @@ mod test {
         map.insert(2, 1);
         map.insert(3, 4);
 
-        map[&4];
+        black_box(map[&4]);
     }
 
     // Number of items to insert into the map during entry tests.
@@ -1721,7 +1847,7 @@ mod test {
         for i in 0..SQUARES_UPPER_LIM {
             match map.entry(i) {
                 Occupied(slot) => assert_eq!(slot.get(), &(i * i)),
-                Vacant(_) => panic!("Key not found.")
+                Vacant(_) => panic!("Key not found."),
             }
         }
         check_integrity(&map.root);
@@ -1737,7 +1863,7 @@ mod test {
                 Occupied(mut e) => {
                     *e.get_mut() = i * i * i;
                 }
-                Vacant(_) => panic!("Key not found.")
+                Vacant(_) => panic!("Key not found."),
             }
             assert_eq!(map.get(&i).unwrap(), &(i * i * i));
         }
@@ -1752,7 +1878,7 @@ mod test {
 
         let value_ref = match map.entry(3) {
             Occupied(e) => e.into_mut(),
-            Vacant(_) => panic!("Entry not found.")
+            Vacant(_) => panic!("Entry not found."),
         };
 
         assert_eq!(*value_ref, 6);
@@ -1767,7 +1893,7 @@ mod test {
         for i in (1..SQUARES_UPPER_LIM).step_by(2) {
             match map.entry(i) {
                 Occupied(e) => assert_eq!(e.remove(), i * i),
-                Vacant(_) => panic!("Key not found.")
+                Vacant(_) => panic!("Key not found."),
             }
         }
 
@@ -1789,7 +1915,7 @@ mod test {
         for i in 0..SQUARES_UPPER_LIM {
             match map.entry(i) {
                 Occupied(mut e) => assert_eq!(e.insert(i * i * i), i * i),
-                Vacant(_) => panic!("Key not found.")
+                Vacant(_) => panic!("Key not found."),
             }
             assert_eq!(map.get(&i).unwrap(), &(i * i * i));
         }
@@ -1809,8 +1935,8 @@ mod test {
 
                     // Update it to i^3 using the returned mutable reference.
                     *inserted_val = i * i * i;
-                },
-                _ => panic!("Non-existent key found.")
+                }
+                _ => panic!("Non-existent key found."),
             }
             assert_eq!(map.get(&i).unwrap(), &(i * i * i));
         }
@@ -1824,10 +1950,8 @@ mod test {
         let mut map = Map::new();
         map.insert(1, 2);
 
-        match map.entry(1) {
-            Occupied(e) => { e.remove(); },
-            _ => ()
+        if let Occupied(e) = map.entry(1) {
+            e.remove();
         }
     }
 }
-

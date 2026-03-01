@@ -424,7 +424,7 @@ impl Extend<usize> for Set {
     }
 }
 
-impl<'a, 'b> ops::BitOr<&'b Set> for &'a Set {
+impl ops::BitOr<&Set> for &Set {
     type Output = Set;
 
     /// Returns the union of `self` and `rhs` as a new set.
@@ -444,7 +444,7 @@ impl<'a, 'b> ops::BitOr<&'b Set> for &'a Set {
     }
 }
 
-impl<'a, 'b> ops::BitAnd<&'b Set> for &'a Set {
+impl ops::BitAnd<&Set> for &Set {
     type Output = Set;
 
     /// Returns the intersection of `self` and `rhs` as a new set.
@@ -464,7 +464,7 @@ impl<'a, 'b> ops::BitAnd<&'b Set> for &'a Set {
     }
 }
 
-impl<'a, 'b> ops::BitXor<&'b Set> for &'a Set {
+impl ops::BitXor<&Set> for &Set {
     type Output = Set;
 
     /// Returns the symmetric difference of `self` and `rhs` as a new set.
@@ -484,7 +484,7 @@ impl<'a, 'b> ops::BitXor<&'b Set> for &'a Set {
     }
 }
 
-impl<'a, 'b> ops::Sub<&'b Set> for &'a Set {
+impl ops::Sub<&Set> for &Set {
     type Output = Set;
 
     /// Returns the difference of `self` and `rhs` as a new set.
@@ -725,17 +725,17 @@ mod test {
         let mut a = Set::new();
         let mut b = Set::new();
 
-        assert!(!(a < b) && !(b < a));
+        assert!((a >= b) && (b >= a));
         assert!(b.insert(2));
         assert!(a < b);
         assert!(a.insert(3));
-        assert!(!(a < b) && b < a);
+        assert!((a >= b) && b < a);
         assert!(b.insert(1));
         assert!(b < a);
         assert!(a.insert(0));
         assert!(a < b);
         assert!(a.insert(6));
-        assert!(a < b && !(b < a));
+        assert!(a < b && (b >= a));
     }
 
     #[test]
@@ -743,7 +743,7 @@ mod test {
         let mut a = Set::new();
         let mut b = Set::new();
 
-        assert!(a <= b && a >= b);
+        assert!(a == b);
         assert!(a.insert(1));
         assert!(a > b && a >= b);
         assert!(b < a && b <= a);
@@ -794,7 +794,7 @@ mod test {
             &set_b,
             Counter {
                 i: &mut i,
-                expected: expected,
+                expected,
             },
         );
         assert_eq!(i, expected.len());
