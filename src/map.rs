@@ -969,16 +969,16 @@ unsafe fn next_child<T>(
     key: usize,
     idx: usize,
 ) -> (Option<*mut TrieNode<T>>, bool) {
-    match *node {
+    match unsafe { &mut *node } {
         // If the node is internal, tell the caller to descend further.
-        Internal(ref mut node_internal) => (
+        &mut Internal(ref mut node_internal) => (
             Some(&mut node_internal.children[chunk(key, idx)] as *mut _),
             false,
         ),
         // If the node is external or empty, the search is complete.
         // If the key doesn't match, node expansion will be done upon
         // insertion. If it does match, we've found our node.
-        External(stored_key, _) if stored_key == key => (None, true),
+        External(stored_key, _) if *stored_key == key => (None, true),
         External(..) | Nothing => (None, false),
     }
 }
