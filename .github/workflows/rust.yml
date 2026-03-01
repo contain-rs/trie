@@ -30,7 +30,7 @@ jobs:
           rustup override set nightly
           cargo miri setup
       - name: Test with Miri
-        run: MIRIFLAGS=-Zmiri-strict-provenance cargo miri test
+        run: MIRIFLAGS=-Zmiri-strict-provenance cargo miri test --features nightly
   
   fmt:
     runs-on: ubuntu-latest

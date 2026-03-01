@@ -752,11 +752,13 @@ mod test {
         assert!(a < b && a <= b);
     }
 
+    #[cfg(feature = "nightly")]
     struct Counter<'a, 'b> {
         i: &'a mut usize,
         expected: &'b [usize],
     }
 
+    #[cfg(feature = "nightly")]
     impl<'a, 'b> FnOnce<(usize,)> for Counter<'a, 'b> {
         type Output = bool;
 
@@ -765,6 +767,7 @@ mod test {
         }
     }
 
+    #[cfg(feature = "nightly")]
     impl<'a, 'b> FnMut<(usize,)> for Counter<'a, 'b> {
         extern "rust-call" fn call_mut(&mut self, (x,): (usize,)) -> bool {
             assert_eq!(x, self.expected[*self.i]);
@@ -773,6 +776,7 @@ mod test {
         }
     }
 
+    #[cfg(feature = "nightly")]
     fn check<F>(a: &[usize], b: &[usize], expected: &[usize], f: F)
     where
         // FIXME Replace `Counter` with `Box<FnMut(&usize) -> bool>`
@@ -800,6 +804,7 @@ mod test {
         assert_eq!(i, expected.len());
     }
 
+    #[cfg(feature = "nightly")]
     #[test]
     fn test_intersection() {
         fn check_intersection(a: &[usize], b: &[usize], expected: &[usize]) {
@@ -814,6 +819,7 @@ mod test {
         check_intersection(&[11, 1, 3, 77, 103, 5], &[2, 11, 77, 5, 3], &[3, 5, 11, 77]);
     }
 
+    #[cfg(feature = "nightly")]
     #[test]
     fn test_difference() {
         fn check_difference(a: &[usize], b: &[usize], expected: &[usize]) {
@@ -831,6 +837,7 @@ mod test {
         );
     }
 
+    #[cfg(feature = "nightly")]
     #[test]
     fn test_symmetric_difference() {
         fn check_symmetric_difference(a: &[usize], b: &[usize], expected: &[usize]) {
@@ -843,6 +850,7 @@ mod test {
         check_symmetric_difference(&[1, 3, 5, 9, 11], &[3, 9, 14, 22], &[1, 5, 11, 14, 22]);
     }
 
+    #[cfg(feature = "nightly")]
     #[test]
     fn test_union() {
         fn check_union(a: &[usize], b: &[usize], expected: &[usize]) {
