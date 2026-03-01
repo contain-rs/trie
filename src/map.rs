@@ -1,4 +1,4 @@
-// Copyright 2013-2014 The Rust Project Developers. See the COPYRIGHT
+// Copyright 2013-2026 The Rust Project Developers. See the COPYRIGHT
 // file at the top-level directory of this distribution and at
 // http://rust-lang.org/COPYRIGHT.
 //
@@ -90,7 +90,7 @@ const MAX_DEPTH: usize = USIZE_BITS / SHIFT;
 #[derive(Clone)]
 pub struct Map<T> {
     root: InternalNode<T>,
-    length: usize
+    length: usize,
 }
 
 // An internal node holds SIZE child nodes, which may themselves contain more internal nodes.
@@ -184,11 +184,11 @@ impl<T> Map<T> {
 
     /// Gets an iterator visiting all keys in ascending order by the keys.
     /// The iterator's element type is `usize`.
-    pub fn keys(&self) -> Keys<T> { Keys(self.iter()) }
+    pub fn keys(&self) -> Keys<'_, T> { Keys(self.iter()) }
 
     /// Gets an iterator visiting all values in ascending order by the keys.
     /// The iterator's element type is `&'r T`.
-    pub fn values(&self) -> Values<T> { Values(self.iter()) }
+    pub fn values(&self) -> Values<'_, T> { Values(self.iter()) }
 
     /// Gets an iterator over the key-value pairs in the map, ordered by keys.
     ///
@@ -201,7 +201,7 @@ impl<T> Map<T> {
     ///     println!("{}: {}", key, value);
     /// }
     /// ```
-    pub fn iter(&self) -> Iter<T> {
+    pub fn iter(&self) -> Iter<'_, T> {
         let mut iter = unsafe {Iter::new()};
         iter.stack[0] = self.root.children.iter();
         iter.length = 1;
@@ -226,7 +226,7 @@ impl<T> Map<T> {
     /// assert_eq!(map.get(&2), Some(&-2));
     /// assert_eq!(map.get(&3), Some(&-3));
     /// ```
-    pub fn iter_mut(&mut self) -> IterMut<T> {
+    pub fn iter_mut(&mut self) -> IterMut<'_, T> {
         let mut iter = unsafe {IterMut::new()};
         iter.stack[0] = self.root.children.iter_mut();
         iter.length = 1;
@@ -471,7 +471,7 @@ macro_rules! bound {
 impl<T> Map<T> {
     // If `upper` is true then returns upper_bound else returns lower_bound.
     #[inline]
-    fn bound(&self, key: usize, upper: bool) -> Range<T> {
+    fn bound(&self, key: usize, upper: bool) -> Range<'_, T> {
         Range(bound!(Iter, self = self,
                key = key, is_upper = upper,
                iter = iter,
@@ -490,7 +490,7 @@ impl<T> Map<T> {
     /// assert_eq!(map.lower_bound(5).next(), Some((6, &"c")));
     /// assert_eq!(map.lower_bound(10).next(), None);
     /// ```
-    pub fn lower_bound(&self, key: usize) -> Range<T> {
+    pub fn lower_bound(&self, key: usize) -> Range<'_, T> {
         self.bound(key, false)
     }
 
@@ -506,12 +506,12 @@ impl<T> Map<T> {
     /// assert_eq!(map.upper_bound(5).next(), Some((6, &"c")));
     /// assert_eq!(map.upper_bound(10).next(), None);
     /// ```
-    pub fn upper_bound(&self, key: usize) -> Range<T> {
+    pub fn upper_bound(&self, key: usize) -> Range<'_, T> {
         self.bound(key, true)
     }
     // If `upper` is true then returns upper_bound else returns lower_bound.
     #[inline]
-    fn bound_mut(&mut self, key: usize, upper: bool) -> RangeMut<T> {
+    fn bound_mut(&mut self, key: usize, upper: bool) -> RangeMut<'_, T> {
         RangeMut(bound!(IterMut, self = self,
                key = key, is_upper = upper,
                iter = iter_mut,
@@ -538,7 +538,7 @@ impl<T> Map<T> {
     /// assert_eq!(map.get(&4), Some(&"changed"));
     /// assert_eq!(map.get(&6), Some(&"changed"));
     /// ```
-    pub fn lower_bound_mut(&mut self, key: usize) -> RangeMut<T> {
+    pub fn lower_bound_mut(&mut self, key: usize) -> RangeMut<'_, T> {
         self.bound_mut(key, false)
     }
 
@@ -562,7 +562,7 @@ impl<T> Map<T> {
     /// assert_eq!(map.get(&4), Some(&"b"));
     /// assert_eq!(map.get(&6), Some(&"changed"));
     /// ```
-    pub fn upper_bound_mut(&mut self, key: usize) -> RangeMut<T> {
+    pub fn upper_bound_mut(&mut self, key: usize) -> RangeMut<'_, T> {
         self.bound_mut(key, true)
     }
 }
@@ -858,7 +858,7 @@ impl<'a, T> SearchStack<'a, T> {
 impl<T> Map<T> {
     /// Gets the given key's corresponding entry in the map for in-place manipulation.
     #[inline]
-    pub fn entry(&mut self, key: usize) -> Entry<T> {
+    pub fn entry(&mut self, key: usize) -> Entry<'_, T> {
         // Create an empty search stack.
         let mut search_stack = SearchStack::new(self, key);
 
@@ -1831,203 +1831,3 @@ mod test {
     }
 }
 
-#[cfg(test)]
-mod bench {
-    use rand::{weak_rng, Rng};
-    use test::{Bencher, black_box};
-
-    use super::{Map, Occupied, Vacant};
-
-    const MAP_SIZE: usize = 1000;
-
-    map_insert_rand_bench!{insert_rand_100,    100,    Map}
-    map_insert_rand_bench!{insert_rand_10_000, 10_000, Map}
-
-    map_insert_seq_bench!{insert_seq_100,    100,    Map}
-    map_insert_seq_bench!{insert_seq_10_000, 10_000, Map}
-
-    map_find_rand_bench!{find_rand_100,    100,    Map}
-    map_find_rand_bench!{find_rand_10_000, 10_000, Map}
-
-    map_find_seq_bench!{find_seq_100,    100,    Map}
-    map_find_seq_bench!{find_seq_10_000, 10_000, Map}
-
-    fn random_map(size: usize) -> Map<usize> {
-        let mut map = Map::<usize>::new();
-        let mut rng = weak_rng();
-
-        for _ in 0..size {
-            map.insert(rng.gen(), rng.gen());
-        }
-        map
-    }
-
-    fn bench_iter(b: &mut Bencher, size: usize) {
-        let map = random_map(size);
-        b.iter(|| {
-            for entry in map.iter() {
-                black_box(entry);
-            }
-        });
-    }
-
-    #[bench]
-    pub fn iter_20(b: &mut Bencher) {
-        bench_iter(b, 20);
-    }
-
-    #[bench]
-    pub fn iter_1000(b: &mut Bencher) {
-        bench_iter(b, 1000);
-    }
-
-    #[bench]
-    pub fn iter_100000(b: &mut Bencher) {
-        bench_iter(b, 100000);
-    }
-
-    #[bench]
-    fn bench_lower_bound(b: &mut Bencher) {
-        let mut m = Map::<usize>::new();
-        let mut rng = weak_rng();
-        for _ in 0..MAP_SIZE {
-            m.insert(rng.gen(), rng.gen());
-        }
-
-        b.iter(|| {
-            for _ in 0..10 {
-                m.lower_bound(rng.gen());
-            }
-        });
-    }
-
-    #[bench]
-    fn bench_upper_bound(b: &mut Bencher) {
-        let mut m = Map::<usize>::new();
-        let mut rng = weak_rng();
-        for _ in 0..MAP_SIZE {
-            m.insert(rng.gen(), rng.gen());
-        }
-
-        b.iter(|| {
-            for _ in 0..10 {
-                m.upper_bound(rng.gen());
-            }
-        });
-    }
-
-    #[bench]
-    fn bench_insert_large(b: &mut Bencher) {
-        let mut m = Map::<[usize; 10]>::new();
-        let mut rng = weak_rng();
-
-        b.iter(|| {
-            for _ in 0..MAP_SIZE {
-                m.insert(rng.gen(), [1; 10]);
-            }
-        });
-    }
-
-    #[bench]
-    fn bench_insert_large_entry(b: &mut Bencher) {
-        let mut m = Map::<[usize; 10]>::new();
-        let mut rng = weak_rng();
-
-        b.iter(|| {
-            for _ in 0..MAP_SIZE {
-                match m.entry(rng.gen()) {
-                    Occupied(mut e) => { e.insert([1; 10]); },
-                    Vacant(e) => { e.insert([1; 10]); }
-                }
-            }
-        });
-    }
-
-    #[bench]
-    fn bench_insert_large_low_bits(b: &mut Bencher) {
-        let mut m = Map::<[usize; 10]>::new();
-        let mut rng = weak_rng();
-
-        b.iter(|| {
-            for _ in 0..MAP_SIZE {
-                // only have the last few bits set.
-                m.insert(rng.gen::<usize>() & 0xff_ff, [1; 10]);
-            }
-        });
-    }
-
-    #[bench]
-    fn bench_insert_small(b: &mut Bencher) {
-        let mut m = Map::<()>::new();
-        let mut rng = weak_rng();
-
-        b.iter(|| {
-            for _ in 0..MAP_SIZE {
-                m.insert(rng.gen(), ());
-            }
-        });
-    }
-
-    #[bench]
-    fn bench_insert_small_low_bits(b: &mut Bencher) {
-        let mut m = Map::<()>::new();
-        let mut rng = weak_rng();
-
-        b.iter(|| {
-            for _ in 0..MAP_SIZE {
-                // only have the last few bits set.
-                m.insert(rng.gen::<usize>() & 0xff_ff, ());
-            }
-        });
-    }
-
-    #[bench]
-    fn bench_get(b: &mut Bencher) {
-        let map = random_map(MAP_SIZE);
-        let keys: Vec<usize> = map.keys().collect();
-        b.iter(|| {
-            for key in keys.iter() {
-                black_box(map.get(key));
-            }
-        });
-    }
-
-    #[bench]
-    fn bench_get_entry(b: &mut Bencher) {
-        let mut map = random_map(MAP_SIZE);
-        let keys: Vec<usize> = map.keys().collect();
-        b.iter(|| {
-            for key in keys.iter() {
-                match map.entry(*key) {
-                    Occupied(e) => { black_box(e.get()); },
-                    _ => ()
-                }
-            }
-        });
-    }
-
-    #[bench]
-    fn bench_remove(b: &mut Bencher) {
-        b.iter(|| {
-            let mut map = random_map(MAP_SIZE);
-            let keys: Vec<usize> = map.keys().collect();
-            for key in keys.iter() {
-                black_box(map.remove(key));
-            }
-        });
-    }
-
-    #[bench]
-    fn bench_remove_entry(b: &mut Bencher) {
-        b.iter(|| {
-            let mut map = random_map(MAP_SIZE);
-            let keys: Vec<usize> = map.keys().collect();
-            for key in keys.iter() {
-                match map.entry(*key) {
-                    Occupied(e) => { black_box(e.remove()); },
-                    _ => ()
-                }
-            }
-        });
-    }
-}

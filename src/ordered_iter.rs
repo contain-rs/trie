@@ -1,6 +1,6 @@
 extern crate ordered_iter;
 
-use self::ordered_iter::{OrderedMapIterator, OrderedSetIterator};
+use ordered_iter::{OrderedMapIterator, OrderedSetIterator};
 use super::{map, set};
 
 impl<'a, T> OrderedMapIterator for map::Iter<'a, T> {

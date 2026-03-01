@@ -1,4 +1,4 @@
-// Copyright 2014 The Rust Project Developers. See the COPYRIGHT
+// Copyright 2014-2026 The Rust Project Developers. See the COPYRIGHT
 // file at the top-level directory of this distribution and at
 // http://rust-lang.org/COPYRIGHT.
 //
@@ -14,12 +14,12 @@
 
 //! An ordered set based on a trie.
 
-use std::cmp::Ordering::{self, Less, Equal, Greater};
+use std::cmp::Ordering::{self, Equal, Greater, Less};
 use std::fmt::{self, Debug};
 use std::iter::{self, Peekable};
 use std::ops;
 
-use super::map::{Map, self};
+use super::map::{self, Map};
 
 /// A set implemented as a radix trie.
 ///
@@ -50,7 +50,7 @@ use super::map::{Map, self};
 /// ```
 #[derive(Clone, Default, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Set {
-    map: Map<()>
+    map: Map<()>,
 }
 
 impl Debug for Set {
@@ -69,7 +69,7 @@ impl Set {
     /// ```
     #[inline]
     pub fn new() -> Set {
-        Set{map: Map::new()}
+        Set { map: Map::new() }
     }
 
     /// Visits all values in reverse order. Aborts traversal when `f` returns `false`.
@@ -90,7 +90,10 @@ impl Set {
     /// assert_eq!(vec, [5, 4, 3]);
     /// ```
     #[inline]
-    pub fn each_reverse<F>(&self, mut f: F) -> bool where F: FnMut(&usize) -> bool {
+    pub fn each_reverse<F>(&self, mut f: F) -> bool
+    where
+        F: FnMut(&usize) -> bool,
+    {
         self.map.each_reverse(|k, _| f(k))
     }
 
@@ -111,8 +114,10 @@ impl Set {
     /// }
     /// ```
     #[inline]
-    pub fn iter(&self) -> Iter {
-        Iter { iter: self.map.iter() }
+    pub fn iter(&self) -> Iter<'_> {
+        Iter {
+            iter: self.map.iter(),
+        }
     }
 
     /// Gets an iterator pointing to the first value that is not less than `val`.
@@ -126,8 +131,10 @@ impl Set {
     /// assert_eq!(set.lower_bound(5).next(), Some(6));
     /// assert_eq!(set.lower_bound(10).next(), None);
     /// ```
-    pub fn lower_bound(&self, val: usize) -> Range {
-        Range { iter: self.map.lower_bound(val) }
+    pub fn lower_bound(&self, val: usize) -> Range<'_> {
+        Range {
+            iter: self.map.lower_bound(val),
+        }
     }
 
     /// Gets an iterator pointing to the first value that key is greater than `val`.
@@ -141,8 +148,10 @@ impl Set {
     /// assert_eq!(set.upper_bound(5).next(), Some(6));
     /// assert_eq!(set.upper_bound(10).next(), None);
     /// ```
-    pub fn upper_bound(&self, val: usize) -> Range {
-        Range { iter: self.map.upper_bound(val) }
+    pub fn upper_bound(&self, val: usize) -> Range<'_> {
+        Range {
+            iter: self.map.upper_bound(val),
+        }
     }
 
     /// Visits the values representing the difference, in ascending order.
@@ -167,7 +176,10 @@ impl Set {
     /// assert_eq!(diff2, [4, 5].iter().cloned().collect());
     /// ```
     pub fn difference<'a>(&'a self, other: &'a Set) -> Difference<'a> {
-        Difference { a: self.iter().peekable(), b: other.iter().peekable() }
+        Difference {
+            a: self.iter().peekable(),
+            b: other.iter().peekable(),
+        }
     }
 
     /// Visits the values representing the symmetric difference, in ascending order.
@@ -190,7 +202,10 @@ impl Set {
     /// assert_eq!(diff1, [1, 2, 4, 5].iter().cloned().collect());
     /// ```
     pub fn symmetric_difference<'a>(&'a self, other: &'a Set) -> SymmetricDifference<'a> {
-        SymmetricDifference { a: self.iter().peekable(), b: other.iter().peekable() }
+        SymmetricDifference {
+            a: self.iter().peekable(),
+            b: other.iter().peekable(),
+        }
     }
 
     /// Visits the values representing the intersection, in ascending order.
@@ -210,7 +225,10 @@ impl Set {
     /// assert_eq!(diff, [2, 3].iter().cloned().collect());
     /// ```
     pub fn intersection<'a>(&'a self, other: &'a Set) -> Intersection<'a> {
-        Intersection { a: self.iter().peekable(), b: other.iter().peekable() }
+        Intersection {
+            a: self.iter().peekable(),
+            b: other.iter().peekable(),
+        }
     }
 
     /// Visits the values representing the union, in ascending order.
@@ -230,7 +248,10 @@ impl Set {
     /// assert_eq!(diff, [1, 2, 3, 4, 5].iter().cloned().collect());
     /// ```
     pub fn union<'a>(&'a self, other: &'a Set) -> Union<'a> {
-        Union { a: self.iter().peekable(), b: other.iter().peekable() }
+        Union {
+            a: self.iter().peekable(),
+            b: other.iter().peekable(),
+        }
     }
 
     /// Return the number of elements in the set
@@ -244,7 +265,9 @@ impl Set {
     /// assert_eq!(v.len(), 1);
     /// ```
     #[inline]
-    pub fn len(&self) -> usize { self.map.len() }
+    pub fn len(&self) -> usize {
+        self.map.len()
+    }
 
     /// Returns true if the set contains no elements
     ///
@@ -256,7 +279,9 @@ impl Set {
     /// v.insert(1);
     /// assert!(!v.is_empty());
     /// ```
-    pub fn is_empty(&self) -> bool { self.map.is_empty() }
+    pub fn is_empty(&self) -> bool {
+        self.map.is_empty()
+    }
 
     /// Clears the set, removing all values.
     ///
@@ -269,7 +294,9 @@ impl Set {
     /// assert!(v.is_empty());
     /// ```
     #[inline]
-    pub fn clear(&mut self) { self.map.clear() }
+    pub fn clear(&mut self) {
+        self.map.clear()
+    }
 
     /// Returns `true` if the set contains a value.
     ///
@@ -382,7 +409,7 @@ impl Set {
 }
 
 impl iter::FromIterator<usize> for Set {
-    fn from_iter<I: IntoIterator<Item=usize>>(iter: I) -> Set {
+    fn from_iter<I: IntoIterator<Item = usize>>(iter: I) -> Set {
         let mut set = Set::new();
         set.extend(iter);
         set
@@ -390,7 +417,7 @@ impl iter::FromIterator<usize> for Set {
 }
 
 impl Extend<usize> for Set {
-    fn extend<I: IntoIterator<Item=usize>>(&mut self, iter: I) {
+    fn extend<I: IntoIterator<Item = usize>>(&mut self, iter: I) {
         for elem in iter {
             self.insert(elem);
         }
@@ -480,13 +507,13 @@ impl<'a, 'b> ops::Sub<&'b Set> for &'a Set {
 /// A forward iterator over a set.
 #[derive(Clone)]
 pub struct Iter<'a> {
-    iter: map::Iter<'a, ()>
+    iter: map::Iter<'a, ()>,
 }
 
 /// A bounded forward iterator over a set.
 #[derive(Clone)]
 pub struct Range<'a> {
-    iter: map::Range<'a, ()>
+    iter: map::Range<'a, ()>,
 }
 
 /// An iterator producing elements in the set difference (in-order).
@@ -520,8 +547,8 @@ pub struct Union<'a> {
 /// Compare `x` and `y`, but return `short` if x is None and `long` if y is None
 fn cmp_opt(x: Option<&usize>, y: Option<&usize>, short: Ordering, long: Ordering) -> Ordering {
     match (x, y) {
-        (None    , _       ) => short,
-        (_       , None    ) => long,
+        (None, _) => short,
+        (_, None) => long,
         (Some(x1), Some(y1)) => x1.cmp(y1),
     }
 }
@@ -538,13 +565,19 @@ impl<'a> Iterator for Iter<'a> {
 }
 
 impl<'a> ExactSizeIterator for Iter<'a> {
-    fn len(&self) -> usize { self.iter.len() }
+    fn len(&self) -> usize {
+        self.iter.len()
+    }
 }
 
 impl<'a> Iterator for Range<'a> {
     type Item = usize;
-    fn next(&mut self) -> Option<usize> { self.iter.next().map(|(key, _)| key) }
-    fn size_hint(&self) -> (usize, Option<usize>) { self.iter.size_hint() }
+    fn next(&mut self) -> Option<usize> {
+        self.iter.next().map(|(key, _)| key)
+    }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
 }
 
 impl<'a> Iterator for Difference<'a> {
@@ -552,9 +585,14 @@ impl<'a> Iterator for Difference<'a> {
     fn next(&mut self) -> Option<usize> {
         loop {
             match cmp_opt(self.a.peek(), self.b.peek(), Less, Less) {
-                Less    => return self.a.next(),
-                Equal   => { self.a.next(); self.b.next(); }
-                Greater => { self.b.next(); }
+                Less => return self.a.next(),
+                Equal => {
+                    self.a.next();
+                    self.b.next();
+                }
+                Greater => {
+                    self.b.next();
+                }
             }
         }
     }
@@ -566,7 +604,10 @@ impl<'a> Iterator for SymmetricDifference<'a> {
         loop {
             match cmp_opt(self.a.peek(), self.b.peek(), Greater, Less) {
                 Less => return self.a.next(),
-                Equal => { self.a.next(); self.b.next(); }
+                Equal => {
+                    self.a.next();
+                    self.b.next();
+                }
                 Greater => return self.b.next(),
             }
         }
@@ -578,15 +619,22 @@ impl<'a> Iterator for Intersection<'a> {
     fn next(&mut self) -> Option<usize> {
         loop {
             let o_cmp = match (self.a.peek(), self.b.peek()) {
-                (None    , _       ) => None,
-                (_       , None    ) => None,
+                (None, _) => None,
+                (_, None) => None,
                 (Some(a1), Some(b1)) => Some(a1.cmp(b1)),
             };
             match o_cmp {
-                None          => return None,
-                Some(Less)    => { self.a.next(); }
-                Some(Equal)   => { self.b.next(); return self.a.next() }
-                Some(Greater) => { self.b.next(); }
+                None => return None,
+                Some(Less) => {
+                    self.a.next();
+                }
+                Some(Equal) => {
+                    self.b.next();
+                    return self.a.next();
+                }
+                Some(Greater) => {
+                    self.b.next();
+                }
             }
         }
     }
@@ -596,8 +644,11 @@ impl<'a> Iterator for Union<'a> {
     type Item = usize;
     fn next(&mut self) -> Option<usize> {
         match cmp_opt(self.a.peek(), self.b.peek(), Greater, Less) {
-            Less    => self.a.next(),
-            Equal   => { self.b.next(); self.a.next() }
+            Less => self.a.next(),
+            Equal => {
+                self.b.next();
+                self.a.next()
+            }
             Greater => self.b.next(),
         }
     }
@@ -606,7 +657,9 @@ impl<'a> Iterator for Union<'a> {
 impl<'a> IntoIterator for &'a Set {
     type Item = usize;
     type IntoIter = Iter<'a>;
-    fn into_iter(self) -> Iter<'a> { self.iter() }
+    fn into_iter(self) -> Iter<'a> {
+        self.iter()
+    }
 }
 
 #[cfg(test)]
@@ -720,18 +773,30 @@ mod test {
         }
     }
 
-    fn check<F>(a: &[usize], b: &[usize], expected: &[usize], f: F) where
+    fn check<F>(a: &[usize], b: &[usize], expected: &[usize], f: F)
+    where
         // FIXME Replace `Counter` with `Box<FnMut(&usize) -> bool>`
         F: FnOnce(&Set, &Set, Counter) -> bool,
     {
         let mut set_a = Set::new();
         let mut set_b = Set::new();
 
-        for x in a.iter() { assert!(set_a.insert(*x)) }
-        for y in b.iter() { assert!(set_b.insert(*y)) }
+        for x in a.iter() {
+            assert!(set_a.insert(*x))
+        }
+        for y in b.iter() {
+            assert!(set_b.insert(*y))
+        }
 
         let mut i = 0;
-        f(&set_a, &set_b, Counter { i: &mut i, expected: expected });
+        f(
+            &set_a,
+            &set_b,
+            Counter {
+                i: &mut i,
+                expected: expected,
+            },
+        );
         assert_eq!(i, expected.len());
     }
 
@@ -746,9 +811,7 @@ mod test {
         check_intersection(&[], &[1, 2, 3], &[]);
         check_intersection(&[2], &[1, 2, 3], &[2]);
         check_intersection(&[1, 2, 3], &[2], &[2]);
-        check_intersection(&[11, 1, 3, 77, 103, 5],
-                           &[2, 11, 77, 5, 3],
-                           &[3, 5, 11, 77]);
+        check_intersection(&[11, 1, 3, 77, 103, 5], &[2, 11, 77, 5, 3], &[3, 5, 11, 77]);
     }
 
     #[test]
@@ -760,12 +823,12 @@ mod test {
         check_difference(&[], &[], &[]);
         check_difference(&[1, 12], &[], &[1, 12]);
         check_difference(&[], &[1, 2, 3, 9], &[]);
-        check_difference(&[1, 3, 5, 9, 11],
-                         &[3, 9],
-                         &[1, 5, 11]);
-        check_difference(&[11, 22, 33, 40, 42],
-                         &[14, 23, 34, 38, 39, 50],
-                         &[11, 22, 33, 40, 42]);
+        check_difference(&[1, 3, 5, 9, 11], &[3, 9], &[1, 5, 11]);
+        check_difference(
+            &[11, 22, 33, 40, 42],
+            &[14, 23, 34, 38, 39, 50],
+            &[11, 22, 33, 40, 42],
+        );
     }
 
     #[test]
@@ -777,9 +840,7 @@ mod test {
         check_symmetric_difference(&[], &[], &[]);
         check_symmetric_difference(&[1, 2, 3], &[2], &[1, 3]);
         check_symmetric_difference(&[2], &[1, 2, 3], &[1, 3]);
-        check_symmetric_difference(&[1, 3, 5, 9, 11],
-                                   &[3, 9, 14, 22],
-                                   &[1, 5, 11, 14, 22]);
+        check_symmetric_difference(&[1, 3, 5, 9, 11], &[3, 9, 14, 22], &[1, 5, 11, 14, 22]);
     }
 
     #[test]
@@ -791,9 +852,11 @@ mod test {
         check_union(&[], &[], &[]);
         check_union(&[1, 2, 3], &[2], &[1, 2, 3]);
         check_union(&[2], &[1, 2, 3], &[1, 2, 3]);
-        check_union(&[1, 3, 5, 9, 11, 16, 19, 24],
-                    &[1, 5, 9, 13, 19],
-                    &[1, 3, 5, 9, 11, 13, 16, 19, 24]);
+        check_union(
+            &[1, 3, 5, 9, 11, 16, 19, 24],
+            &[1, 5, 9, 13, 19],
+            &[1, 3, 5, 9, 11, 13, 16, 19, 24],
+        );
     }
 
     #[test]

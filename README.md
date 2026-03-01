@@ -1,16 +1,14 @@
 An ordered map and set based on a trie.
 
-Documentation is available at https://contain-rs.github.io/trie/trie.
+WORK IN PROGRESS.
 
-To use `trie` with Cargo, add this to `Cargo.toml`:
+Meant to be: Highly general and customizable.
+
+You can see the documentation here: https://docs.rs/trie/latest/trie/.
+
+To use `trie`, add this to `Cargo.toml`:
 
 ```toml
 [dependencies]
-trie = "*"
-```
-
-and this to the crate root:
-
-```rust
-extern crate trie;
+trie = "0.3"
 ```
