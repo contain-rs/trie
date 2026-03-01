@@ -664,8 +664,8 @@ impl<'a> IntoIterator for &'a Set {
 
 #[cfg(test)]
 mod test {
-    use super::map::USIZE_BITS;
     use super::Set;
+    use super::map::USIZE_BITS;
 
     #[test]
     fn test_sane_chunk() {

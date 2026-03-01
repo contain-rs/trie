@@ -14,10 +14,10 @@
 
 extern crate test;
 
-use rand::{rngs, seq::SliceRandom, RngExt, SeedableRng};
+use rand::{RngExt, SeedableRng, rngs, seq::SliceRandom};
 use test::black_box;
 
-use trie::{map::Occupied, map::Vacant, Map};
+use trie::{Map, map::Occupied, map::Vacant};
 
 const MAP_SIZE: usize = 1000;
 
