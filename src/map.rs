@@ -17,6 +17,7 @@ use std::cmp::Ordering;
 use std::fmt::{self, Debug};
 use std::hash::{Hash, Hasher};
 use std::iter;
+use std::marker::PhantomData;
 use std::mem;
 use std::ops;
 use std::ptr;
@@ -407,35 +408,24 @@ impl<T> Map<T> {
     }
 }
 
-// FIXME #5846 we want to be able to choose between &x and &mut x
-// (with many different `x`) below, so we need to optionally pass mut
-// as a tt, but the only thing we can do with a `tt` is pass them to
-// other macros, so this takes the `& <mutability> <operand>` token
-// sequence and forces their evaluation as an expression. (see also
-// `item!` below.)
-macro_rules! addr {
-    ($e:expr) => {
-        $e
-    };
-}
-
 macro_rules! bound {
-    ($iterator_name:ident,
-     // the current treemap
-     self = $this:expr,
-     // the key to look for
-     key = $key:expr,
-     // are we looking at the upper bound?
-     is_upper = $upper:expr,
+    (
+        $iterator_name:ident,
+        // the current treemap
+        self = $this:expr,
+        // the key to look for
+        key = $key:expr,
+        // are we looking at the upper bound?
+        is_upper = $upper:expr,
 
-     // method name for iterating.
-     iter = $iter:ident,
+        // method name for iterating.
+        iter = $iter:ident,
 
-     // see the comment on `addr!`, this is just an optional mut, but
-     // there's no 0-or-1 repeats yet.
-     mutability = $($mut_:tt)*) => {
+        // this is just an optional mut, but there's no 0-or-1 repeats yet.
+        mutability = ($($mut_:tt)*),
+        const = ($($const_:tt)*)
+    ) => {
         {
-            // # For `mut`
             // We need an unsafe pointer here because we are borrowing
             // mutable references to the internals of each of these
             // mutable nodes, while still using the outer node.
@@ -446,14 +436,8 @@ macro_rules! bound {
             // values of the map (as the return value of the
             // iterator), i.e. we can never cause a deallocation of any
             // InternalNodes so the raw pointer is always valid.
-            //
-            // # For non-`mut`
-            // We like sharing code so much that even a little unsafe won't
-            // stop us.
             let this = $this;
-            let mut node = unsafe {
-                mem::transmute::<&InternalNode<T>, usize>(&this.root) as *mut InternalNode<T>
-            };
+            let mut node = & $($mut_)* this.root as *$($mut_)* $($const_)* InternalNode<T>;
 
             let key = $key;
 
@@ -462,35 +446,32 @@ macro_rules! bound {
             it.remaining = this.length;
 
             // this addr is necessary for the `Internal` pattern.
-            addr!(loop {
-                    let children = unsafe {addr!(& $($mut_)* (*node).children)};
-                    // it.length is the current depth in the iterator and the
-                    // current depth through the `usize` key we've traversed.
-                    let child_id = chunk(key, it.length);
-                    let (slice_idx, ret) = match children[child_id] {
-                        Internal(ref $($mut_)* n) => {
-                            node = unsafe {
-                                mem::transmute::<&InternalNode<T>, usize>(&**n)
-                                    as *mut InternalNode<T>
-                            };
-                            (child_id + 1, false)
-                        }
-                        External(stored, _) => {
-                            (if stored < key || ($upper && stored == key) {
-                                child_id + 1
-                            } else {
-                                child_id
-                            }, true)
-                        }
-                        Nothing => {
-                            (child_id + 1, true)
-                        }
-                    };
-                    // push to the stack.
-                    it.stack[it.length] = children[slice_idx..].$iter();
-                    it.length += 1;
-                    if ret { break }
-                });
+            loop {
+                let children = unsafe { & $($mut_)* (*node).children };
+                // it.length is the current depth in the iterator and the
+                // current depth through the `usize` key we've traversed.
+                let child_id = chunk(key, it.length);
+                let (slice_idx, ret) = match & $($mut_)* children[child_id] {
+                    & $($mut_)* Internal(ref $($mut_)* n) => {
+                        node = (& $($mut_)* **n) as *$($mut_)* $($const_)* _;
+                        (child_id + 1, false)
+                    }
+                    & $($mut_)* External(stored, _) => {
+                        (if stored < key || ($upper && stored == key) {
+                            child_id + 1
+                        } else {
+                            child_id
+                        }, true)
+                    }
+                    & $($mut_)* Nothing => {
+                        (child_id + 1, true)
+                    }
+                };
+                // push to the stack.
+                it.stack[it.length] = children[slice_idx..].$iter();
+                it.length += 1;
+                if ret { break }
+            }
 
             it
         }
@@ -504,7 +485,7 @@ impl<T> Map<T> {
         Range(bound!(Iter, self = self,
                key = key, is_upper = upper,
                iter = iter,
-               mutability = ))
+               mutability = (), const = (const)))
     }
 
     /// Gets an iterator pointing to the first key-value pair whose key is not less than `key`.
@@ -544,7 +525,7 @@ impl<T> Map<T> {
         RangeMut(bound!(IterMut, self = self,
                key = key, is_upper = upper,
                iter = iter_mut,
-               mutability = mut))
+               mutability = (mut), const = ()))
     }
 
     /// Gets an iterator pointing to the first key-value pair whose key is not less than `key`.
@@ -873,11 +854,16 @@ pub struct VacantEntry<'a, T: 'a> {
 /// Invariants:
 /// * The last node is either `External` or `Nothing`.
 /// * Pointers at indexes less than `length` can be safely dereferenced.
+///
+/// we can only use raw pointers, because of stacked borrows.
+/// Source:
+/// https://rust-unofficial.github.io/too-many-lists/fifth-stacked-borrows.html#managing-stacked-borrows
 struct SearchStack<'a, T: 'a> {
-    map: &'a mut Map<T>,
+    map: *mut Map<T>,
     length: usize,
     key: usize,
     items: [*mut TrieNode<T>; MAX_DEPTH],
+    phantom: PhantomData<&'a mut Map<T>>,
 }
 
 impl<'a, T> SearchStack<'a, T> {
@@ -888,6 +874,7 @@ impl<'a, T> SearchStack<'a, T> {
             length: 0,
             key,
             items: [ptr::null_mut(); MAX_DEPTH],
+            phantom: PhantomData,
         }
     }
 
@@ -930,7 +917,8 @@ impl<T> Map<T> {
         let mut search_stack = SearchStack::new(self, key);
 
         // Unconditionally add the corresponding node from the first layer.
-        let first_node = &mut search_stack.map.root.children[chunk(key, 0)] as *mut _;
+        let first_node =
+            unsafe { (&mut (*search_stack.map).root.children[chunk(key, 0)]) as *mut _ };
         search_stack.push(first_node);
 
         // While no appropriate slot is found, keep descending down the Trie,
@@ -1062,7 +1050,9 @@ impl<'a, T> OccupiedEntry<'a, T> {
         }
 
         // Decrement the length of the entire map, for the removed node.
-        search_stack.map.length -= 1;
+        unsafe {
+            (*search_stack.map).length -= 1;
+        }
 
         value
     }
@@ -1076,15 +1066,19 @@ impl<'a, T> VacantEntry<'a, T> {
         let key = search_stack.key;
 
         // Update the map's length for the new element.
-        search_stack.map.length += 1;
+        unsafe {
+            (*search_stack.map).length += 1;
+        }
 
         // If there's only 1 node in the search stack, insert a new node below it at idx 1.
         if old_length == 1 {
-            // Note: Small hack to appease the borrow checker. Can't mutably borrow root.count
-            let mut temp = search_stack.map.root.count;
-            let (value_ref, _) = insert(&mut temp, search_stack.get_ref(0), key, value, 1);
-            search_stack.map.root.count = temp;
-            value_ref
+            unsafe {
+                // Note: Small hack to appease the borrow checker. Can't mutably borrow root.count
+                let mut temp = (*search_stack.map).root.count;
+                let (value_ref, _) = insert(&mut temp, search_stack.get_ref(0), key, value, 1);
+                (*search_stack.map).root.count = temp;
+                value_ref
+            }
         }
         // Otherwise, find the predecessor of the last stack node, and insert as normal.
         else {
@@ -1208,13 +1202,6 @@ impl<'a, T> Iterator for Values<'a, T> {
 
 impl<'a, T> ExactSizeIterator for Values<'a, T> {}
 
-// FIXME #5846: see `addr!` above.
-macro_rules! item {
-    ($i:item) => {
-        $i
-    };
-}
-
 macro_rules! iterator_impl {
     ($name:ident,
      iter = $iter:ident,
@@ -1272,7 +1259,7 @@ macro_rules! iterator_impl {
             }
         }
 
-        item!(impl<'a, T> Iterator for $name<'a, T> {
+        impl<'a, T> Iterator for $name<'a, T> {
                 type Item = (usize, &'a $($mut_)* T);
                 // you might wonder why we're not even trying to act within the
                 // rules, and are just manipulating raw pointers like there's no
@@ -1310,27 +1297,27 @@ macro_rules! iterator_impl {
                                 // first.
                                 None => write_ptr = write_ptr.offset(-1),
                                 Some(child) => {
-                                    addr!(match *child {
-                                            Internal(ref $($mut_)* node) => {
-                                                // going down a level, so push
-                                                // to the stack (this is the
-                                                // write referenced above)
-                                                *write_ptr = node.children.$iter();
-                                                write_ptr = write_ptr.offset(1);
-                                            }
-                                            External(key, ref $($mut_)* value) => {
-                                                self.remaining -= 1;
-                                                // store the new length of the
-                                                // stack, based on our current
-                                                // position.
-                                                self.length = (write_ptr as usize
-                                                               - start_ptr as usize) /
-                                                    mem::size_of_val(&*write_ptr);
+                                    match *child {
+                                        Internal(ref $($mut_)* node) => {
+                                            // going down a level, so push
+                                            // to the stack (this is the
+                                            // write referenced above)
+                                            *write_ptr = node.children.$iter();
+                                            write_ptr = write_ptr.offset(1);
+                                        }
+                                        External(key, ref $($mut_)* value) => {
+                                            self.remaining -= 1;
+                                            // store the new length of the
+                                            // stack, based on our current
+                                            // position.
+                                            self.length = (write_ptr as usize
+                                                            - start_ptr as usize) /
+                                                mem::size_of::<slice::Iter<'_, TrieNode<T>>>();
 
-                                                return Some((key, value));
-                                            }
-                                            Nothing => {}
-                                        })
+                                            return Some((key, value));
+                                        }
+                                        Nothing => {}
+                                    }
                                 }
                             }
                         }
@@ -1342,7 +1329,7 @@ macro_rules! iterator_impl {
                 fn size_hint(&self) -> (usize, Option<usize>) {
                     (self.remaining, Some(self.remaining))
                 }
-            });
+            }
 
         impl<'a, T> ExactSizeIterator for $name<'a, T> {
             fn len(&self) -> usize { self.remaining }
