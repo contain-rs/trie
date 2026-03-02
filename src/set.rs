@@ -424,7 +424,7 @@ impl Extend<usize> for Set {
     }
 }
 
-impl<'a, 'b> ops::BitOr<&'b Set> for &'a Set {
+impl ops::BitOr<&Set> for &Set {
     type Output = Set;
 
     /// Returns the union of `self` and `rhs` as a new set.
@@ -444,7 +444,7 @@ impl<'a, 'b> ops::BitOr<&'b Set> for &'a Set {
     }
 }
 
-impl<'a, 'b> ops::BitAnd<&'b Set> for &'a Set {
+impl ops::BitAnd<&Set> for &Set {
     type Output = Set;
 
     /// Returns the intersection of `self` and `rhs` as a new set.
@@ -464,7 +464,7 @@ impl<'a, 'b> ops::BitAnd<&'b Set> for &'a Set {
     }
 }
 
-impl<'a, 'b> ops::BitXor<&'b Set> for &'a Set {
+impl ops::BitXor<&Set> for &Set {
     type Output = Set;
 
     /// Returns the symmetric difference of `self` and `rhs` as a new set.
@@ -484,7 +484,7 @@ impl<'a, 'b> ops::BitXor<&'b Set> for &'a Set {
     }
 }
 
-impl<'a, 'b> ops::Sub<&'b Set> for &'a Set {
+impl ops::Sub<&Set> for &Set {
     type Output = Set;
 
     /// Returns the difference of `self` and `rhs` as a new set.
@@ -664,8 +664,8 @@ impl<'a> IntoIterator for &'a Set {
 
 #[cfg(test)]
 mod test {
-    use super::map::USIZE_BITS;
     use super::Set;
+    use super::map::USIZE_BITS;
 
     #[test]
     fn test_sane_chunk() {
@@ -725,17 +725,17 @@ mod test {
         let mut a = Set::new();
         let mut b = Set::new();
 
-        assert!(!(a < b) && !(b < a));
+        assert!((a >= b) && (b >= a));
         assert!(b.insert(2));
         assert!(a < b);
         assert!(a.insert(3));
-        assert!(!(a < b) && b < a);
+        assert!((a >= b) && b < a);
         assert!(b.insert(1));
         assert!(b < a);
         assert!(a.insert(0));
         assert!(a < b);
         assert!(a.insert(6));
-        assert!(a < b && !(b < a));
+        assert!(a < b && (b >= a));
     }
 
     #[test]
@@ -743,7 +743,7 @@ mod test {
         let mut a = Set::new();
         let mut b = Set::new();
 
-        assert!(a <= b && a >= b);
+        assert!(a == b);
         assert!(a.insert(1));
         assert!(a > b && a >= b);
         assert!(b < a && b <= a);
@@ -752,11 +752,13 @@ mod test {
         assert!(a < b && a <= b);
     }
 
+    #[cfg(feature = "nightly")]
     struct Counter<'a, 'b> {
         i: &'a mut usize,
         expected: &'b [usize],
     }
 
+    #[cfg(feature = "nightly")]
     impl<'a, 'b> FnOnce<(usize,)> for Counter<'a, 'b> {
         type Output = bool;
 
@@ -765,6 +767,7 @@ mod test {
         }
     }
 
+    #[cfg(feature = "nightly")]
     impl<'a, 'b> FnMut<(usize,)> for Counter<'a, 'b> {
         extern "rust-call" fn call_mut(&mut self, (x,): (usize,)) -> bool {
             assert_eq!(x, self.expected[*self.i]);
@@ -773,6 +776,7 @@ mod test {
         }
     }
 
+    #[cfg(feature = "nightly")]
     fn check<F>(a: &[usize], b: &[usize], expected: &[usize], f: F)
     where
         // FIXME Replace `Counter` with `Box<FnMut(&usize) -> bool>`
@@ -794,12 +798,13 @@ mod test {
             &set_b,
             Counter {
                 i: &mut i,
-                expected: expected,
+                expected,
             },
         );
         assert_eq!(i, expected.len());
     }
 
+    #[cfg(feature = "nightly")]
     #[test]
     fn test_intersection() {
         fn check_intersection(a: &[usize], b: &[usize], expected: &[usize]) {
@@ -814,6 +819,7 @@ mod test {
         check_intersection(&[11, 1, 3, 77, 103, 5], &[2, 11, 77, 5, 3], &[3, 5, 11, 77]);
     }
 
+    #[cfg(feature = "nightly")]
     #[test]
     fn test_difference() {
         fn check_difference(a: &[usize], b: &[usize], expected: &[usize]) {
@@ -831,6 +837,7 @@ mod test {
         );
     }
 
+    #[cfg(feature = "nightly")]
     #[test]
     fn test_symmetric_difference() {
         fn check_symmetric_difference(a: &[usize], b: &[usize], expected: &[usize]) {
@@ -843,6 +850,7 @@ mod test {
         check_symmetric_difference(&[1, 3, 5, 9, 11], &[3, 9, 14, 22], &[1, 5, 11, 14, 22]);
     }
 
+    #[cfg(feature = "nightly")]
     #[test]
     fn test_union() {
         fn check_union(a: &[usize], b: &[usize], expected: &[usize]) {

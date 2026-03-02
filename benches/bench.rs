@@ -132,17 +132,17 @@ macro_rules! map_find_seq_bench {
     };
 }
 
-map_insert_rand_bench!{insert_rand_100,    100,    Map}
-map_insert_rand_bench!{insert_rand_10_000, 10_000, Map}
+map_insert_rand_bench! {insert_rand_100,    100,    Map}
+map_insert_rand_bench! {insert_rand_10_000, 10_000, Map}
 
-map_insert_seq_bench!{insert_seq_100,    100,    Map}
-map_insert_seq_bench!{insert_seq_10_000, 10_000, Map}
+map_insert_seq_bench! {insert_seq_100,    100,    Map}
+map_insert_seq_bench! {insert_seq_10_000, 10_000, Map}
 
-map_find_rand_bench!{find_rand_100,    100,    Map}
-map_find_rand_bench!{find_rand_10_000, 10_000, Map}
+map_find_rand_bench! {find_rand_100,    100,    Map}
+map_find_rand_bench! {find_rand_10_000, 10_000, Map}
 
-map_find_seq_bench!{find_seq_100,    100,    Map}
-map_find_seq_bench!{find_seq_10_000, 10_000, Map}
+map_find_seq_bench! {find_seq_100,    100,    Map}
+map_find_seq_bench! {find_seq_10_000, 10_000, Map}
 
 fn random_map(size: usize) -> Map<usize> {
     let mut map = Map::<usize>::new();
@@ -228,8 +228,12 @@ fn bench_insert_large_entry(b: &mut test::Bencher) {
     b.iter(|| {
         for _ in 0..MAP_SIZE {
             match m.entry(rng.random::<u32>() as usize) {
-                Occupied(mut e) => { e.insert([1; 10]); },
-                Vacant(e) => { e.insert([1; 10]); }
+                Occupied(mut e) => {
+                    e.insert([1; 10]);
+                }
+                Vacant(e) => {
+                    e.insert([1; 10]);
+                }
             }
         }
     });
@@ -290,9 +294,8 @@ fn bench_get_entry(b: &mut test::Bencher) {
     let keys: Vec<usize> = map.keys().collect();
     b.iter(|| {
         for key in keys.iter() {
-            match map.entry(*key) {
-                Occupied(e) => { black_box(e.get()); },
-                _ => ()
+            if let Occupied(e) = map.entry(*key) {
+                black_box(e.get());
             }
         }
     });
@@ -315,9 +318,8 @@ fn bench_remove_entry(b: &mut test::Bencher) {
         let mut map = random_map(MAP_SIZE);
         let keys: Vec<usize> = map.keys().collect();
         for key in keys.iter() {
-            match map.entry(*key) {
-                Occupied(e) => { black_box(e.remove()); },
-                _ => ()
+            if let Occupied(e) = map.entry(*key) {
+                black_box(e.remove());
             }
         }
     });

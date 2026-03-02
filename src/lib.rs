@@ -10,15 +10,11 @@
 
 //! An ordered map and set based on a trie.
 
-#![cfg_attr(test, feature(unboxed_closures))]
-#![cfg_attr(test, feature(fn_traits))]
+#![cfg_attr(feature = "nightly", feature(unboxed_closures))]
+#![cfg_attr(feature = "nightly", feature(fn_traits))]
 
 pub use map::Map;
 pub use set::Set;
-
-#[cfg(test)]
-#[macro_use]
-mod bench;
 
 pub mod map;
 pub mod set;
