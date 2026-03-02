@@ -13,9 +13,11 @@
 #![cfg_attr(feature = "nightly", feature(unboxed_closures))]
 #![cfg_attr(feature = "nightly", feature(fn_traits))]
 
-pub use map::Map;
+pub use chunk::Chunk;
+pub type TrieMap<K, V> = map::Map<K, V>;
 pub use set::Set;
 
+pub mod chunk;
 pub mod map;
 pub mod set;
 

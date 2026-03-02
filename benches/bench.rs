@@ -17,7 +17,7 @@ extern crate test;
 use rand::{RngExt, SeedableRng, rngs, seq::SliceRandom};
 use test::black_box;
 
-use trie::{Map, map::Occupied, map::Vacant};
+use trie::{map::Map, map::Occupied, map::Vacant};
 
 const MAP_SIZE: usize = 1000;
 
@@ -144,8 +144,8 @@ map_find_rand_bench! {find_rand_10_000, 10_000, Map}
 map_find_seq_bench! {find_seq_100,    100,    Map}
 map_find_seq_bench! {find_seq_10_000, 10_000, Map}
 
-fn random_map(size: usize) -> Map<usize> {
-    let mut map = Map::<usize>::new();
+fn random_map(size: usize) -> Map<usize, usize> {
+    let mut map = Map::<usize, usize>::new();
     let mut rng = small_rng();
 
     for _ in 0..size {

@@ -19,6 +19,8 @@ use std::fmt::{self, Debug};
 use std::iter::{self, Peekable};
 use std::ops;
 
+use crate::Chunk;
+
 use super::map::{self, Map};
 
 /// A set implemented as a radix trie.
@@ -49,17 +51,17 @@ use super::map::{self, Map};
 /// assert!(set.is_empty());
 /// ```
 #[derive(Clone, Default, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Set {
-    map: Map<()>,
+pub struct Set<T: Chunk> {
+    map: Map<T, ()>,
 }
 
-impl Debug for Set {
+impl<T: Chunk + Debug + PartialOrd> Debug for Set<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_set().entries(self.iter()).finish()
     }
 }
 
-impl Set {
+impl<T: Chunk> Set<T> {
     /// Creates an empty set.
     ///
     /// # Examples
@@ -68,7 +70,7 @@ impl Set {
     /// let mut set = trie::Set::new();
     /// ```
     #[inline]
-    pub fn new() -> Set {
+    pub fn new() -> Set<T> {
         Set { map: Map::new() }
     }
 
@@ -92,7 +94,7 @@ impl Set {
     #[inline]
     pub fn each_reverse<F>(&self, mut f: F) -> bool
     where
-        F: FnMut(&usize) -> bool,
+        F: FnMut(&T) -> bool,
     {
         self.map.each_reverse(|k, _| f(k))
     }
@@ -114,12 +116,14 @@ impl Set {
     /// }
     /// ```
     #[inline]
-    pub fn iter(&self) -> Iter<'_> {
+    pub fn iter(&self) -> Iter<'_, T> {
         Iter {
             iter: self.map.iter(),
         }
     }
+}
 
+impl<T: Chunk + PartialOrd> Set<T> {
     /// Gets an iterator pointing to the first value that is not less than `val`.
     /// If all values in the set are less than `val` an empty iterator is returned.
     ///
@@ -131,7 +135,7 @@ impl Set {
     /// assert_eq!(set.lower_bound(5).next(), Some(6));
     /// assert_eq!(set.lower_bound(10).next(), None);
     /// ```
-    pub fn lower_bound(&self, val: usize) -> Range<'_> {
+    pub fn lower_bound(&self, val: &T) -> Range<'_, T> {
         Range {
             iter: self.map.lower_bound(val),
         }
@@ -148,7 +152,7 @@ impl Set {
     /// assert_eq!(set.upper_bound(5).next(), Some(6));
     /// assert_eq!(set.upper_bound(10).next(), None);
     /// ```
-    pub fn upper_bound(&self, val: usize) -> Range<'_> {
+    pub fn upper_bound(&self, val: &T) -> Range<'_, T> {
         Range {
             iter: self.map.upper_bound(val),
         }
@@ -175,7 +179,7 @@ impl Set {
     /// let diff2: trie::Set = b.difference(&a).collect();
     /// assert_eq!(diff2, [4, 5].iter().cloned().collect());
     /// ```
-    pub fn difference<'a>(&'a self, other: &'a Set) -> Difference<'a> {
+    pub fn difference<'a>(&'a self, other: &'a Set<T>) -> Difference<'a, T> {
         Difference {
             a: self.iter().peekable(),
             b: other.iter().peekable(),
@@ -201,7 +205,7 @@ impl Set {
     /// assert_eq!(diff1, diff2);
     /// assert_eq!(diff1, [1, 2, 4, 5].iter().cloned().collect());
     /// ```
-    pub fn symmetric_difference<'a>(&'a self, other: &'a Set) -> SymmetricDifference<'a> {
+    pub fn symmetric_difference<'a>(&'a self, other: &'a Set<T>) -> SymmetricDifference<'a, T> {
         SymmetricDifference {
             a: self.iter().peekable(),
             b: other.iter().peekable(),
@@ -224,7 +228,7 @@ impl Set {
     /// let diff: trie::Set = a.intersection(&b).collect();
     /// assert_eq!(diff, [2, 3].iter().cloned().collect());
     /// ```
-    pub fn intersection<'a>(&'a self, other: &'a Set) -> Intersection<'a> {
+    pub fn intersection<'a>(&'a self, other: &'a Set<T>) -> Intersection<'a, T> {
         Intersection {
             a: self.iter().peekable(),
             b: other.iter().peekable(),
@@ -236,24 +240,26 @@ impl Set {
     /// # Examples
     ///
     /// ```
-    /// let a: trie::Set = [1, 2, 3].iter().cloned().collect();
-    /// let b: trie::Set = [3, 4, 5].iter().cloned().collect();
+    /// let a: trie::Set<usize> = [1, 2, 3].iter().cloned().collect();
+    /// let b: trie::Set<usize> = [3, 4, 5].iter().cloned().collect();
     ///
     /// // Print 1, 2, 3, 4, 5 in ascending order.
     /// for x in a.union(&b) {
     ///     println!("{}", x);
     /// }
     ///
-    /// let diff: trie::Set = a.union(&b).collect();
+    /// let diff: trie::Set<usize> = a.union(&b).collect();
     /// assert_eq!(diff, [1, 2, 3, 4, 5].iter().cloned().collect());
     /// ```
-    pub fn union<'a>(&'a self, other: &'a Set) -> Union<'a> {
+    pub fn union<'a>(&'a self, other: &'a Set<T>) -> Union<'a, T> {
         Union {
             a: self.iter().peekable(),
             b: other.iter().peekable(),
         }
     }
+}
 
+impl<T: Chunk> Set<T> {
     /// Return the number of elements in the set
     ///
     /// # Examples
@@ -308,7 +314,7 @@ impl Set {
     /// assert_eq!(set.contains(&4), false);
     /// ```
     #[inline]
-    pub fn contains(&self, value: &usize) -> bool {
+    pub fn contains(&self, value: &T) -> bool {
         self.map.contains_key(value)
     }
 
@@ -328,8 +334,8 @@ impl Set {
     /// assert_eq!(a.is_disjoint(&b), false);
     /// ```
     #[inline]
-    pub fn is_disjoint(&self, other: &Set) -> bool {
-        self.iter().all(|v| !other.contains(&v))
+    pub fn is_disjoint(&self, other: &Set<T>) -> bool {
+        self.iter().all(|v| !other.contains(v))
     }
 
     /// Returns `true` if the set is a subset of another.
@@ -347,8 +353,8 @@ impl Set {
     /// assert_eq!(set.is_subset(&sup), false);
     /// ```
     #[inline]
-    pub fn is_subset(&self, other: &Set) -> bool {
-        self.iter().all(|v| other.contains(&v))
+    pub fn is_subset(&self, other: &Set<T>) -> bool {
+        self.iter().all(|v| other.contains(v))
     }
 
     /// Returns `true` if the set is a superset of another.
@@ -369,7 +375,7 @@ impl Set {
     /// assert_eq!(set.is_superset(&sub), true);
     /// ```
     #[inline]
-    pub fn is_superset(&self, other: &Set) -> bool {
+    pub fn is_superset(&self, other: &Set<T>) -> bool {
         other.is_subset(self)
     }
 
@@ -386,7 +392,7 @@ impl Set {
     /// assert_eq!(set.len(), 1);
     /// ```
     #[inline]
-    pub fn insert(&mut self, value: usize) -> bool {
+    pub fn insert(&mut self, value: T) -> bool {
         self.map.insert(value, ()).is_none()
     }
 
@@ -403,29 +409,29 @@ impl Set {
     /// assert_eq!(set.remove(&2), false);
     /// ```
     #[inline]
-    pub fn remove(&mut self, value: &usize) -> bool {
+    pub fn remove(&mut self, value: &T) -> bool {
         self.map.remove(value).is_some()
     }
 }
 
-impl iter::FromIterator<usize> for Set {
-    fn from_iter<I: IntoIterator<Item = usize>>(iter: I) -> Set {
+impl<T: Chunk> iter::FromIterator<T> for Set<T> {
+    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Set<T> {
         let mut set = Set::new();
         set.extend(iter);
         set
     }
 }
 
-impl Extend<usize> for Set {
-    fn extend<I: IntoIterator<Item = usize>>(&mut self, iter: I) {
+impl<T: Chunk> Extend<T> for Set<T> {
+    fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
         for elem in iter {
             self.insert(elem);
         }
     }
 }
 
-impl ops::BitOr<&Set> for &Set {
-    type Output = Set;
+impl<T: Chunk + Clone + Ord> ops::BitOr<&Set<T>> for &Set<T> {
+    type Output = Set<T>;
 
     /// Returns the union of `self` and `rhs` as a new set.
     ///
@@ -439,13 +445,13 @@ impl ops::BitOr<&Set> for &Set {
     /// let v: Vec<usize> = set.iter().collect();
     /// assert_eq!(v, [1, 2, 3, 4, 5]);
     /// ```
-    fn bitor(self, rhs: &Set) -> Set {
-        self.union(rhs).collect()
+    fn bitor(self, rhs: &Set<T>) -> Set<T> {
+        self.union(rhs).cloned().collect()
     }
 }
 
-impl ops::BitAnd<&Set> for &Set {
-    type Output = Set;
+impl<T: Chunk + Clone + Ord> ops::BitAnd<&Set<T>> for &Set<T> {
+    type Output = Set<T>;
 
     /// Returns the intersection of `self` and `rhs` as a new set.
     ///
@@ -459,13 +465,13 @@ impl ops::BitAnd<&Set> for &Set {
     /// let v: Vec<usize> = set.iter().collect();
     /// assert_eq!(v, [2, 3]);
     /// ```
-    fn bitand(self, rhs: &Set) -> Set {
-        self.intersection(rhs).collect()
+    fn bitand(self, rhs: &Set<T>) -> Set<T> {
+        self.intersection(rhs).cloned().collect()
     }
 }
 
-impl ops::BitXor<&Set> for &Set {
-    type Output = Set;
+impl<T: Chunk + Clone + Ord> ops::BitXor<&Set<T>> for &Set<T> {
+    type Output = Set<T>;
 
     /// Returns the symmetric difference of `self` and `rhs` as a new set.
     ///
@@ -479,13 +485,13 @@ impl ops::BitXor<&Set> for &Set {
     /// let v: Vec<usize> = set.iter().collect();
     /// assert_eq!(v, [1, 2, 4, 5]);
     /// ```
-    fn bitxor(self, rhs: &Set) -> Set {
-        self.symmetric_difference(rhs).collect()
+    fn bitxor(self, rhs: &Set<T>) -> Set<T> {
+        self.symmetric_difference(rhs).cloned().collect()
     }
 }
 
-impl ops::Sub<&Set> for &Set {
-    type Output = Set;
+impl<T: Chunk + Clone + Ord> ops::Sub<&Set<T>> for &Set<T> {
+    type Output = Set<T>;
 
     /// Returns the difference of `self` and `rhs` as a new set.
     ///
@@ -499,53 +505,53 @@ impl ops::Sub<&Set> for &Set {
     /// let v: Vec<usize> = set.iter().collect();
     /// assert_eq!(v, [1, 2]);
     /// ```
-    fn sub(self, rhs: &Set) -> Set {
-        self.difference(rhs).collect()
+    fn sub(self, rhs: &Set<T>) -> Set<T> {
+        self.difference(rhs).cloned().collect()
     }
 }
 
 /// A forward iterator over a set.
 #[derive(Clone)]
-pub struct Iter<'a> {
-    iter: map::Iter<'a, ()>,
+pub struct Iter<'a, T: 'a> {
+    iter: map::Iter<'a, T, ()>,
 }
 
 /// A bounded forward iterator over a set.
 #[derive(Clone)]
-pub struct Range<'a> {
-    iter: map::Range<'a, ()>,
+pub struct Range<'a, T: 'a> {
+    iter: map::Range<'a, T, ()>,
 }
 
 /// An iterator producing elements in the set difference (in-order).
 #[derive(Clone)]
-pub struct Difference<'a> {
-    a: Peekable<Iter<'a>>,
-    b: Peekable<Iter<'a>>,
+pub struct Difference<'a, T: 'a> {
+    a: Peekable<Iter<'a, T>>,
+    b: Peekable<Iter<'a, T>>,
 }
 
 /// An iterator producing elements in the set symmetric difference (in-order).
 #[derive(Clone)]
-pub struct SymmetricDifference<'a> {
-    a: Peekable<Iter<'a>>,
-    b: Peekable<Iter<'a>>,
+pub struct SymmetricDifference<'a, T: 'a> {
+    a: Peekable<Iter<'a, T>>,
+    b: Peekable<Iter<'a, T>>,
 }
 
 /// An iterator producing elements in the set intersection (in-order).
 #[derive(Clone)]
-pub struct Intersection<'a> {
-    a: Peekable<Iter<'a>>,
-    b: Peekable<Iter<'a>>,
+pub struct Intersection<'a, T: 'a> {
+    a: Peekable<Iter<'a, T>>,
+    b: Peekable<Iter<'a, T>>,
 }
 
 /// An iterator producing elements in the set union (in-order).
 #[derive(Clone)]
-pub struct Union<'a> {
-    a: Peekable<Iter<'a>>,
-    b: Peekable<Iter<'a>>,
+pub struct Union<'a, T: 'a> {
+    a: Peekable<Iter<'a, T>>,
+    b: Peekable<Iter<'a, T>>,
 }
 
 /// Compare `x` and `y`, but return `short` if x is None and `long` if y is None
-fn cmp_opt(x: Option<&usize>, y: Option<&usize>, short: Ordering, long: Ordering) -> Ordering {
+fn cmp_opt<T: Ord>(x: Option<&T>, y: Option<&T>, short: Ordering, long: Ordering) -> Ordering {
     match (x, y) {
         (None, _) => short,
         (_, None) => long,
@@ -553,9 +559,9 @@ fn cmp_opt(x: Option<&usize>, y: Option<&usize>, short: Ordering, long: Ordering
     }
 }
 
-impl<'a> Iterator for Iter<'a> {
-    type Item = usize;
-    fn next(&mut self) -> Option<usize> {
+impl<'a, T: 'a> Iterator for Iter<'a, T> {
+    type Item = &'a T;
+    fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|(key, _)| key)
     }
 
@@ -564,15 +570,15 @@ impl<'a> Iterator for Iter<'a> {
     }
 }
 
-impl<'a> ExactSizeIterator for Iter<'a> {
+impl<'a, T: 'a> ExactSizeIterator for Iter<'a, T> {
     fn len(&self) -> usize {
         self.iter.len()
     }
 }
 
-impl<'a> Iterator for Range<'a> {
-    type Item = usize;
-    fn next(&mut self) -> Option<usize> {
+impl<'a, T: 'a> Iterator for Range<'a, T> {
+    type Item = &'a T;
+    fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|(key, _)| key)
     }
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -580,11 +586,11 @@ impl<'a> Iterator for Range<'a> {
     }
 }
 
-impl<'a> Iterator for Difference<'a> {
-    type Item = usize;
-    fn next(&mut self) -> Option<usize> {
+impl<'a, T: 'a + Ord> Iterator for Difference<'a, T> {
+    type Item = &'a T;
+    fn next(&mut self) -> Option<Self::Item> {
         loop {
-            match cmp_opt(self.a.peek(), self.b.peek(), Less, Less) {
+            match cmp_opt(self.a.peek().copied(), self.b.peek().copied(), Less, Less) {
                 Less => return self.a.next(),
                 Equal => {
                     self.a.next();
@@ -598,11 +604,11 @@ impl<'a> Iterator for Difference<'a> {
     }
 }
 
-impl<'a> Iterator for SymmetricDifference<'a> {
-    type Item = usize;
-    fn next(&mut self) -> Option<usize> {
+impl<'a, T: Ord + 'a> Iterator for SymmetricDifference<'a, T> {
+    type Item = &'a T;
+    fn next(&mut self) -> Option<Self::Item> {
         loop {
-            match cmp_opt(self.a.peek(), self.b.peek(), Greater, Less) {
+            match cmp_opt(self.a.peek().copied(), self.b.peek().copied(), Greater, Less) {
                 Less => return self.a.next(),
                 Equal => {
                     self.a.next();
@@ -614,9 +620,9 @@ impl<'a> Iterator for SymmetricDifference<'a> {
     }
 }
 
-impl<'a> Iterator for Intersection<'a> {
-    type Item = usize;
-    fn next(&mut self) -> Option<usize> {
+impl<'a, T: Ord + 'a> Iterator for Intersection<'a, T> {
+    type Item = &'a T;
+    fn next(&mut self) -> Option<Self::Item> {
         loop {
             let o_cmp = match (self.a.peek(), self.b.peek()) {
                 (None, _) => None,
@@ -640,10 +646,10 @@ impl<'a> Iterator for Intersection<'a> {
     }
 }
 
-impl<'a> Iterator for Union<'a> {
-    type Item = usize;
-    fn next(&mut self) -> Option<usize> {
-        match cmp_opt(self.a.peek(), self.b.peek(), Greater, Less) {
+impl<'a, T: Ord + 'a> Iterator for Union<'a, T> {
+    type Item = &'a T;
+    fn next(&mut self) -> Option<Self::Item> {
+        match cmp_opt(self.a.peek().copied(), self.b.peek().copied(), Greater, Less) {
             Less => self.a.next(),
             Equal => {
                 self.b.next();
@@ -654,10 +660,10 @@ impl<'a> Iterator for Union<'a> {
     }
 }
 
-impl<'a> IntoIterator for &'a Set {
-    type Item = usize;
-    type IntoIter = Iter<'a>;
-    fn into_iter(self) -> Iter<'a> {
+impl<'a, T: Chunk + 'a> IntoIterator for &'a Set<T> {
+    type Item = &'a T;
+    type IntoIter = Iter<'a, T>;
+    fn into_iter(self) -> Iter<'a, T> {
         self.iter()
     }
 }
@@ -665,7 +671,7 @@ impl<'a> IntoIterator for &'a Set {
 #[cfg(test)]
 mod test {
     use super::Set;
-    use super::map::USIZE_BITS;
+    use crate::chunk::USIZE_BITS;
 
     #[test]
     fn test_sane_chunk() {
@@ -681,7 +687,7 @@ mod test {
 
         let expected = [x, y];
 
-        for (i, x) in trie.iter().enumerate() {
+        for (i, &x) in trie.iter().enumerate() {
             assert_eq!(expected[i], x);
         }
     }
@@ -690,7 +696,7 @@ mod test {
     fn test_from_iter() {
         let xs = [9, 8, 7, 6, 5, 4, 3, 2, 1];
 
-        let set: Set = xs.iter().cloned().collect();
+        let set: Set<usize> = xs.iter().cloned().collect();
 
         for x in xs.iter() {
             assert!(set.contains(x));
@@ -700,7 +706,7 @@ mod test {
     #[test]
     fn test_debug() {
         let mut set = Set::new();
-        let empty = Set::new();
+        let empty: Set<usize> = Set::new();
 
         set.insert(1);
         set.insert(2);
@@ -869,41 +875,41 @@ mod test {
 
     #[test]
     fn test_bit_or() {
-        let a: Set = [1, 2, 3].iter().cloned().collect();
-        let b: Set = [3, 4, 5].iter().cloned().collect();
+        let a: Set<usize> = [1, 2, 3].iter().cloned().collect();
+        let b: Set<usize> = [3, 4, 5].iter().cloned().collect();
 
-        let set: Set = &a | &b;
-        let v: Vec<usize> = set.iter().collect();
+        let set: Set<usize> = &a | &b;
+        let v: Vec<usize> = set.iter().copied().collect();
         assert_eq!(v, [1, 2, 3, 4, 5]);
     }
 
     #[test]
     fn test_bit_and() {
-        let a: Set = [1, 2, 3].iter().cloned().collect();
-        let b: Set = [2, 3, 4].iter().cloned().collect();
+        let a: Set<usize> = [1, 2, 3].iter().cloned().collect();
+        let b: Set<usize> = [2, 3, 4].iter().cloned().collect();
 
-        let set: Set = &a & &b;
-        let v: Vec<usize> = set.iter().collect();
+        let set: Set<usize> = &a & &b;
+        let v: Vec<usize> = set.iter().copied().collect();
         assert_eq!(v, [2, 3]);
     }
 
     #[test]
     fn test_bit_xor() {
-        let a: Set = [1, 2, 3].iter().cloned().collect();
-        let b: Set = [3, 4, 5].iter().cloned().collect();
+        let a: Set<usize> = [1, 2, 3].iter().cloned().collect();
+        let b: Set<usize> = [3, 4, 5].iter().cloned().collect();
 
-        let set: Set = &a ^ &b;
-        let v: Vec<usize> = set.iter().collect();
+        let set: Set<usize> = &a ^ &b;
+        let v: Vec<usize> = set.iter().copied().collect();
         assert_eq!(v, [1, 2, 4, 5]);
     }
 
     #[test]
     fn test_sub() {
-        let a: Set = [1, 2, 3].iter().cloned().collect();
-        let b: Set = [3, 4, 5].iter().cloned().collect();
+        let a: Set<usize> = [1, 2, 3].iter().cloned().collect();
+        let b: Set<usize> = [3, 4, 5].iter().cloned().collect();
 
-        let set: Set = &a - &b;
-        let v: Vec<usize> = set.iter().collect();
+        let set: Set<usize> = &a - &b;
+        let v: Vec<usize> = set.iter().copied().collect();
         assert_eq!(v, [1, 2]);
     }
 }

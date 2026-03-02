@@ -10,6 +10,9 @@
 
 //! An ordered map based on a trie.
 
+use crate::Chunk;
+use crate::chunk::{MAX_DEPTH, SIZE};
+
 pub use self::Entry::*;
 use self::TrieNode::*;
 
@@ -22,23 +25,6 @@ use std::mem;
 use std::ops;
 use std::ptr;
 use std::slice;
-
-#[cfg(target_pointer_width = "32")]
-pub const USIZE_BITS: usize = 32;
-
-#[cfg(target_pointer_width = "64")]
-pub const USIZE_BITS: usize = 64;
-
-// FIXME(conventions): implement bounded iterators
-// FIXME(conventions): implement into_iter
-// FIXME(conventions): replace each_reverse by making iter DoubleEnded
-
-// FIXME: #5244: need to manually update the InternalNode constructor
-const SHIFT: usize = 4;
-const SIZE: usize = 1 << SHIFT;
-const MASK: usize = SIZE - 1;
-// The number of chunks that the key is divided into. Also the maximum depth of the map.
-const MAX_DEPTH: usize = USIZE_BITS / SHIFT;
 
 /// A map implemented as a radix trie.
 ///
@@ -89,8 +75,8 @@ const MAX_DEPTH: usize = USIZE_BITS / SHIFT;
 /// assert!(map.is_empty());
 /// ```
 #[derive(Clone)]
-pub struct Map<T> {
-    root: InternalNode<T>,
+pub struct Map<K, V> {
+    root: InternalNode<K, V>,
     length: usize,
 }
 
@@ -98,57 +84,57 @@ pub struct Map<T> {
 //
 // Throughout this implementation, "idx" is used to refer to a section of key that is used
 // to access a node. The layer of the tree directly below the root corresponds to idx 0.
-struct InternalNode<T> {
+struct InternalNode<K, V> {
     // The number of direct children which are external (i.e. that store a value).
     count: usize,
-    children: [TrieNode<T>; SIZE],
+    children: [TrieNode<K, V>; SIZE],
 }
 
 // Each child of an InternalNode may be internal, in which case nesting continues,
 // external (containing a value), or empty
 #[derive(Clone)]
-enum TrieNode<T> {
-    Internal(Box<InternalNode<T>>),
-    External(usize, T),
+enum TrieNode<K, V> {
+    Internal(Box<InternalNode<K, V>>),
+    External(K, V),
     Nothing,
 }
 
-impl<T: PartialEq> PartialEq for Map<T> {
-    fn eq(&self, other: &Map<T>) -> bool {
+impl<K: Chunk, V: PartialEq> PartialEq for Map<K, V> {
+    fn eq(&self, other: &Map<K, V>) -> bool {
         self.len() == other.len() && self.iter().zip(other.iter()).all(|(a, b)| a == b)
     }
 }
 
-impl<T: Eq> Eq for Map<T> {}
+impl<K: Chunk, V: Eq> Eq for Map<K, V> {}
 
-impl<T: PartialOrd> PartialOrd for Map<T> {
+impl<K: PartialOrd + Chunk, V: PartialOrd> PartialOrd for Map<K, V> {
     #[inline]
-    fn partial_cmp(&self, other: &Map<T>) -> Option<Ordering> {
+    fn partial_cmp(&self, other: &Map<K, V>) -> Option<Ordering> {
         self.iter().partial_cmp(other.iter())
     }
 }
 
-impl<T: Ord> Ord for Map<T> {
+impl<K: Ord + Chunk, V: Ord> Ord for Map<K, V> {
     #[inline]
-    fn cmp(&self, other: &Map<T>) -> Ordering {
+    fn cmp(&self, other: &Map<K, V>) -> Ordering {
         self.iter().cmp(other.iter())
     }
 }
 
-impl<T: Debug> Debug for Map<T> {
+impl<K: Debug + Chunk, V: Debug> Debug for Map<K, V> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_map().entries(self.iter()).finish()
     }
 }
 
-impl<T> Default for Map<T> {
+impl<K, V> Default for Map<K, V> {
     #[inline]
-    fn default() -> Map<T> {
+    fn default() -> Map<K, V> {
         Map::new()
     }
 }
 
-impl<T> Map<T> {
+impl<K, V> Map<K, V> {
     /// Creates an empty map.
     ///
     /// # Examples
@@ -157,13 +143,15 @@ impl<T> Map<T> {
     /// let mut map: trie::Map<&str> = trie::Map::new();
     /// ```
     #[inline]
-    pub fn new() -> Map<T> {
+    pub fn new() -> Self {
         Map {
             root: InternalNode::new(),
             length: 0,
         }
     }
+}
 
+impl<K: Chunk, V> Map<K, V> {
     /// Visits all key-value pairs in reverse order. Aborts traversal when `f` returns `false`.
     /// Returns `true` if `f` returns `true` for all elements.
     ///
@@ -184,20 +172,20 @@ impl<T> Map<T> {
     #[inline]
     pub fn each_reverse<'a, F>(&'a self, mut f: F) -> bool
     where
-        F: FnMut(&usize, &'a T) -> bool,
+        F: FnMut(&K, &'a V) -> bool,
     {
         self.root.each_reverse(&mut f)
     }
 
     /// Gets an iterator visiting all keys in ascending order by the keys.
     /// The iterator's element type is `usize`.
-    pub fn keys(&self) -> Keys<'_, T> {
+    pub fn keys(&self) -> Keys<'_, K, V> {
         Keys(self.iter())
     }
 
     /// Gets an iterator visiting all values in ascending order by the keys.
     /// The iterator's element type is `&'r T`.
-    pub fn values(&self) -> Values<'_, T> {
+    pub fn values(&self) -> Values<'_, K, V> {
         Values(self.iter())
     }
 
@@ -212,7 +200,7 @@ impl<T> Map<T> {
     ///     println!("{}: {}", key, value);
     /// }
     /// ```
-    pub fn iter(&self) -> Iter<'_, T> {
+    pub fn iter(&self) -> Iter<'_, K, V> {
         let mut iter = unsafe { Iter::new() };
         iter.stack[0] = self.root.children.iter();
         iter.length = 1;
@@ -237,7 +225,7 @@ impl<T> Map<T> {
     /// assert_eq!(map.get(&2), Some(&-2));
     /// assert_eq!(map.get(&3), Some(&-3));
     /// ```
-    pub fn iter_mut(&mut self) -> IterMut<'_, T> {
+    pub fn iter_mut(&mut self) -> IterMut<'_, K, V> {
         let mut iter = unsafe { IterMut::new() };
         iter.stack[0] = self.root.children.iter_mut();
         iter.length = 1;
@@ -303,14 +291,14 @@ impl<T> Map<T> {
     /// assert_eq!(map.get(&2), None);
     /// ```
     #[inline]
-    pub fn get(&self, key: &usize) -> Option<&T> {
+    pub fn get(&self, key: &K) -> Option<&V> {
         let mut node = &self.root;
         let mut idx = 0;
         loop {
-            match node.children[chunk(*key, idx)] {
+            match node.children[key.chunk(idx)] {
                 Internal(ref x) => node = &**x,
-                External(stored, ref value) => {
-                    if stored == *key {
+                External(ref stored, ref value) => {
+                    if stored == key {
                         return Some(value);
                     } else {
                         return None;
@@ -333,7 +321,7 @@ impl<T> Map<T> {
     /// assert_eq!(map.contains_key(&2), false);
     /// ```
     #[inline]
-    pub fn contains_key(&self, key: &usize) -> bool {
+    pub fn contains_key(&self, key: &K) -> bool {
         self.get(key).is_some()
     }
 
@@ -351,8 +339,8 @@ impl<T> Map<T> {
     /// assert_eq!(map[&1], "b");
     /// ```
     #[inline]
-    pub fn get_mut(&mut self, key: &usize) -> Option<&mut T> {
-        find_mut(&mut self.root.children[chunk(*key, 0)], *key, 1)
+    pub fn get_mut(&mut self, key: &K) -> Option<&mut V> {
+        find_mut(&mut self.root.children[key.chunk(0)], key, 1)
     }
 
     /// Inserts a key-value pair from the map. If the key already had a value
@@ -369,10 +357,10 @@ impl<T> Map<T> {
     /// assert_eq!(map.insert(37, "c"), Some("b"));
     /// assert_eq!(map[&37], "c");
     /// ```
-    pub fn insert(&mut self, key: usize, value: T) -> Option<T> {
+    pub fn insert(&mut self, key: K, value: V) -> Option<V> {
         let (_, old_val) = insert(
             &mut self.root.count,
-            &mut self.root.children[chunk(key, 0)],
+            &mut self.root.children[key.chunk(0)],
             key,
             value,
             1,
@@ -394,11 +382,11 @@ impl<T> Map<T> {
     /// assert_eq!(map.remove(&1), Some("a"));
     /// assert_eq!(map.remove(&1), None);
     /// ```
-    pub fn remove(&mut self, key: &usize) -> Option<T> {
+    pub fn remove(&mut self, key: &K) -> Option<V> {
         let ret = remove(
             &mut self.root.count,
-            &mut self.root.children[chunk(*key, 0)],
-            *key,
+            &mut self.root.children[key.chunk(0)],
+            key,
             1,
         );
         if ret.is_some() {
@@ -437,7 +425,7 @@ macro_rules! bound {
             // iterator), i.e. we can never cause a deallocation of any
             // InternalNodes so the raw pointer is always valid.
             let this = $this;
-            let mut node = & $($mut_)* this.root as *$($mut_)* $($const_)* InternalNode<T>;
+            let mut node = & $($mut_)* this.root as *$($mut_)* $($const_)* InternalNode<K, V>;
 
             let key = $key;
 
@@ -450,13 +438,13 @@ macro_rules! bound {
                 let children = unsafe { & $($mut_)* (*node).children };
                 // it.length is the current depth in the iterator and the
                 // current depth through the `usize` key we've traversed.
-                let child_id = chunk(key, it.length);
+                let child_id = key.chunk(it.length);
                 let (slice_idx, ret) = match & $($mut_)* children[child_id] {
                     & $($mut_)* Internal(ref $($mut_)* n) => {
                         node = (& $($mut_)* **n) as *$($mut_)* $($const_)* _;
                         (child_id + 1, false)
                     }
-                    & $($mut_)* External(stored, _) => {
+                    & $($mut_)* External(ref stored, _) => {
                         (if stored < key || ($upper && stored == key) {
                             child_id + 1
                         } else {
@@ -478,10 +466,10 @@ macro_rules! bound {
     }
 }
 
-impl<T> Map<T> {
+impl<K: Chunk + PartialOrd, V> Map<K, V> {
     // If `upper` is true then returns upper_bound else returns lower_bound.
     #[inline]
-    fn bound(&self, key: usize, upper: bool) -> Range<'_, T> {
+    fn bound(&self, key: &K, upper: bool) -> Range<'_, K, V> {
         Range(bound!(Iter, self = self,
                key = key, is_upper = upper,
                iter = iter,
@@ -500,7 +488,7 @@ impl<T> Map<T> {
     /// assert_eq!(map.lower_bound(5).next(), Some((6, &"c")));
     /// assert_eq!(map.lower_bound(10).next(), None);
     /// ```
-    pub fn lower_bound(&self, key: usize) -> Range<'_, T> {
+    pub fn lower_bound(&self, key: &K) -> Range<'_, K, V> {
         self.bound(key, false)
     }
 
@@ -516,12 +504,12 @@ impl<T> Map<T> {
     /// assert_eq!(map.upper_bound(5).next(), Some((6, &"c")));
     /// assert_eq!(map.upper_bound(10).next(), None);
     /// ```
-    pub fn upper_bound(&self, key: usize) -> Range<'_, T> {
+    pub fn upper_bound(&self, key: &K) -> Range<'_, K, V> {
         self.bound(key, true)
     }
     // If `upper` is true then returns upper_bound else returns lower_bound.
     #[inline]
-    fn bound_mut(&mut self, key: usize, upper: bool) -> RangeMut<'_, T> {
+    fn bound_mut(&mut self, key: &K, upper: bool) -> RangeMut<'_, K, V> {
         RangeMut(bound!(IterMut, self = self,
                key = key, is_upper = upper,
                iter = iter_mut,
@@ -548,7 +536,7 @@ impl<T> Map<T> {
     /// assert_eq!(map.get(&4), Some(&"changed"));
     /// assert_eq!(map.get(&6), Some(&"changed"));
     /// ```
-    pub fn lower_bound_mut(&mut self, key: usize) -> RangeMut<'_, T> {
+    pub fn lower_bound_mut(&mut self, key: &K) -> RangeMut<'_, K, V> {
         self.bound_mut(key, false)
     }
 
@@ -572,28 +560,28 @@ impl<T> Map<T> {
     /// assert_eq!(map.get(&4), Some(&"b"));
     /// assert_eq!(map.get(&6), Some(&"changed"));
     /// ```
-    pub fn upper_bound_mut(&mut self, key: usize) -> RangeMut<'_, T> {
+    pub fn upper_bound_mut(&mut self, key: &K) -> RangeMut<'_, K, V> {
         self.bound_mut(key, true)
     }
 }
 
-impl<T> iter::FromIterator<(usize, T)> for Map<T> {
-    fn from_iter<I: IntoIterator<Item = (usize, T)>>(iter: I) -> Map<T> {
+impl<K: Chunk, V> iter::FromIterator<(K, V)> for Map<K, V> {
+    fn from_iter<I: IntoIterator<Item = (K, V)>>(iter: I) -> Map<K, V> {
         let mut map = Map::new();
         map.extend(iter);
         map
     }
 }
 
-impl<T> Extend<(usize, T)> for Map<T> {
-    fn extend<I: IntoIterator<Item = (usize, T)>>(&mut self, iter: I) {
+impl<K: Chunk, V> Extend<(K, V)> for Map<K, V> {
+    fn extend<I: IntoIterator<Item = (K, V)>>(&mut self, iter: I) {
         for (k, v) in iter {
             self.insert(k, v);
         }
     }
 }
 
-impl<T: Hash> Hash for Map<T> {
+impl<K: Chunk + Hash, V: Hash> Hash for Map<K, V> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         for elt in self.iter() {
             elt.hash(state);
@@ -601,24 +589,24 @@ impl<T: Hash> Hash for Map<T> {
     }
 }
 
-impl<'a, T> ops::Index<&'a usize> for Map<T> {
-    type Output = T;
+impl<'a, K: Chunk + 'a, V> ops::Index<&'a K> for Map<K, V> {
+    type Output = V;
     #[inline]
-    fn index(&self, i: &'a usize) -> &T {
+    fn index(&self, i: &'a K) -> &V {
         self.get(i).expect("key not present")
     }
 }
 
-impl<'a, T> ops::IndexMut<&'a usize> for Map<T> {
+impl<'a, K: Chunk + 'a, V> ops::IndexMut<&'a K> for Map<K, V> {
     #[inline]
-    fn index_mut(&mut self, i: &'a usize) -> &mut T {
+    fn index_mut(&mut self, i: &'a K) -> &mut V {
         self.get_mut(i).expect("key not present")
     }
 }
 
-impl<T: Clone> Clone for InternalNode<T> {
+impl<K: Clone, V: Clone> Clone for InternalNode<K, V> {
     #[inline]
-    fn clone(&self) -> InternalNode<T> {
+    fn clone(&self) -> InternalNode<K, V> {
         let ch = &self.children;
         InternalNode {
             count: self.count,
@@ -644,25 +632,20 @@ impl<T: Clone> Clone for InternalNode<T> {
     }
 }
 
-impl<T> InternalNode<T> {
+impl<K, V> InternalNode<K, V> {
     #[inline]
-    fn new() -> InternalNode<T> {
-        // FIXME: #5244: [Nothing, ..SIZE] should be possible without implicit
-        // copyability
+    fn new() -> Self {
         InternalNode {
             count: 0,
-            children: [
-                Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing,
-                Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing,
-            ],
+            children: [const { Nothing }; SIZE],
         }
     }
 }
 
-impl<T> InternalNode<T> {
+impl<K, V> InternalNode<K, V> {
     fn each_reverse<'a, F>(&'a self, f: &mut F) -> bool
     where
-        F: FnMut(&usize, &'a T) -> bool,
+        F: FnMut(&'a K, &'a V) -> bool,
     {
         for elt in self.children.iter().rev() {
             match *elt {
@@ -671,8 +654,8 @@ impl<T> InternalNode<T> {
                         return false;
                     }
                 }
-                External(k, ref v) => {
-                    if !f(&k, v) {
+                External(ref k, ref v) => {
+                    if !f(k, v) {
                         return false;
                     }
                 }
@@ -683,18 +666,11 @@ impl<T> InternalNode<T> {
     }
 }
 
-// if this was done via a trait, the key could be generic
-#[inline]
-fn chunk(n: usize, idx: usize) -> usize {
-    let sh = USIZE_BITS - (SHIFT * (idx + 1));
-    (n >> sh) & MASK
-}
-
-fn find_mut<T>(child: &mut TrieNode<T>, key: usize, idx: usize) -> Option<&mut T> {
+fn find_mut<'a, K: Chunk, V>(child: &'a mut TrieNode<K, V>, key: &K, idx: usize) -> Option<&'a mut V> {
     match *child {
-        External(stored, ref mut value) if stored == key => Some(value),
+        External(ref stored, ref mut value) if stored == key => Some(value),
         External(..) => None,
-        Internal(ref mut x) => find_mut(&mut x.children[chunk(key, idx)], key, idx + 1),
+        Internal(ref mut x) => find_mut(&mut x.children[key.chunk(idx)], key, idx + 1),
         Nothing => None,
     }
 }
@@ -708,13 +684,13 @@ fn find_mut<T>(child: &mut TrieNode<T>, key: usize, idx: usize) -> Option<&mut T
 /// which will be incremented only if `start_node` is transformed into a *new* external node.
 ///
 /// Returns a mutable reference to the inserted value and an optional previous value.
-fn insert<'a, T>(
+fn insert<'a, K: Chunk, V>(
     count: &mut usize,
-    start_node: &'a mut TrieNode<T>,
-    key: usize,
-    value: T,
+    start_node: &'a mut TrieNode<K, V>,
+    key: K,
+    value: V,
     idx: usize,
-) -> (&'a mut T, Option<T>) {
+) -> (&'a mut V, Option<V>) {
     // We branch twice to avoid having to do the `replace` when we
     // don't need to; this is much faster, especially for keys that
     // have long shared prefixes.
@@ -733,13 +709,13 @@ fn insert<'a, T>(
             let x = &mut **x;
             return insert(
                 &mut x.count,
-                &mut x.children[chunk(key, idx)],
+                &mut x.children[key.chunk(idx)],
                 key,
                 value,
                 idx + 1,
             );
         }
-        External(stored_key, _) if stored_key == key => {
+        External(ref stored_key, _) if stored_key == &key => {
             hack = true;
         }
         _ => {}
@@ -754,9 +730,10 @@ fn insert<'a, T>(
                     Internal(ref mut new_node) => {
                         let new_node = &mut **new_node;
                         // Re-insert the old value.
+                        // TODO: remove recursive call.
                         insert(
                             &mut new_node.count,
-                            &mut new_node.children[chunk(stored_key, idx)],
+                            &mut new_node.children[stored_key.chunk(idx)],
                             stored_key,
                             stored_value,
                             idx + 1,
@@ -765,7 +742,7 @@ fn insert<'a, T>(
                         // Insert the new value, and return a reference to it directly.
                         return insert(
                             &mut new_node.count,
-                            &mut new_node.children[chunk(key, idx)],
+                            &mut new_node.children[key.chunk(idx)],
                             key,
                             value,
                             idx + 1,
@@ -789,16 +766,16 @@ fn insert<'a, T>(
     unreachable!();
 }
 
-fn remove<T>(count: &mut usize, child: &mut TrieNode<T>, key: usize, idx: usize) -> Option<T> {
+fn remove<K: Chunk, V>(count: &mut usize, child: &mut TrieNode<K, V>, key: &K, idx: usize) -> Option<V> {
     let (ret, this) = match *child {
-        External(stored, _) if stored == key => match mem::replace(child, Nothing) {
+        External(ref stored, _) if stored == key => match mem::replace(child, Nothing) {
             External(_, value) => (Some(value), true),
             _ => unreachable!(),
         },
         External(..) => (None, false),
         Internal(ref mut x) => {
             let x = &mut **x;
-            let ret = remove(&mut x.count, &mut x.children[chunk(key, idx)], key, idx + 1);
+            let ret = remove(&mut x.count, &mut x.children[key.chunk(idx)], key, idx + 1);
             (ret, x.count == 0)
         }
         Nothing => (None, false),
@@ -812,17 +789,17 @@ fn remove<T>(count: &mut usize, child: &mut TrieNode<T>, key: usize, idx: usize)
 }
 
 /// A view into a single entry in a map, which may be vacant or occupied.
-pub enum Entry<'a, T: 'a> {
+pub enum Entry<'a, K: 'a, V: 'a> {
     /// An occupied entry.
-    Occupied(OccupiedEntry<'a, T>),
+    Occupied(OccupiedEntry<'a, K, V>),
     /// A vacant entry.
-    Vacant(VacantEntry<'a, T>),
+    Vacant(VacantEntry<'a, K, V>),
 }
 
-impl<'a, T> Entry<'a, T> {
+impl<'a, K: Chunk, V> Entry<'a, K, V> {
     /// Ensures a value is in the entry by inserting the default if empty, and returns
     /// a mutable reference to the value in the entry.
-    pub fn or_insert(self, default: T) -> &'a mut T {
+    pub fn or_insert(self, default: V) -> &'a mut V {
         match self {
             Occupied(entry) => entry.into_mut(),
             Vacant(entry) => entry.insert(default),
@@ -831,7 +808,7 @@ impl<'a, T> Entry<'a, T> {
 
     /// Ensures a value is in the entry by inserting the result of the default function if empty,
     /// and returns a mutable reference to the value in the entry.
-    pub fn or_insert_with<F: FnOnce() -> T>(self, default: F) -> &'a mut T {
+    pub fn or_insert_with<F: FnOnce() -> V>(self, default: F) -> &'a mut V {
         match self {
             Occupied(entry) => entry.into_mut(),
             Vacant(entry) => entry.insert(default()),
@@ -840,13 +817,13 @@ impl<'a, T> Entry<'a, T> {
 }
 
 /// A view into an occupied entry in a map.
-pub struct OccupiedEntry<'a, T: 'a> {
-    search_stack: SearchStack<'a, T>,
+pub struct OccupiedEntry<'a, K: 'a, V: 'a> {
+    search_stack: SearchStack<'a, K, V>,
 }
 
 /// A view into a vacant entry in a map.
-pub struct VacantEntry<'a, T: 'a> {
-    search_stack: SearchStack<'a, T>,
+pub struct VacantEntry<'a, K: 'a, V: 'a> {
+    search_stack: SearchStack<'a, K, V>,
 }
 
 /// A list of nodes encoding a path from the root of a map to a node.
@@ -858,17 +835,17 @@ pub struct VacantEntry<'a, T: 'a> {
 /// we can only use raw pointers, because of stacked borrows.
 /// Source:
 /// https://rust-unofficial.github.io/too-many-lists/fifth-stacked-borrows.html#managing-stacked-borrows
-struct SearchStack<'a, T: 'a> {
-    map: *mut Map<T>,
+struct SearchStack<'a, K: 'a, V: 'a> {
+    map: *mut Map<K, V>,
     length: usize,
-    key: usize,
-    items: [*mut TrieNode<T>; MAX_DEPTH],
-    phantom: PhantomData<&'a mut Map<T>>,
+    key: K,
+    items: [*mut TrieNode<K, V>; MAX_DEPTH],
+    phantom: PhantomData<&'a mut Map<K, V>>,
 }
 
-impl<'a, T> SearchStack<'a, T> {
+impl<'a, K, V> SearchStack<'a, K, V> {
     /// Creates a new search-stack with empty entries.
-    fn new(map: &'a mut Map<T>, key: usize) -> SearchStack<'a, T> {
+    fn new(map: *mut Map<K, V>, key: K) -> Self {
         SearchStack {
             map,
             length: 0,
@@ -878,21 +855,21 @@ impl<'a, T> SearchStack<'a, T> {
         }
     }
 
-    fn push(&mut self, node: *mut TrieNode<T>) {
+    fn push(&mut self, node: *mut TrieNode<K, V>) {
         self.length += 1;
         self.items[self.length - 1] = node;
     }
 
-    fn peek(&self) -> *mut TrieNode<T> {
+    fn peek(&self) -> *mut TrieNode<K, V> {
         self.items[self.length - 1]
     }
 
-    fn peek_ref(&self) -> &'a mut TrieNode<T> {
+    fn peek_ref(&self) -> &'a mut TrieNode<K, V> {
         let item = self.items[self.length - 1];
         unsafe { &mut *item }
     }
 
-    fn pop_ref(&mut self) -> &'a mut TrieNode<T> {
+    fn pop_ref(&mut self) -> &'a mut TrieNode<K, V> {
         self.length -= 1;
         unsafe { &mut *self.items[self.length] }
     }
@@ -901,7 +878,7 @@ impl<'a, T> SearchStack<'a, T> {
         self.length == 0
     }
 
-    fn get_ref(&self, idx: usize) -> &'a mut TrieNode<T> {
+    fn get_ref(&self, idx: usize) -> &'a mut TrieNode<K, V> {
         assert!(idx < self.length);
         unsafe { &mut *self.items[idx] }
     }
@@ -909,23 +886,21 @@ impl<'a, T> SearchStack<'a, T> {
 
 // Implementation of SearchStack creation logic.
 // Once a SearchStack has been created the Entry methods are relatively straight-forward.
-impl<T> Map<T> {
+impl<K: Chunk, V> Map<K, V> {
     /// Gets the given key's corresponding entry in the map for in-place manipulation.
     #[inline]
-    pub fn entry(&mut self, key: usize) -> Entry<'_, T> {
+    pub fn entry(&mut self, key: K) -> Entry<'_, K, V> {
+        // Unconditionally add the corresponding node from the first layer.
+        let first_node = &mut self.root.children[key.chunk(0)] as *mut _;
         // Create an empty search stack.
         let mut search_stack = SearchStack::new(self, key);
-
-        // Unconditionally add the corresponding node from the first layer.
-        let first_node =
-            unsafe { (&mut (*search_stack.map).root.children[chunk(key, 0)]) as *mut _ };
         search_stack.push(first_node);
 
         // While no appropriate slot is found, keep descending down the Trie,
         // adding nodes to the search stack.
         let search_successful: bool;
         loop {
-            match unsafe { next_child(search_stack.peek(), key, search_stack.length) } {
+            match unsafe { next_child(search_stack.peek(), &search_stack.key, search_stack.length) } {
                 (Some(child), _) => search_stack.push(child),
                 (None, success) => {
                     search_successful = success;
@@ -952,30 +927,30 @@ impl<T> Map<T> {
 ///
 /// This function is safe only if `node` points to a valid `TrieNode`.
 #[inline]
-unsafe fn next_child<T>(
-    node: *mut TrieNode<T>,
-    key: usize,
+unsafe fn next_child<K: Chunk, V>(
+    node: *mut TrieNode<K, V>,
+    key: &K,
     idx: usize,
-) -> (Option<*mut TrieNode<T>>, bool) {
+) -> (Option<*mut TrieNode<K, V>>, bool) {
     match unsafe { &mut *node } {
         // If the node is internal, tell the caller to descend further.
         &mut Internal(ref mut node_internal) => (
-            Some(&mut node_internal.children[chunk(key, idx)] as *mut _),
+            Some(&mut node_internal.children[key.chunk(idx)] as *mut _),
             false,
         ),
         // If the node is external or empty, the search is complete.
         // If the key doesn't match, node expansion will be done upon
         // insertion. If it does match, we've found our node.
-        External(stored_key, _) if *stored_key == key => (None, true),
+        External(stored_key, _) if stored_key == key => (None, true),
         External(..) | Nothing => (None, false),
     }
 }
 
 // NB: All these methods assume a correctly constructed occupied entry (matching the given key).
-impl<'a, T> OccupiedEntry<'a, T> {
+impl<'a, K, V> OccupiedEntry<'a, K, V> {
     /// Gets a reference to the value in the entry.
     #[inline]
-    pub fn get(&self) -> &T {
+    pub fn get(&self) -> &V {
         match *self.search_stack.peek_ref() {
             External(_, ref value) => value,
             // Invalid SearchStack, non-external last node.
@@ -985,7 +960,7 @@ impl<'a, T> OccupiedEntry<'a, T> {
 
     /// Gets a mutable reference to the value in the entry.
     #[inline]
-    pub fn get_mut(&mut self) -> &mut T {
+    pub fn get_mut(&mut self) -> &mut V {
         match *self.search_stack.peek_ref() {
             External(_, ref mut value) => value,
             // Invalid SearchStack, non-external last node.
@@ -996,7 +971,7 @@ impl<'a, T> OccupiedEntry<'a, T> {
     /// Converts the OccupiedEntry into a mutable reference to the value in the entry,
     /// with a lifetime bound to the map itself.
     #[inline]
-    pub fn into_mut(self) -> &'a mut T {
+    pub fn into_mut(self) -> &'a mut V {
         match *self.search_stack.peek_ref() {
             External(_, ref mut value) => value,
             // Invalid SearchStack, non-external last node.
@@ -1006,7 +981,7 @@ impl<'a, T> OccupiedEntry<'a, T> {
 
     /// Sets the value of the entry, and returns the entry's old value.
     #[inline]
-    pub fn insert(&mut self, value: T) -> T {
+    pub fn insert(&mut self, value: V) -> V {
         match *self.search_stack.peek_ref() {
             External(_, ref mut stored_value) => mem::replace(stored_value, value),
             // Invalid SearchStack, non-external last node.
@@ -1016,7 +991,7 @@ impl<'a, T> OccupiedEntry<'a, T> {
 
     /// Takes the value out of the entry, and returns it.
     #[inline]
-    pub fn remove(self) -> T {
+    pub fn remove(self) -> V {
         // This function removes the external leaf-node, then unwinds the search-stack
         // deleting now-childless ancestors.
         let mut search_stack = self.search_stack;
@@ -1058,12 +1033,11 @@ impl<'a, T> OccupiedEntry<'a, T> {
     }
 }
 
-impl<'a, T> VacantEntry<'a, T> {
+impl<'a, K: Chunk, V> VacantEntry<'a, K, V> {
     /// Set the vacant entry to the given value.
-    pub fn insert(self, value: T) -> &'a mut T {
+    pub fn insert(self, value: V) -> &'a mut V {
         let search_stack = self.search_stack;
         let old_length = search_stack.length;
-        let key = search_stack.key;
 
         // Update the map's length for the new element.
         unsafe {
@@ -1075,7 +1049,7 @@ impl<'a, T> VacantEntry<'a, T> {
             unsafe {
                 // Note: Small hack to appease the borrow checker. Can't mutably borrow root.count
                 let mut temp = (*search_stack.map).root.count;
-                let (value_ref, _) = insert(&mut temp, search_stack.get_ref(0), key, value, 1);
+                let (value_ref, _) = insert(&mut temp, search_stack.get_ref(0), search_stack.key, value, 1);
                 (*search_stack.map).root.count = temp;
                 value_ref
             }
@@ -1087,8 +1061,8 @@ impl<'a, T> VacantEntry<'a, T> {
                     let parent = &mut **parent;
                     let (value_ref, _) = insert(
                         &mut parent.count,
-                        &mut parent.children[chunk(key, old_length - 1)],
-                        key,
+                        &mut parent.children[search_stack.key.chunk(old_length - 1)],
+                        search_stack.key,
                         value,
                         old_length,
                     );
@@ -1102,13 +1076,13 @@ impl<'a, T> VacantEntry<'a, T> {
 }
 
 /// A forward iterator over a map.
-pub struct Iter<'a, T: 'a> {
-    stack: [slice::Iter<'a, TrieNode<T>>; MAX_DEPTH],
+pub struct Iter<'a, K: 'a, V: 'a> {
+    stack: [slice::Iter<'a, TrieNode<K, V>>; MAX_DEPTH],
     length: usize,
     remaining: usize,
 }
 
-impl<'a, T> Clone for Iter<'a, T> {
+impl<'a, K, V> Clone for Iter<'a, K, V> {
     #[cfg(target_pointer_width = "32")]
     fn clone(&self) -> Iter<'a, T> {
         Iter {
@@ -1127,7 +1101,7 @@ impl<'a, T> Clone for Iter<'a, T> {
     }
 
     #[cfg(target_pointer_width = "64")]
-    fn clone(&self) -> Iter<'a, T> {
+    fn clone(&self) -> Iter<'a, K, V> {
         Iter {
             stack: [
                 self.stack[0].clone(),
@@ -1154,24 +1128,24 @@ impl<'a, T> Clone for Iter<'a, T> {
 
 /// A forward iterator over the key-value pairs of a map, with the
 /// values being mutable.
-pub struct IterMut<'a, T: 'a> {
-    stack: [slice::IterMut<'a, TrieNode<T>>; MAX_DEPTH],
+pub struct IterMut<'a, K: 'a, V: 'a> {
+    stack: [slice::IterMut<'a, TrieNode<K, V>>; MAX_DEPTH],
     length: usize,
     remaining: usize,
 }
 
 /// A forward iterator over the keys of a map.
-pub struct Keys<'a, T: 'a>(Iter<'a, T>);
+pub struct Keys<'a, K: 'a, V: 'a>(Iter<'a, K, V>);
 
-impl<'a, T> Clone for Keys<'a, T> {
-    fn clone(&self) -> Keys<'a, T> {
+impl<'a, K, V> Clone for Keys<'a, K, V> {
+    fn clone(&self) -> Keys<'a, K, V> {
         Keys(self.0.clone())
     }
 }
 
-impl<'a, T> Iterator for Keys<'a, T> {
-    type Item = usize;
-    fn next(&mut self) -> Option<usize> {
+impl<'a, K, V> Iterator for Keys<'a, K, V> {
+    type Item = &'a K;
+    fn next(&mut self) -> Option<Self::Item> {
         self.0.next().map(|e| e.0)
     }
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -1179,20 +1153,20 @@ impl<'a, T> Iterator for Keys<'a, T> {
     }
 }
 
-impl<'a, T> ExactSizeIterator for Keys<'a, T> {}
+impl<'a, K, V> ExactSizeIterator for Keys<'a, K, V> {}
 
 /// A forward iterator over the values of a map.
-pub struct Values<'a, T: 'a>(Iter<'a, T>);
+pub struct Values<'a, K: 'a, V: 'a>(Iter<'a, K, V>);
 
-impl<'a, T> Clone for Values<'a, T> {
-    fn clone(&self) -> Values<'a, T> {
+impl<'a, K, V> Clone for Values<'a, K, V> {
+    fn clone(&self) -> Values<'a, K, V> {
         Values(self.0.clone())
     }
 }
 
-impl<'a, T> Iterator for Values<'a, T> {
-    type Item = &'a T;
-    fn next(&mut self) -> Option<&'a T> {
+impl<'a, K, V> Iterator for Values<'a, K, V> {
+    type Item = &'a V;
+    fn next(&mut self) -> Option<Self::Item> {
         self.0.next().map(|e| e.1)
     }
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -1200,19 +1174,19 @@ impl<'a, T> Iterator for Values<'a, T> {
     }
 }
 
-impl<'a, T> ExactSizeIterator for Values<'a, T> {}
+impl<'a, K, V> ExactSizeIterator for Values<'a, K, V> {}
 
 macro_rules! iterator_impl {
     ($name:ident,
      iter = $iter:ident,
-     mutability = $($mut_:tt)*) => {
-        impl<'a, T> $name<'a, T> {
+     mutability = ($($mut_:tt)*)) => {
+        impl<'a, K, V> $name<'a, K, V> {
             // Create new zero'd iterator. We have a thin gilding of safety by
             // using init rather than uninit, so that the worst that can happen
             // from failing to initialise correctly after calling these is a
             // segfault.
             #[cfg(target_pointer_width="32")]
-            unsafe fn new() -> $name<'a, T> {
+            unsafe fn new() -> Self {
                 $name {
                     remaining: 0,
                     length: 0,
@@ -1231,7 +1205,7 @@ macro_rules! iterator_impl {
             }
 
             #[cfg(target_pointer_width="64")]
-            unsafe fn new() -> $name<'a, T> {
+            unsafe fn new() -> Self {
                 $name {
                     remaining: 0,
                     length: 0,
@@ -1259,99 +1233,99 @@ macro_rules! iterator_impl {
             }
         }
 
-        impl<'a, T> Iterator for $name<'a, T> {
-                type Item = (usize, &'a $($mut_)* T);
-                // you might wonder why we're not even trying to act within the
-                // rules, and are just manipulating raw pointers like there's no
-                // such thing as invalid pointers and memory unsafety. The
-                // reason is performance, without doing this we can get the
-                // (now replaced) bench_iter_large microbenchmark down to about
-                // 30000 ns/iter (using .unsafe_get to index self.stack directly, 38000
-                // ns/iter with [] checked indexing), but this smashes that down
-                // to 13500 ns/iter.
-                //
-                // Fortunately, it's still safe...
-                //
-                // We have an invariant that every Internal node
-                // corresponds to one push to self.stack, and one pop,
-                // nested appropriately. self.stack has enough storage
-                // to store the maximum depth of Internal nodes in the
-                // trie (8 on 32-bit platforms, 16 on 64-bit).
-                fn next(&mut self) -> Option<(usize, &'a $($mut_)* T)> {
-                    let start_ptr = self.stack.as_mut_ptr();
+        impl<'a, K, V> Iterator for $name<'a, K, V> {
+            type Item = (&'a K, &'a $($mut_)* V);
+            // you might wonder why we're not even trying to act within the
+            // rules, and are just manipulating raw pointers like there's no
+            // such thing as invalid pointers and memory unsafety. The
+            // reason is performance, without doing this we can get the
+            // (now replaced) bench_iter_large microbenchmark down to about
+            // 30000 ns/iter (using .unsafe_get to index self.stack directly, 38000
+            // ns/iter with [] checked indexing), but this smashes that down
+            // to 13500 ns/iter.
+            //
+            // Fortunately, it's still safe...
+            //
+            // We have an invariant that every Internal node
+            // corresponds to one push to self.stack, and one pop,
+            // nested appropriately. self.stack has enough storage
+            // to store the maximum depth of Internal nodes in the
+            // trie (8 on 32-bit platforms, 16 on 64-bit).
+            fn next(&mut self) -> Option<Self::Item> {
+                let start_ptr = self.stack.as_mut_ptr();
 
-                    unsafe {
-                        // write_ptr is the next place to write to the stack.
-                        // invariant: start_ptr <= write_ptr < end of the
-                        // vector.
-                        let mut write_ptr = start_ptr.offset(self.length as isize);
-                        while write_ptr != start_ptr {
-                            // indexing back one is safe, since write_ptr >
-                            // start_ptr now.
-                            match (*write_ptr.offset(-1)).next() {
-                                // exhausted this iterator (i.e. finished this
-                                // Internal node), so pop from the stack.
-                                //
-                                // don't bother clearing the memory, because the
-                                // next time we use it we'll've written to it
-                                // first.
-                                None => write_ptr = write_ptr.offset(-1),
-                                Some(child) => {
-                                    match *child {
-                                        Internal(ref $($mut_)* node) => {
-                                            // going down a level, so push
-                                            // to the stack (this is the
-                                            // write referenced above)
-                                            *write_ptr = node.children.$iter();
-                                            write_ptr = write_ptr.offset(1);
-                                        }
-                                        External(key, ref $($mut_)* value) => {
-                                            self.remaining -= 1;
-                                            // store the new length of the
-                                            // stack, based on our current
-                                            // position.
-                                            self.length = (write_ptr as usize
-                                                            - start_ptr as usize) /
-                                                mem::size_of::<slice::Iter<'_, TrieNode<T>>>();
-
-                                            return Some((key, value));
-                                        }
-                                        Nothing => {}
+                unsafe {
+                    // write_ptr is the next place to write to the stack.
+                    // invariant: start_ptr <= write_ptr < end of the
+                    // vector.
+                    let mut write_ptr = start_ptr.offset(self.length as isize);
+                    while write_ptr != start_ptr {
+                        // indexing back one is safe, since write_ptr >
+                        // start_ptr now.
+                        match (*write_ptr.offset(-1)).next() {
+                            // exhausted this iterator (i.e. finished this
+                            // Internal node), so pop from the stack.
+                            //
+                            // don't bother clearing the memory, because the
+                            // next time we use it we'll've written to it
+                            // first.
+                            None => write_ptr = write_ptr.offset(-1),
+                            Some(child) => {
+                                match *child {
+                                    Internal(ref $($mut_)* node) => {
+                                        // going down a level, so push
+                                        // to the stack (this is the
+                                        // write referenced above)
+                                        *write_ptr = node.children.$iter();
+                                        write_ptr = write_ptr.offset(1);
                                     }
+                                    External(ref key, ref $($mut_)* value) => {
+                                        self.remaining -= 1;
+                                        // store the new length of the
+                                        // stack, based on our current
+                                        // position.
+                                        self.length = (write_ptr as usize
+                                                        - start_ptr as usize) /
+                                            mem::size_of::<slice::Iter<'_, TrieNode<K, V>>>();
+
+                                        return Some((key, value));
+                                    }
+                                    Nothing => {}
                                 }
                             }
                         }
                     }
-                    return None;
                 }
-
-                #[inline]
-                fn size_hint(&self) -> (usize, Option<usize>) {
-                    (self.remaining, Some(self.remaining))
-                }
+                return None;
             }
 
-        impl<'a, T> ExactSizeIterator for $name<'a, T> {
+            #[inline]
+            fn size_hint(&self) -> (usize, Option<usize>) {
+                (self.remaining, Some(self.remaining))
+            }
+        }
+
+        impl<'a, K, V> ExactSizeIterator for $name<'a, K, V> {
             fn len(&self) -> usize { self.remaining }
         }
     }
 }
 
-iterator_impl! { Iter, iter = iter, mutability = }
-iterator_impl! { IterMut, iter = iter_mut, mutability = mut }
+iterator_impl! { Iter, iter = iter, mutability = () }
+iterator_impl! { IterMut, iter = iter_mut, mutability = (mut) }
 
 /// A bounded forward iterator over a map.
-pub struct Range<'a, T: 'a>(Iter<'a, T>);
+pub struct Range<'a, K: 'a, V: 'a>(Iter<'a, K, V>);
 
-impl<'a, T> Clone for Range<'a, T> {
-    fn clone(&self) -> Range<'a, T> {
+impl<'a, K, V> Clone for Range<'a, K, V> {
+    fn clone(&self) -> Range<'a, K, V> {
         Range(self.0.clone())
     }
 }
 
-impl<'a, T> Iterator for Range<'a, T> {
-    type Item = (usize, &'a T);
-    fn next(&mut self) -> Option<(usize, &'a T)> {
+impl<'a, K, V> Iterator for Range<'a, K, V> {
+    type Item = (&'a K, &'a V);
+    fn next(&mut self) -> Option<Self::Item> {
         self.0.next()
     }
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -1361,11 +1335,11 @@ impl<'a, T> Iterator for Range<'a, T> {
 
 /// A bounded forward iterator over the key-value pairs of a map, with the
 /// values being mutable.
-pub struct RangeMut<'a, T: 'a>(IterMut<'a, T>);
+pub struct RangeMut<'a, K: 'a, V: 'a>(IterMut<'a, K, V>);
 
-impl<'a, T> Iterator for RangeMut<'a, T> {
-    type Item = (usize, &'a mut T);
-    fn next(&mut self) -> Option<(usize, &'a mut T)> {
+impl<'a, K, V> Iterator for RangeMut<'a, K, V> {
+    type Item = (&'a K, &'a mut V);
+    fn next(&mut self) -> Option<(&'a K, &'a mut V)> {
         self.0.next()
     }
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -1373,18 +1347,18 @@ impl<'a, T> Iterator for RangeMut<'a, T> {
     }
 }
 
-impl<'a, T> IntoIterator for &'a Map<T> {
-    type Item = (usize, &'a T);
-    type IntoIter = Iter<'a, T>;
-    fn into_iter(self) -> Iter<'a, T> {
+impl<'a, K: Chunk, V> IntoIterator for &'a Map<K, V> {
+    type Item = (&'a K, &'a V);
+    type IntoIter = Iter<'a, K, V>;
+    fn into_iter(self) -> Iter<'a, K, V> {
         self.iter()
     }
 }
 
-impl<'a, T> IntoIterator for &'a mut Map<T> {
-    type Item = (usize, &'a mut T);
-    type IntoIter = IterMut<'a, T>;
-    fn into_iter(self) -> IterMut<'a, T> {
+impl<'a, K: Chunk, V> IntoIterator for &'a mut Map<K, V> {
+    type Item = (&'a K, &'a mut V);
+    type IntoIter = IterMut<'a, K, V>;
+    fn into_iter(self) -> IterMut<'a, K, V> {
         self.iter_mut()
     }
 }
@@ -1399,7 +1373,7 @@ mod test {
     use super::TrieNode::*;
     use super::{InternalNode, Map};
 
-    fn check_integrity<T>(trie: &InternalNode<T>) {
+    fn check_integrity<K, V>(trie: &InternalNode<K, V>) {
         assert!(trie.count != 0);
 
         let mut sum = 0;
@@ -1542,7 +1516,7 @@ mod test {
     fn test_from_iter() {
         let xs = [(1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6)];
 
-        let map: Map<i32> = xs.iter().cloned().collect();
+        let map: Map<usize, i32> = xs.iter().cloned().collect();
 
         for &(k, v) in xs.iter() {
             assert_eq!(map.get(&k), Some(&v));
@@ -1552,18 +1526,18 @@ mod test {
     #[test]
     fn test_keys() {
         let vec = [(1, 'a'), (2, 'b'), (3, 'c')];
-        let map: Map<_> = vec.iter().cloned().collect();
+        let map: Map<usize, _> = vec.iter().cloned().collect();
         let keys: Vec<_> = map.keys().collect();
         assert_eq!(keys.len(), 3);
-        assert!(keys.contains(&1));
-        assert!(keys.contains(&2));
-        assert!(keys.contains(&3));
+        assert!(keys.contains(&&1));
+        assert!(keys.contains(&&2));
+        assert!(keys.contains(&&3));
     }
 
     #[test]
     fn test_values() {
         let vec = [(1, 'a'), (2, 'b'), (3, 'c')];
-        let map: Map<_> = vec.iter().cloned().collect();
+        let map: Map<usize, _> = vec.iter().cloned().collect();
         let values: Vec<_> = map.values().cloned().collect();
         assert_eq!(values.len(), 3);
         assert!(values.contains(&'a'));
@@ -1573,7 +1547,7 @@ mod test {
 
     #[test]
     fn test_iteration() {
-        let empty_map: Map<usize> = Map::new();
+        let empty_map: Map<usize, usize> = Map::new();
         assert_eq!(empty_map.iter().next(), None);
 
         let first = usize::MAX - 10000;
@@ -1585,7 +1559,7 @@ mod test {
         }
 
         let mut i = 0;
-        for (k, &v) in map.iter() {
+        for (&k, &v) in map.iter() {
             assert_eq!(k, first + i);
             assert_eq!(v, k / 2);
             i += 1;
@@ -1595,7 +1569,7 @@ mod test {
 
     #[test]
     fn test_mut_iter() {
-        let mut empty_map: Map<usize> = Map::new();
+        let mut empty_map: Map<usize, usize> = Map::new();
         assert!(empty_map.iter_mut().next().is_none());
 
         let first = usize::MAX - 10000;
@@ -1607,7 +1581,7 @@ mod test {
         }
 
         let mut i = 0;
-        for (k, v) in map.iter_mut() {
+        for (&k, v) in map.iter_mut() {
             assert_eq!(k, first + i);
             *v -= k / 2;
             i += 1;
@@ -1619,51 +1593,51 @@ mod test {
 
     #[test]
     fn test_bound() {
-        let empty_map: Map<usize> = Map::new();
-        assert_eq!(empty_map.lower_bound(0).next(), None);
-        assert_eq!(empty_map.upper_bound(0).next(), None);
+        let empty_map: Map<usize, usize> = Map::new();
+        assert_eq!(empty_map.lower_bound(&0).next(), None);
+        assert_eq!(empty_map.upper_bound(&0).next(), None);
 
         let last = 999;
         let step = 3;
         let value = 42;
 
-        let mut map: Map<usize> = Map::new();
+        let mut map: Map<usize, usize> = Map::new();
         for x in (0..last).step_by(step) {
             assert!(x % step == 0);
             map.insert(x, value);
         }
 
         for i in 0..last - step {
-            let mut lb = map.lower_bound(i);
-            let mut ub = map.upper_bound(i);
+            let mut lb = map.lower_bound(&i);
+            let mut ub = map.upper_bound(&i);
             let next_key = i - i % step + step;
-            let next_pair = (next_key, &value);
+            let next_pair = (&next_key, &value);
             if i % step == 0 {
-                assert_eq!(lb.next(), Some((i, &value)));
+                assert_eq!(lb.next(), Some((&i, &value)));
             } else {
                 assert_eq!(lb.next(), Some(next_pair));
             }
             assert_eq!(ub.next(), Some(next_pair));
         }
 
-        let mut lb = map.lower_bound(last - step);
-        assert_eq!(lb.next(), Some((last - step, &value)));
-        let mut ub = map.upper_bound(last - step);
+        let mut lb = map.lower_bound(&(last - step));
+        assert_eq!(lb.next(), Some((&(last - step), &value)));
+        let mut ub = map.upper_bound(&(last - step));
         assert_eq!(ub.next(), None);
 
         for i in last - step + 1..last {
-            let mut lb = map.lower_bound(i);
+            let mut lb = map.lower_bound(&i);
             assert_eq!(lb.next(), None);
-            let mut ub = map.upper_bound(i);
+            let mut ub = map.upper_bound(&i);
             assert_eq!(ub.next(), None);
         }
     }
 
     #[test]
     fn test_mut_bound() {
-        let empty_map: Map<usize> = Map::new();
-        assert_eq!(empty_map.lower_bound(0).next(), None);
-        assert_eq!(empty_map.upper_bound(0).next(), None);
+        let empty_map: Map<usize, usize> = Map::new();
+        assert_eq!(empty_map.lower_bound(&0).next(), None);
+        assert_eq!(empty_map.upper_bound(&0).next(), None);
 
         let mut m_lower = Map::new();
         let mut m_upper = Map::new();
@@ -1673,23 +1647,23 @@ mod test {
         }
 
         for i in 0..199 {
-            let mut lb_it = m_lower.lower_bound_mut(i);
-            let (k, v) = lb_it.next().unwrap();
+            let mut lb_it = m_lower.lower_bound_mut(&i);
+            let (&k, v) = lb_it.next().unwrap();
             let lb = i + i % 2;
             assert_eq!(lb, k);
             *v -= k;
         }
 
         for i in 0..198 {
-            let mut ub_it = m_upper.upper_bound_mut(i);
-            let (k, v) = ub_it.next().unwrap();
+            let mut ub_it = m_upper.upper_bound_mut(&i);
+            let (&k, v) = ub_it.next().unwrap();
             let ub = i + 2 - i % 2;
             assert_eq!(ub, k);
             *v -= k;
         }
 
-        assert!(m_lower.lower_bound_mut(199).next().is_none());
-        assert!(m_upper.upper_bound_mut(198).next().is_none());
+        assert!(m_lower.lower_bound_mut(&199).next().is_none());
+        assert!(m_upper.upper_bound_mut(&198).next().is_none());
 
         assert!(m_lower.iter().all(|(_, &x)| x == 0));
         assert!(m_upper.iter().all(|(_, &x)| x == 0));
@@ -1782,7 +1756,7 @@ mod test {
     #[test]
     fn test_debug() {
         let mut map = Map::new();
-        let empty: Map<char> = Map::new();
+        let empty: Map<usize, char> = Map::new();
 
         map.insert(1, 'a');
         map.insert(2, 'b');
@@ -1819,7 +1793,7 @@ mod test {
     const SQUARES_UPPER_LIM: usize = 128;
 
     /// Make a map storing i^2 for i in [0, 128)
-    fn squares_map() -> Map<usize> {
+    fn squares_map() -> Map<usize, usize> {
         let mut map = Map::new();
         for i in 0..SQUARES_UPPER_LIM {
             map.insert(i, i * i);
