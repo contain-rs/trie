@@ -768,35 +768,9 @@ mod test {
         assert!(a < b && a <= b);
     }
 
-    #[cfg(feature = "nightly")]
-    struct Counter<'a, 'b> {
-        i: &'a mut usize,
-        expected: &'b [usize],
-    }
-
-    #[cfg(feature = "nightly")]
-    impl<'a, 'b> FnOnce<(usize,)> for Counter<'a, 'b> {
-        type Output = bool;
-
-        extern "rust-call" fn call_once(mut self, args: (usize,)) -> bool {
-            self.call_mut(args)
-        }
-    }
-
-    #[cfg(feature = "nightly")]
-    impl<'a, 'b> FnMut<(usize,)> for Counter<'a, 'b> {
-        extern "rust-call" fn call_mut(&mut self, (x,): (usize,)) -> bool {
-            assert_eq!(x, self.expected[*self.i]);
-            *self.i += 1;
-            true
-        }
-    }
-
-    #[cfg(feature = "nightly")]
     fn check<F>(a: &[usize], b: &[usize], expected: &[usize], f: F)
     where
-        // FIXME Replace `Counter` with `Box<FnMut(&usize) -> bool>`
-        F: FnOnce(&Set, &Set, Counter) -> bool,
+        F: FnOnce(&Set<usize>, &Set<usize>, &mut usize, &[usize], Box<dyn FnMut(&usize, &mut usize, &[usize]) -> bool>) -> bool,
     {
         let mut set_a = Set::new();
         let mut set_b = Set::new();
@@ -812,19 +786,21 @@ mod test {
         f(
             &set_a,
             &set_b,
-            Counter {
-                i: &mut i,
-                expected,
-            },
+            &mut i,
+            expected,
+            Box::new(|&x: &usize, i: &mut usize, expected: &[usize]| {
+                assert_eq!(x, expected[*i]);
+                *i += 1;
+                true
+            })
         );
         assert_eq!(i, expected.len());
     }
 
-    #[cfg(feature = "nightly")]
     #[test]
     fn test_intersection() {
         fn check_intersection(a: &[usize], b: &[usize], expected: &[usize]) {
-            check(a, b, expected, |x, y, f| x.intersection(y).all(f))
+            check(a, b, expected, |x, y, i, expected, mut f| x.intersection(y).all(|elem| f(elem, i, expected)))
         }
 
         check_intersection(&[], &[], &[]);
@@ -835,11 +811,10 @@ mod test {
         check_intersection(&[11, 1, 3, 77, 103, 5], &[2, 11, 77, 5, 3], &[3, 5, 11, 77]);
     }
 
-    #[cfg(feature = "nightly")]
     #[test]
     fn test_difference() {
         fn check_difference(a: &[usize], b: &[usize], expected: &[usize]) {
-            check(a, b, expected, |x, y, f| x.difference(y).all(f))
+            check(a, b, expected, |x, y, i, e, mut f| x.difference(y).all(|elem| f(elem, i, e)))
         }
 
         check_difference(&[], &[], &[]);
@@ -853,11 +828,10 @@ mod test {
         );
     }
 
-    #[cfg(feature = "nightly")]
     #[test]
     fn test_symmetric_difference() {
         fn check_symmetric_difference(a: &[usize], b: &[usize], expected: &[usize]) {
-            check(a, b, expected, |x, y, f| x.symmetric_difference(y).all(f))
+            check(a, b, expected, |x, y, i, e, mut f| x.symmetric_difference(y).all(|elem| f(elem, i, e)))
         }
 
         check_symmetric_difference(&[], &[], &[]);
@@ -866,11 +840,10 @@ mod test {
         check_symmetric_difference(&[1, 3, 5, 9, 11], &[3, 9, 14, 22], &[1, 5, 11, 14, 22]);
     }
 
-    #[cfg(feature = "nightly")]
     #[test]
     fn test_union() {
         fn check_union(a: &[usize], b: &[usize], expected: &[usize]) {
-            check(a, b, expected, |x, y, f| x.union(y).all(f))
+            check(a, b, expected, |x, y, i, e, mut f| x.union(y).all(|elem| f(elem, i, e)))
         }
 
         check_union(&[], &[], &[]);

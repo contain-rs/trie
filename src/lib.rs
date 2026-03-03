@@ -10,9 +10,6 @@
 
 //! An ordered map and set based on a trie.
 
-#![cfg_attr(feature = "nightly", feature(unboxed_closures))]
-#![cfg_attr(feature = "nightly", feature(fn_traits))]
-
 pub use chunk::Chunk;
 pub type TrieMap<K, V> = map::Map<K, V>;
 pub use map::Map;
