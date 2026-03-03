@@ -140,7 +140,7 @@ impl<K, V> Map<K, V> {
     /// # Examples
     ///
     /// ```
-    /// let mut map: trie::Map<&str> = trie::Map::new();
+    /// let mut map: trie::Map<usize, &str> = trie::Map::new();
     /// ```
     #[inline]
     pub fn new() -> Self {
@@ -158,7 +158,7 @@ impl<K: Chunk, V> Map<K, V> {
     /// # Examples
     ///
     /// ```
-    /// let map: trie::Map<&str> = [(1, "a"), (2, "b"), (3, "c")].iter().cloned().collect();
+    /// let map: trie::Map<usize, &str> = [(1, "a"), (2, "b"), (3, "c")].iter().cloned().collect();
     ///
     /// let mut vec = vec![];
     /// assert_eq!(true, map.each_reverse(|&key, &value| { vec.push((key, value)); true }));
@@ -194,7 +194,7 @@ impl<K: Chunk, V> Map<K, V> {
     /// # Examples
     ///
     /// ```
-    /// let map: trie::Map<&str> = [(3, "c"), (1, "a"), (2, "b")].iter().cloned().collect();
+    /// let map: trie::Map<usize, &str> = [(3, "c"), (1, "a"), (2, "b")].iter().cloned().collect();
     ///
     /// for (key, value) in map.iter() {
     ///     println!("{}: {}", key, value);
@@ -215,9 +215,9 @@ impl<K: Chunk, V> Map<K, V> {
     /// # Examples
     ///
     /// ```
-    /// let mut map: trie::Map<i32> = [(1, 2), (2, 4), (3, 6)].iter().cloned().collect();
+    /// let mut map: trie::Map<usize, i32> = [(1, 2), (2, 4), (3, 6)].iter().cloned().collect();
     ///
-    /// for (key, value) in map.iter_mut() {
+    /// for (&key, value) in map.iter_mut() {
     ///     *value = -(key as i32);
     /// }
     ///
@@ -482,11 +482,11 @@ impl<K: Chunk + PartialOrd, V> Map<K, V> {
     /// # Examples
     ///
     /// ```
-    /// let map: trie::Map<&str> = [(2, "a"), (4, "b"), (6, "c")].iter().cloned().collect();
+    /// let map: trie::Map<usize, &str> = [(2, "a"), (4, "b"), (6, "c")].iter().cloned().collect();
     ///
-    /// assert_eq!(map.lower_bound(4).next(), Some((4, &"b")));
-    /// assert_eq!(map.lower_bound(5).next(), Some((6, &"c")));
-    /// assert_eq!(map.lower_bound(10).next(), None);
+    /// assert_eq!(map.lower_bound(&4).next(), Some((&4, &"b")));
+    /// assert_eq!(map.lower_bound(&5).next(), Some((&6, &"c")));
+    /// assert_eq!(map.lower_bound(&10).next(), None);
     /// ```
     pub fn lower_bound(&self, key: &K) -> Range<'_, K, V> {
         self.bound(key, false)
@@ -498,11 +498,11 @@ impl<K: Chunk + PartialOrd, V> Map<K, V> {
     /// # Examples
     ///
     /// ```
-    /// let map: trie::Map<&str> = [(2, "a"), (4, "b"), (6, "c")].iter().cloned().collect();
+    /// let map: trie::Map<usize, &str> = [(2, "a"), (4, "b"), (6, "c")].iter().cloned().collect();
     ///
-    /// assert_eq!(map.upper_bound(4).next(), Some((6, &"c")));
-    /// assert_eq!(map.upper_bound(5).next(), Some((6, &"c")));
-    /// assert_eq!(map.upper_bound(10).next(), None);
+    /// assert_eq!(map.upper_bound(&4).next(), Some((&6, &"c")));
+    /// assert_eq!(map.upper_bound(&5).next(), Some((&6, &"c")));
+    /// assert_eq!(map.upper_bound(&10).next(), None);
     /// ```
     pub fn upper_bound(&self, key: &K) -> Range<'_, K, V> {
         self.bound(key, true)
@@ -522,13 +522,13 @@ impl<K: Chunk + PartialOrd, V> Map<K, V> {
     /// # Examples
     ///
     /// ```
-    /// let mut map: trie::Map<&str> = [(2, "a"), (4, "b"), (6, "c")].iter().cloned().collect();
+    /// let mut map: trie::Map<usize, &str> = [(2, "a"), (4, "b"), (6, "c")].iter().cloned().collect();
     ///
-    /// assert_eq!(map.lower_bound_mut(4).next(), Some((4, &mut "b")));
-    /// assert_eq!(map.lower_bound_mut(5).next(), Some((6, &mut "c")));
-    /// assert_eq!(map.lower_bound_mut(10).next(), None);
+    /// assert_eq!(map.lower_bound_mut(&4).next(), Some((&4, &mut "b")));
+    /// assert_eq!(map.lower_bound_mut(&5).next(), Some((&6, &mut "c")));
+    /// assert_eq!(map.lower_bound_mut(&10).next(), None);
     ///
-    /// for (key, value) in map.lower_bound_mut(4) {
+    /// for (_key, value) in map.lower_bound_mut(&4) {
     ///     *value = "changed";
     /// }
     ///
@@ -546,13 +546,13 @@ impl<K: Chunk + PartialOrd, V> Map<K, V> {
     /// # Examples
     ///
     /// ```
-    /// let mut map: trie::Map<&str> = [(2, "a"), (4, "b"), (6, "c")].iter().cloned().collect();
+    /// let mut map: trie::Map<usize, &str> = [(2, "a"), (4, "b"), (6, "c")].iter().cloned().collect();
     ///
-    /// assert_eq!(map.upper_bound_mut(4).next(), Some((6, &mut "c")));
-    /// assert_eq!(map.upper_bound_mut(5).next(), Some((6, &mut "c")));
-    /// assert_eq!(map.upper_bound_mut(10).next(), None);
+    /// assert_eq!(map.upper_bound_mut(&4).next(), Some((&6, &mut "c")));
+    /// assert_eq!(map.upper_bound_mut(&5).next(), Some((&6, &mut "c")));
+    /// assert_eq!(map.upper_bound_mut(&10).next(), None);
     ///
-    /// for (key, value) in map.upper_bound_mut(4) {
+    /// for (_key, value) in map.upper_bound_mut(&4) {
     ///     *value = "changed";
     /// }
     ///

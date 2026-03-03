@@ -180,7 +180,7 @@ pub fn iter_100000(b: &mut test::Bencher) {
 
 #[bench]
 fn bench_lower_bound(b: &mut test::Bencher) {
-    let mut m = Map::<usize>::new();
+    let mut m = Map::<usize, usize>::new();
     let mut rng = small_rng();
     for _ in 0..MAP_SIZE {
         m.insert(rng.random::<u32>() as usize, rng.random::<u32>() as usize);
@@ -188,14 +188,14 @@ fn bench_lower_bound(b: &mut test::Bencher) {
 
     b.iter(|| {
         for _ in 0..10 {
-            m.lower_bound(rng.random::<u32>() as usize);
+            m.lower_bound(&(rng.random::<u32>() as usize));
         }
     });
 }
 
 #[bench]
 fn bench_upper_bound(b: &mut test::Bencher) {
-    let mut m = Map::<usize>::new();
+    let mut m = Map::<usize, usize>::new();
     let mut rng = small_rng();
     for _ in 0..MAP_SIZE {
         m.insert(rng.random::<u32>() as usize, rng.random::<u32>() as usize);
@@ -203,14 +203,14 @@ fn bench_upper_bound(b: &mut test::Bencher) {
 
     b.iter(|| {
         for _ in 0..10 {
-            m.upper_bound(rng.random::<u32>() as usize);
+            m.upper_bound(&(rng.random::<u32>() as usize));
         }
     });
 }
 
 #[bench]
 fn bench_insert_large(b: &mut test::Bencher) {
-    let mut m = Map::<[usize; 10]>::new();
+    let mut m = Map::<usize, [usize; 10]>::new();
     let mut rng = small_rng();
 
     b.iter(|| {
@@ -222,7 +222,7 @@ fn bench_insert_large(b: &mut test::Bencher) {
 
 #[bench]
 fn bench_insert_large_entry(b: &mut test::Bencher) {
-    let mut m = Map::<[usize; 10]>::new();
+    let mut m = Map::<usize, [usize; 10]>::new();
     let mut rng = small_rng();
 
     b.iter(|| {
@@ -241,7 +241,7 @@ fn bench_insert_large_entry(b: &mut test::Bencher) {
 
 #[bench]
 fn bench_insert_large_low_bits(b: &mut test::Bencher) {
-    let mut m = Map::<[usize; 10]>::new();
+    let mut m = Map::<usize, [usize; 10]>::new();
     let mut rng = small_rng();
 
     b.iter(|| {
@@ -254,7 +254,7 @@ fn bench_insert_large_low_bits(b: &mut test::Bencher) {
 
 #[bench]
 fn bench_insert_small(b: &mut test::Bencher) {
-    let mut m = Map::<()>::new();
+    let mut m = Map::<usize, ()>::new();
     let mut rng = small_rng();
 
     b.iter(|| {
@@ -266,7 +266,7 @@ fn bench_insert_small(b: &mut test::Bencher) {
 
 #[bench]
 fn bench_insert_small_low_bits(b: &mut test::Bencher) {
-    let mut m = Map::<()>::new();
+    let mut m = Map::<usize, ()>::new();
     let mut rng = small_rng();
 
     b.iter(|| {
@@ -280,7 +280,7 @@ fn bench_insert_small_low_bits(b: &mut test::Bencher) {
 #[bench]
 fn bench_get(b: &mut test::Bencher) {
     let map = random_map(MAP_SIZE);
-    let keys: Vec<usize> = map.keys().collect();
+    let keys: Vec<usize> = map.keys().copied().collect();
     b.iter(|| {
         for key in keys.iter() {
             black_box(map.get(key));
@@ -291,7 +291,7 @@ fn bench_get(b: &mut test::Bencher) {
 #[bench]
 fn bench_get_entry(b: &mut test::Bencher) {
     let mut map = random_map(MAP_SIZE);
-    let keys: Vec<usize> = map.keys().collect();
+    let keys: Vec<usize> = map.keys().copied().collect();
     b.iter(|| {
         for key in keys.iter() {
             if let Occupied(e) = map.entry(*key) {
@@ -305,7 +305,7 @@ fn bench_get_entry(b: &mut test::Bencher) {
 fn bench_remove(b: &mut test::Bencher) {
     b.iter(|| {
         let mut map = random_map(MAP_SIZE);
-        let keys: Vec<usize> = map.keys().collect();
+        let keys: Vec<usize> = map.keys().copied().collect();
         for key in keys.iter() {
             black_box(map.remove(key));
         }
@@ -316,7 +316,7 @@ fn bench_remove(b: &mut test::Bencher) {
 fn bench_remove_entry(b: &mut test::Bencher) {
     b.iter(|| {
         let mut map = random_map(MAP_SIZE);
-        let keys: Vec<usize> = map.keys().collect();
+        let keys: Vec<usize> = map.keys().copied().collect();
         for key in keys.iter() {
             if let Occupied(e) = map.entry(*key) {
                 black_box(e.remove());

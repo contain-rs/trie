@@ -15,6 +15,7 @@
 
 pub use chunk::Chunk;
 pub type TrieMap<K, V> = map::Map<K, V>;
+pub use map::Map;
 pub use set::Set;
 
 pub mod chunk;

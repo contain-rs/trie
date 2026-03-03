@@ -67,7 +67,7 @@ impl<T: Chunk> Set<T> {
     /// # Examples
     ///
     /// ```
-    /// let mut set = trie::Set::new();
+    /// let mut set: trie::Set<usize> = trie::Set::new();
     /// ```
     #[inline]
     pub fn new() -> Set<T> {
@@ -80,7 +80,7 @@ impl<T: Chunk> Set<T> {
     /// # Examples
     ///
     /// ```
-    /// let set: trie::Set = [1, 2, 3, 4, 5].iter().cloned().collect();
+    /// let set: trie::Set<usize> = [1, 2, 3, 4, 5].iter().cloned().collect();
     ///
     /// let mut vec = vec![];
     /// assert_eq!(true, set.each_reverse(|&x| { vec.push(x); true }));
@@ -130,10 +130,10 @@ impl<T: Chunk + PartialOrd> Set<T> {
     /// # Examples
     ///
     /// ```
-    /// let set: trie::Set = [2, 4, 6, 8].iter().cloned().collect();
-    /// assert_eq!(set.lower_bound(4).next(), Some(4));
-    /// assert_eq!(set.lower_bound(5).next(), Some(6));
-    /// assert_eq!(set.lower_bound(10).next(), None);
+    /// let set: trie::Set<usize> = [2, 4, 6, 8].iter().cloned().collect();
+    /// assert_eq!(set.lower_bound(&4).next(), Some(&4));
+    /// assert_eq!(set.lower_bound(&5).next(), Some(&6));
+    /// assert_eq!(set.lower_bound(&10).next(), None);
     /// ```
     pub fn lower_bound(&self, val: &T) -> Range<'_, T> {
         Range {
@@ -147,10 +147,10 @@ impl<T: Chunk + PartialOrd> Set<T> {
     /// # Examples
     ///
     /// ```
-    /// let set: trie::Set = [2, 4, 6, 8].iter().cloned().collect();
-    /// assert_eq!(set.upper_bound(4).next(), Some(6));
-    /// assert_eq!(set.upper_bound(5).next(), Some(6));
-    /// assert_eq!(set.upper_bound(10).next(), None);
+    /// let set: trie::Set<usize> = [2, 4, 6, 8].iter().cloned().collect();
+    /// assert_eq!(set.upper_bound(&4).next(), Some(&6));
+    /// assert_eq!(set.upper_bound(&5).next(), Some(&6));
+    /// assert_eq!(set.upper_bound(&10).next(), None);
     /// ```
     pub fn upper_bound(&self, val: &T) -> Range<'_, T> {
         Range {
@@ -163,20 +163,20 @@ impl<T: Chunk + PartialOrd> Set<T> {
     /// # Examples
     ///
     /// ```
-    /// let a: trie::Set = [1, 2, 3].iter().cloned().collect();
-    /// let b: trie::Set = [3, 4, 5].iter().cloned().collect();
+    /// let a: trie::Set<usize> = [1, 2, 3].iter().cloned().collect();
+    /// let b: trie::Set<usize> = [3, 4, 5].iter().cloned().collect();
     ///
     /// // Can be seen as `a - b`.
     /// for x in a.difference(&b) {
     ///     println!("{}", x); // Print 1 then 2
     /// }
     ///
-    /// let diff1: trie::Set = a.difference(&b).collect();
+    /// let diff1: trie::Set<usize> = a.difference(&b).copied().collect();
     /// assert_eq!(diff1, [1, 2].iter().cloned().collect());
     ///
     /// // Note that difference is not symmetric,
     /// // and `b - a` means something else:
-    /// let diff2: trie::Set = b.difference(&a).collect();
+    /// let diff2: trie::Set<usize> = b.difference(&a).copied().collect();
     /// assert_eq!(diff2, [4, 5].iter().cloned().collect());
     /// ```
     pub fn difference<'a>(&'a self, other: &'a Set<T>) -> Difference<'a, T> {
@@ -191,16 +191,16 @@ impl<T: Chunk + PartialOrd> Set<T> {
     /// # Examples
     ///
     /// ```
-    /// let a: trie::Set = [1, 2, 3].iter().cloned().collect();
-    /// let b: trie::Set = [3, 4, 5].iter().cloned().collect();
+    /// let a: trie::Set<usize> = [1, 2, 3].iter().cloned().collect();
+    /// let b: trie::Set<usize> = [3, 4, 5].iter().cloned().collect();
     ///
     /// // Print 1, 2, 4, 5 in ascending order.
     /// for x in a.symmetric_difference(&b) {
     ///     println!("{}", x);
     /// }
     ///
-    /// let diff1: trie::Set = a.symmetric_difference(&b).collect();
-    /// let diff2: trie::Set = b.symmetric_difference(&a).collect();
+    /// let diff1: trie::Set<usize> = a.symmetric_difference(&b).copied().collect();
+    /// let diff2: trie::Set<usize> = b.symmetric_difference(&a).copied().collect();
     ///
     /// assert_eq!(diff1, diff2);
     /// assert_eq!(diff1, [1, 2, 4, 5].iter().cloned().collect());
@@ -217,15 +217,15 @@ impl<T: Chunk + PartialOrd> Set<T> {
     /// # Examples
     ///
     /// ```
-    /// let a: trie::Set = [1, 2, 3].iter().cloned().collect();
-    /// let b: trie::Set = [2, 3, 4].iter().cloned().collect();
+    /// let a: trie::Set<usize> = [1, 2, 3].iter().cloned().collect();
+    /// let b: trie::Set<usize> = [2, 3, 4].iter().cloned().collect();
     ///
     /// // Print 2, 3 in ascending order.
     /// for x in a.intersection(&b) {
     ///     println!("{}", x);
     /// }
     ///
-    /// let diff: trie::Set = a.intersection(&b).collect();
+    /// let diff: trie::Set<usize> = a.intersection(&b).copied().collect();
     /// assert_eq!(diff, [2, 3].iter().cloned().collect());
     /// ```
     pub fn intersection<'a>(&'a self, other: &'a Set<T>) -> Intersection<'a, T> {
@@ -248,7 +248,7 @@ impl<T: Chunk + PartialOrd> Set<T> {
     ///     println!("{}", x);
     /// }
     ///
-    /// let diff: trie::Set<usize> = a.union(&b).collect();
+    /// let diff: trie::Set<usize> = a.union(&b).copied().collect();
     /// assert_eq!(diff, [1, 2, 3, 4, 5].iter().cloned().collect());
     /// ```
     pub fn union<'a>(&'a self, other: &'a Set<T>) -> Union<'a, T> {
@@ -309,7 +309,7 @@ impl<T: Chunk> Set<T> {
     /// # Examples
     ///
     /// ```
-    /// let set: trie::Set = [1, 2, 3].iter().cloned().collect();
+    /// let set: trie::Set<usize> = [1, 2, 3].iter().cloned().collect();
     /// assert_eq!(set.contains(&1), true);
     /// assert_eq!(set.contains(&4), false);
     /// ```
@@ -324,7 +324,7 @@ impl<T: Chunk> Set<T> {
     /// # Examples
     ///
     /// ```
-    /// let a: trie::Set = [1, 2, 3].iter().cloned().collect();
+    /// let a: trie::Set<usize> = [1, 2, 3].iter().cloned().collect();
     /// let mut b = trie::Set::new();
     ///
     /// assert_eq!(a.is_disjoint(&b), true);
@@ -343,7 +343,7 @@ impl<T: Chunk> Set<T> {
     /// # Examples
     ///
     /// ```
-    /// let sup: trie::Set = [1, 2, 3].iter().cloned().collect();
+    /// let sup: trie::Set<usize> = [1, 2, 3].iter().cloned().collect();
     /// let mut set = trie::Set::new();
     ///
     /// assert_eq!(set.is_subset(&sup), true);
@@ -362,7 +362,7 @@ impl<T: Chunk> Set<T> {
     /// # Examples
     ///
     /// ```
-    /// let sub: trie::Set = [1, 2].iter().cloned().collect();
+    /// let sub: trie::Set<usize> = [1, 2].iter().cloned().collect();
     /// let mut set = trie::Set::new();
     ///
     /// assert_eq!(set.is_superset(&sub), false);
@@ -438,11 +438,11 @@ impl<T: Chunk + Clone + Ord> ops::BitOr<&Set<T>> for &Set<T> {
     /// # Example
     ///
     /// ```
-    /// let a: trie::Set = [1, 2, 3].iter().cloned().collect();
-    /// let b: trie::Set = [3, 4, 5].iter().cloned().collect();
+    /// let a: trie::Set<usize> = [1, 2, 3].iter().cloned().collect();
+    /// let b: trie::Set<usize> = [3, 4, 5].iter().cloned().collect();
     ///
-    /// let set: trie::Set = &a | &b;
-    /// let v: Vec<usize> = set.iter().collect();
+    /// let set: trie::Set<usize> = &a | &b;
+    /// let v: Vec<usize> = set.iter().copied().collect();
     /// assert_eq!(v, [1, 2, 3, 4, 5]);
     /// ```
     fn bitor(self, rhs: &Set<T>) -> Set<T> {
@@ -458,11 +458,11 @@ impl<T: Chunk + Clone + Ord> ops::BitAnd<&Set<T>> for &Set<T> {
     /// # Example
     ///
     /// ```
-    /// let a: trie::Set = [1, 2, 3].iter().cloned().collect();
-    /// let b: trie::Set = [2, 3, 4].iter().cloned().collect();
+    /// let a: trie::Set<usize> = [1, 2, 3].iter().cloned().collect();
+    /// let b: trie::Set<usize> = [2, 3, 4].iter().cloned().collect();
     ///
-    /// let set: trie::Set = &a & &b;
-    /// let v: Vec<usize> = set.iter().collect();
+    /// let set: trie::Set<usize> = &a & &b;
+    /// let v: Vec<usize> = set.iter().copied().collect();
     /// assert_eq!(v, [2, 3]);
     /// ```
     fn bitand(self, rhs: &Set<T>) -> Set<T> {
@@ -478,11 +478,11 @@ impl<T: Chunk + Clone + Ord> ops::BitXor<&Set<T>> for &Set<T> {
     /// # Example
     ///
     /// ```
-    /// let a: trie::Set = [1, 2, 3].iter().cloned().collect();
-    /// let b: trie::Set = [3, 4, 5].iter().cloned().collect();
+    /// let a: trie::Set<usize> = [1, 2, 3].iter().cloned().collect();
+    /// let b: trie::Set<usize> = [3, 4, 5].iter().cloned().collect();
     ///
-    /// let set: trie::Set = &a ^ &b;
-    /// let v: Vec<usize> = set.iter().collect();
+    /// let set: trie::Set<usize> = &a ^ &b;
+    /// let v: Vec<usize> = set.iter().copied().collect();
     /// assert_eq!(v, [1, 2, 4, 5]);
     /// ```
     fn bitxor(self, rhs: &Set<T>) -> Set<T> {
@@ -498,11 +498,11 @@ impl<T: Chunk + Clone + Ord> ops::Sub<&Set<T>> for &Set<T> {
     /// # Example
     ///
     /// ```
-    /// let a: trie::Set = [1, 2, 3].iter().cloned().collect();
-    /// let b: trie::Set = [3, 4, 5].iter().cloned().collect();
+    /// let a: trie::Set<usize> = [1, 2, 3].iter().cloned().collect();
+    /// let b: trie::Set<usize> = [3, 4, 5].iter().cloned().collect();
     ///
-    /// let set: trie::Set = &a - &b;
-    /// let v: Vec<usize> = set.iter().collect();
+    /// let set: trie::Set<usize> = &a - &b;
+    /// let v: Vec<usize> = set.iter().copied().collect();
     /// assert_eq!(v, [1, 2]);
     /// ```
     fn sub(self, rhs: &Set<T>) -> Set<T> {
