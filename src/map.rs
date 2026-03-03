@@ -16,6 +16,7 @@ use crate::chunk::{MAX_DEPTH, SIZE};
 pub use self::Entry::*;
 use self::TrieNode::*;
 
+use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::fmt::{self, Debug};
 use std::hash::{Hash, Hasher};
@@ -84,6 +85,7 @@ pub struct Map<K, V> {
 //
 // Throughout this implementation, "idx" is used to refer to a section of key that is used
 // to access a node. The layer of the tree directly below the root corresponds to idx 0.
+#[derive(Clone)]
 struct InternalNode<K, V> {
     // The number of direct children which are external (i.e. that store a value).
     count: usize,
@@ -291,14 +293,18 @@ impl<K: Chunk, V> Map<K, V> {
     /// assert_eq!(map.get(&2), None);
     /// ```
     #[inline]
-    pub fn get(&self, key: &K) -> Option<&V> {
+    pub fn get<Q>(&self, key: &Q) -> Option<&V>
+    where
+        K: Borrow<Q>,
+        Q: Chunk,
+    {
         let mut node = &self.root;
         let mut idx = 0;
         loop {
             match node.children[key.chunk(idx)] {
                 Internal(ref x) => node = &**x,
                 External(ref stored, ref value) => {
-                    if stored == key {
+                    if stored.borrow() == key {
                         return Some(value);
                     } else {
                         return None;
@@ -321,7 +327,11 @@ impl<K: Chunk, V> Map<K, V> {
     /// assert_eq!(map.contains_key(&2), false);
     /// ```
     #[inline]
-    pub fn contains_key(&self, key: &K) -> bool {
+    pub fn contains_key<Q>(&self, key: &Q) -> bool
+    where
+        K: Borrow<Q>,
+        Q: Chunk,
+    {
         self.get(key).is_some()
     }
 
@@ -339,7 +349,11 @@ impl<K: Chunk, V> Map<K, V> {
     /// assert_eq!(map[&1], "b");
     /// ```
     #[inline]
-    pub fn get_mut(&mut self, key: &K) -> Option<&mut V> {
+    pub fn get_mut<Q>(&mut self, key: &Q) -> Option<&mut V>
+    where
+        K: Borrow<Q>,
+        Q: Chunk,
+    {
         find_mut(&mut self.root.children[key.chunk(0)], key, 1)
     }
 
@@ -382,7 +396,11 @@ impl<K: Chunk, V> Map<K, V> {
     /// assert_eq!(map.remove(&1), Some("a"));
     /// assert_eq!(map.remove(&1), None);
     /// ```
-    pub fn remove(&mut self, key: &K) -> Option<V> {
+    pub fn remove<Q>(&mut self, key: &Q) -> Option<V>
+    where
+        K: Borrow<Q>,
+        Q: Chunk,
+    {
         let ret = remove(
             &mut self.root.count,
             &mut self.root.children[key.chunk(0)],
@@ -589,46 +607,26 @@ impl<K: Chunk + Hash, V: Hash> Hash for Map<K, V> {
     }
 }
 
-impl<'a, K: Chunk + 'a, V> ops::Index<&'a K> for Map<K, V> {
+impl<'a, Q, K, V> ops::Index<&'a Q> for Map<K, V>
+where
+    K: Borrow<Q> + Chunk,
+    Q: Chunk + 'a,
+{
     type Output = V;
     #[inline]
-    fn index(&self, i: &'a K) -> &V {
+    fn index(&self, i: &'a Q) -> &V {
         self.get(i).expect("key not present")
     }
 }
 
-impl<'a, K: Chunk + 'a, V> ops::IndexMut<&'a K> for Map<K, V> {
+impl<'a, Q, K, V> ops::IndexMut<&'a Q> for Map<K, V>
+where
+    K: Borrow<Q> + Chunk,
+    Q: Chunk + 'a,
+{
     #[inline]
-    fn index_mut(&mut self, i: &'a K) -> &mut V {
+    fn index_mut(&mut self, i: &'a Q) -> &mut V {
         self.get_mut(i).expect("key not present")
-    }
-}
-
-impl<K: Clone, V: Clone> Clone for InternalNode<K, V> {
-    #[inline]
-    fn clone(&self) -> InternalNode<K, V> {
-        let ch = &self.children;
-        InternalNode {
-            count: self.count,
-            children: [
-                ch[0].clone(),
-                ch[1].clone(),
-                ch[2].clone(),
-                ch[3].clone(),
-                ch[4].clone(),
-                ch[5].clone(),
-                ch[6].clone(),
-                ch[7].clone(),
-                ch[8].clone(),
-                ch[9].clone(),
-                ch[10].clone(),
-                ch[11].clone(),
-                ch[12].clone(),
-                ch[13].clone(),
-                ch[14].clone(),
-                ch[15].clone(),
-            ],
-        }
     }
 }
 
@@ -666,13 +664,16 @@ impl<K, V> InternalNode<K, V> {
     }
 }
 
-fn find_mut<'a, K: Chunk, V>(
+fn find_mut<'a, K, Q: Chunk, V>(
     child: &'a mut TrieNode<K, V>,
-    key: &K,
+    key: &Q,
     idx: usize,
-) -> Option<&'a mut V> {
+) -> Option<&'a mut V>
+where
+    K: Borrow<Q> + Chunk,
+{
     match *child {
-        External(ref stored, ref mut value) if stored == key => Some(value),
+        External(ref stored, ref mut value) if stored.borrow() == key => Some(value),
         External(..) => None,
         Internal(ref mut x) => find_mut(&mut x.children[key.chunk(idx)], key, idx + 1),
         Nothing => None,
@@ -770,14 +771,17 @@ fn insert<'a, K: Chunk, V>(
     unreachable!();
 }
 
-fn remove<K: Chunk, V>(
+fn remove<K, Q: Chunk, V>(
     count: &mut usize,
     child: &mut TrieNode<K, V>,
-    key: &K,
+    key: &Q,
     idx: usize,
-) -> Option<V> {
+) -> Option<V>
+where
+    K: Borrow<Q> + Chunk,
+{
     let (ret, this) = match *child {
-        External(ref stored, _) if stored == key => match mem::replace(child, Nothing) {
+        External(ref stored, _) if stored.borrow() == key => match mem::replace(child, Nothing) {
             External(_, value) => (Some(value), true),
             _ => unreachable!(),
         },

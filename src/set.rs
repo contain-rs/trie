@@ -681,12 +681,11 @@ impl<'a, T: Chunk + 'a> IntoIterator for &'a Set<T> {
 #[cfg(test)]
 mod test {
     use super::Set;
-    use crate::chunk::USIZE_BITS;
 
     #[test]
     fn test_sane_chunk() {
         let x = 1;
-        let y = 1 << (USIZE_BITS - 1);
+        let y: u64 = 1 << (usize::BITS - 1);
 
         let mut trie = Set::new();
 
