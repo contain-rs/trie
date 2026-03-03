@@ -770,7 +770,13 @@ mod test {
 
     fn check<F>(a: &[usize], b: &[usize], expected: &[usize], f: F)
     where
-        F: FnOnce(&Set<usize>, &Set<usize>, &mut usize, &[usize], Box<dyn FnMut(&usize, &mut usize, &[usize]) -> bool>) -> bool,
+        F: FnOnce(
+            &Set<usize>,
+            &Set<usize>,
+            &mut usize,
+            &[usize],
+            Box<dyn FnMut(&usize, &mut usize, &[usize]) -> bool>,
+        ) -> bool,
     {
         let mut set_a = Set::new();
         let mut set_b = Set::new();
@@ -792,7 +798,7 @@ mod test {
                 assert_eq!(x, expected[*i]);
                 *i += 1;
                 true
-            })
+            }),
         );
         assert_eq!(i, expected.len());
     }
@@ -800,7 +806,9 @@ mod test {
     #[test]
     fn test_intersection() {
         fn check_intersection(a: &[usize], b: &[usize], expected: &[usize]) {
-            check(a, b, expected, |x, y, i, expected, mut f| x.intersection(y).all(|elem| f(elem, i, expected)))
+            check(a, b, expected, |x, y, i, expected, mut f| {
+                x.intersection(y).all(|elem| f(elem, i, expected))
+            })
         }
 
         check_intersection(&[], &[], &[]);
@@ -814,7 +822,9 @@ mod test {
     #[test]
     fn test_difference() {
         fn check_difference(a: &[usize], b: &[usize], expected: &[usize]) {
-            check(a, b, expected, |x, y, i, e, mut f| x.difference(y).all(|elem| f(elem, i, e)))
+            check(a, b, expected, |x, y, i, e, mut f| {
+                x.difference(y).all(|elem| f(elem, i, e))
+            })
         }
 
         check_difference(&[], &[], &[]);
@@ -831,7 +841,9 @@ mod test {
     #[test]
     fn test_symmetric_difference() {
         fn check_symmetric_difference(a: &[usize], b: &[usize], expected: &[usize]) {
-            check(a, b, expected, |x, y, i, e, mut f| x.symmetric_difference(y).all(|elem| f(elem, i, e)))
+            check(a, b, expected, |x, y, i, e, mut f| {
+                x.symmetric_difference(y).all(|elem| f(elem, i, e))
+            })
         }
 
         check_symmetric_difference(&[], &[], &[]);
@@ -843,7 +855,9 @@ mod test {
     #[test]
     fn test_union() {
         fn check_union(a: &[usize], b: &[usize], expected: &[usize]) {
-            check(a, b, expected, |x, y, i, e, mut f| x.union(y).all(|elem| f(elem, i, e)))
+            check(a, b, expected, |x, y, i, e, mut f| {
+                x.union(y).all(|elem| f(elem, i, e))
+            })
         }
 
         check_union(&[], &[], &[]);
