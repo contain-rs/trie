@@ -666,7 +666,11 @@ impl<K, V> InternalNode<K, V> {
     }
 }
 
-fn find_mut<'a, K: Chunk, V>(child: &'a mut TrieNode<K, V>, key: &K, idx: usize) -> Option<&'a mut V> {
+fn find_mut<'a, K: Chunk, V>(
+    child: &'a mut TrieNode<K, V>,
+    key: &K,
+    idx: usize,
+) -> Option<&'a mut V> {
     match *child {
         External(ref stored, ref mut value) if stored == key => Some(value),
         External(..) => None,
@@ -766,7 +770,12 @@ fn insert<'a, K: Chunk, V>(
     unreachable!();
 }
 
-fn remove<K: Chunk, V>(count: &mut usize, child: &mut TrieNode<K, V>, key: &K, idx: usize) -> Option<V> {
+fn remove<K: Chunk, V>(
+    count: &mut usize,
+    child: &mut TrieNode<K, V>,
+    key: &K,
+    idx: usize,
+) -> Option<V> {
     let (ret, this) = match *child {
         External(ref stored, _) if stored == key => match mem::replace(child, Nothing) {
             External(_, value) => (Some(value), true),
@@ -900,7 +909,8 @@ impl<K: Chunk, V> Map<K, V> {
         // adding nodes to the search stack.
         let search_successful: bool;
         loop {
-            match unsafe { next_child(search_stack.peek(), &search_stack.key, search_stack.length) } {
+            match unsafe { next_child(search_stack.peek(), &search_stack.key, search_stack.length) }
+            {
                 (Some(child), _) => search_stack.push(child),
                 (None, success) => {
                     search_successful = success;
@@ -1049,7 +1059,13 @@ impl<'a, K: Chunk, V> VacantEntry<'a, K, V> {
             unsafe {
                 // Note: Small hack to appease the borrow checker. Can't mutably borrow root.count
                 let mut temp = (*search_stack.map).root.count;
-                let (value_ref, _) = insert(&mut temp, search_stack.get_ref(0), search_stack.key, value, 1);
+                let (value_ref, _) = insert(
+                    &mut temp,
+                    search_stack.get_ref(0),
+                    search_stack.key,
+                    value,
+                    1,
+                );
                 (*search_stack.map).root.count = temp;
                 value_ref
             }

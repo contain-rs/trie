@@ -608,7 +608,12 @@ impl<'a, T: Ord + 'a> Iterator for SymmetricDifference<'a, T> {
     type Item = &'a T;
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            match cmp_opt(self.a.peek().copied(), self.b.peek().copied(), Greater, Less) {
+            match cmp_opt(
+                self.a.peek().copied(),
+                self.b.peek().copied(),
+                Greater,
+                Less,
+            ) {
                 Less => return self.a.next(),
                 Equal => {
                     self.a.next();
@@ -649,7 +654,12 @@ impl<'a, T: Ord + 'a> Iterator for Intersection<'a, T> {
 impl<'a, T: Ord + 'a> Iterator for Union<'a, T> {
     type Item = &'a T;
     fn next(&mut self) -> Option<Self::Item> {
-        match cmp_opt(self.a.peek().copied(), self.b.peek().copied(), Greater, Less) {
+        match cmp_opt(
+            self.a.peek().copied(),
+            self.b.peek().copied(),
+            Greater,
+            Less,
+        ) {
             Less => self.a.next(),
             Equal => {
                 self.b.next();

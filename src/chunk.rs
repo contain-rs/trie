@@ -1,4 +1,3 @@
-
 #[cfg(target_pointer_width = "32")]
 pub const USIZE_BITS: usize = 32;
 
