@@ -10,14 +10,22 @@
 
 //! An ordered map and set based on a trie.
 
+#![feature(generic_const_exprs)]
+#![feature(associated_type_defaults)]
+#![feature(generic_const_items)]
+
 pub use chunk::Chunk;
-pub type TrieMap<K, V> = map::Map<K, V>;
+pub type TrieMap<K, V> = map::Map<K, V, BasicTrieHint<K, V>>;
 pub use map::Map;
 pub use set::Set;
 
+use crate::perf_hint::BasicTrieHint;
+
+pub mod perf_hint;
 pub mod chunk;
 pub mod map;
 pub mod set;
+pub mod node;
 
 // #[cfg(feature = "ordered_iter")]
 // mod ordered_iter;

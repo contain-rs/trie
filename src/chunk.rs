@@ -1,74 +1,172 @@
-pub(crate) const SHIFT: u8 = 4;
-pub(crate) const SIZE: usize = 1 << SHIFT;
-pub(crate) const MASK: usize = SIZE - 1;
-// The number of chunks that the key is divided into. Also the maximum depth of the map.
-pub(crate) const MAX_DEPTH: usize = usize::BITS as usize / SHIFT as usize;
-
-/// Allows us to extract nybbles (4 bits at a time).
-///
-/// Should be implemented for lists of bytes, byte strings,
-/// as well as basic integer types.
+/// Allows us to extract bytes or parts of a byte (meaning, up to 8 bits
+/// at a time).
 ///
 /// Note: the `PartialEq` bound is included as a convenience,
 /// since we always need it in practice.
-///
-/// Note: we accept and return `usize` rather than `u8` as a convenience because
-/// we wish to use these for indices without casting.
 pub trait Chunk: PartialEq {
-    /// Note: we accept and return `usize` rather than `u8` as a convenience because
-    /// we wish to use these for indices without casting.
-    fn chunk(&self, idx: usize) -> usize;
+    const VARSIZED: bool;
+    const CONST_LEN: i64;
+
+    fn chunk(&self, idx: u64, len: u8) -> u8;
+    fn bits(&self) -> u64;
 }
 
 impl Chunk for Vec<u8> {
-    fn chunk(&self, idx: usize) -> usize {
-        (self[idx / 2] >> ((idx % 2) * 4)) as usize
+    const VARSIZED: bool = true;
+    const CONST_LEN: i64 = -1;
+
+    fn chunk(&self, idx: u64, len: u8) -> u8 {
+        self.deref().chunk(idx, len)
+    }
+
+    fn bits(&self) -> u64 {
+        self.len() as u64 * 8
     }
 }
 
 impl<const N: usize> Chunk for [u8; N] {
-    fn chunk(&self, idx: usize) -> usize {
-        (self[idx / 2] >> ((idx % 2) * 4)) as usize
+    const VARSIZED: bool = false;
+    const CONST_LEN: i64 = N as i64 * 8;
+
+    fn chunk(&self, idx: u64, len: u8) -> u8 {
+        self[..].chunk(idx, len)
+    }
+
+    fn bits(&self) -> u64 {
+        N as u64 * 8
     }
 }
 
 impl Chunk for [u8] {
-    fn chunk(&self, idx: usize) -> usize {
-        (self[idx / 2] >> ((idx % 2) * 4)) as usize
+    const VARSIZED: bool = true;
+    const CONST_LEN: i64 = -1;
+
+    fn chunk(&self, idx: u64, len: u8) -> u8 {
+        debug_assert!(len <= 8);
+        let first = self[idx / 8] >> (idx % 8);
+        let second = self.get(idx / 8 + 1).copied().unwrap_or(0) << (idx % 8);
+        let mask = (1 << len) - 1;
+        (first | second) & mask
+    }
+
+    fn bits(&self) -> u64 {
+        self.len() as u64 * 8
+    }
+}
+
+impl Chunk for String {
+    const VARSIZED: bool = true;
+    const CONST_LEN: i64 = -1;
+
+    fn chunk(&self, idx: u64, len: u8) -> u8 {
+        self.as_bytes().chunk(idx, len)
+    }
+
+    fn bits(&self) -> u64 {
+        self.as_bytes().bits()
+    }
+}
+
+impl Chunk for str {
+    const VARSIZED: bool = true;
+    const CONST_LEN: i64 = -1;
+
+    fn chunk(&self, idx: u64, len: u8) -> u8 {
+        self.as_bytes().chunk(idx, len)
+    }
+
+    fn bits(&self) -> u64 {
+        self.as_bytes().bits()
     }
 }
 
 impl Chunk for usize {
-    fn chunk(&self, idx: usize) -> usize {
-        let sh = usize::BITS as u8 - (SHIFT * (idx as u8 + 1));
-        (self >> sh) & MASK
+    const VARSIZED: bool = false;
+    const CONST_LEN: i64 = usize::BITS as i64;
+
+    fn chunk(&self, idx: u64, len: u8) -> u8 {
+        self.to_be_bytes().chunk(idx, len)
+    }
+
+    fn bits(&self) -> u64 {
+        Self::BITS as u64
+    }
+}
+
+impl Chunk for u8 {
+    const VARSIZED: bool = false;
+    const CONST_LEN: i64 = 8;
+    fn chunk(&self, idx: u64, len: u8) -> u8 {
+        [self].chunk(idx, len)
+    }
+
+    fn bits(&self) -> u64 {
+        Self::BITS as u64
     }
 }
 
 impl Chunk for u32 {
-    fn chunk(&self, idx: usize) -> usize {
-        let sh = u32::BITS as u8 - (SHIFT * (idx as u8 + 1));
-        ((self >> sh) & MASK as u32) as usize
+    const VARSIZED: bool = false;
+    const CONST_LEN: i64 = 32;
+
+    fn chunk(&self, idx: u64, len: u8) -> u8 {
+        self.to_be_bytes().chunk(idx, len)
+    }
+
+    fn bits(&self) -> u64 {
+        Self::BITS as u64
     }
 }
 
 impl Chunk for i32 {
-    fn chunk(&self, idx: usize) -> usize {
-        let sh = i32::BITS as u8 - (SHIFT * (idx as u8 + 1));
-        ((*self as u32 >> sh) & MASK as u32) as usize
+    const VARSIZED: bool = false;
+    const CONST_LEN: i64 = 32;
+
+    fn chunk(&self, idx: u64, len: u8) -> u8 {
+        self.to_be_bytes().chunk(idx, len)
+    }
+
+    fn bits(&self) -> u64 {
+        Self::BITS as u64
     }
 }
 
 impl Chunk for u64 {
-    fn chunk(&self, idx: usize) -> usize {
-        let sh = u64::BITS as u8 - (SHIFT * (idx as u8 + 1));
-        ((self >> sh) & MASK as u64) as usize
+    const VARSIZED: bool = false;
+    const CONST_LEN: i64 = 64;
+
+    fn chunk(&self, idx: u64, len: u8) -> u8 {
+        self.to_be_bytes().chunk(idx, len)
+    }
+
+    fn bits(&self) -> u64 {
+        Self::BITS as u64
     }
 }
 
 impl Chunk for i64 {
-    fn chunk(&self, idx: usize) -> usize {
-        let sh = i64::BITS as u8 - (SHIFT * (idx as u8 + 1));
-        (((*self) as u64 >> sh) & MASK as u64) as usize
+    const VARSIZED: bool = false;
+    const CONST_LEN: i64 = 64;
+
+    fn chunk(&self, idx: u64, len: u8) -> u8 {
+        self.to_be_bytes().chunk(idx, len)
+    }
+
+    fn bits(&self) -> u64 {
+        Self::BITS as u64
+    }
+}
+
+#[cfg(feature = "bit-vec")]
+impl Chunk for bit_vec::BitVec {
+    const VARSIZED: bool = true;
+    const CONST_LEN: i64 = -1;
+
+    fn chunk(&self, idx: u64, len: u8) -> u8 {
+        todo!()
+    }
+
+    fn bits(&self) -> u64 {
+        self.len() as u64
     }
 }
