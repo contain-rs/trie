@@ -306,13 +306,13 @@ impl<M: MapTrait> Map<M> {
     {
         // Root is now a TrieNode: start traversal from it directly at idx 0.
         let mut node = self.root.into_any_ref();
-        let mut idx = 0;
+        let mut idx: Q::KeySize = 0u8.try_into().ok().unwrap();
 
         loop {
             match node {
                 AnyNodeRef::Branch { children, .. } => {
-                    node = children[key.chunk(idx, M::SHIFT) as usize].into_any_ref();
-                    idx += M::SHIFT as u64;
+                    node = children[key.chunk(idx.try_into().ok()?.try_into().ok()?, M::SHIFT) as usize].into_any_ref();
+                    idx += M::SHIFT.try_into().ok().unwrap();
                 }
                 AnyNodeRef::External(k, v) => {
                     if k.borrow() == key {
@@ -365,7 +365,7 @@ impl<M: MapTrait> Map<M> {
         Q: Chunk,
     {
         // Root is now the first node to check, at idx 0.
-        find_mut(self.root.as_any_mut(), key, 0)
+        find_mut(self.root.as_any_mut(), key, 0u8.try_into().ok().unwrap())
     }
 
     /// Inserts a key-value pair from the map. If the key already had a value
@@ -388,10 +388,10 @@ impl<M: MapTrait> Map<M> {
         let mut root_count: usize = 0;
         let (_, old_val) = match self.root.as_either() {
             EitherNode::Trie(node) => {
-                insert(&mut root_count, node, key, value, 0)
+                insert(&mut root_count, node, key, value, 0u8.try_into().ok().unwrap())
             }
             EitherNode::Internal(internal) => {
-                insert(&mut internal.count, &mut internal.children[key.chunk(0, M::SHIFT) as usize], key, value, M::SHIFT as u64)
+                insert(&mut internal.count, &mut internal.children[key.chunk(0u8.try_into().ok().unwrap(), M::SHIFT) as usize], key, value, M::SHIFT.try_into().ok().unwrap())
             }
         };
         if old_val.is_none() {
@@ -419,10 +419,10 @@ impl<M: MapTrait> Map<M> {
         let mut root_count: usize = 0;
         let ret = match self.root.as_either() {
             EitherNode::Trie(node) => {
-                remove(&mut root_count, node, key, 0)
+                remove(&mut root_count, node, key, 0u8.into())
             }
             EitherNode::Internal(internal) => {
-                remove(&mut internal.count, &mut internal.children[key.chunk(0, M::SHIFT) as usize], key, M::SHIFT as u64)
+                remove(&mut internal.count, &mut internal.children[key.chunk(0u8.into(), M::SHIFT) as usize], key, M::SHIFT.into())
             }
         };
         if ret.is_some() {
@@ -1379,18 +1379,20 @@ where
 // }
 
 // // TODO: make the function non-recursive
-fn find_mut<'a, M: MapTrait, Q: Chunk>(
+fn find_mut<'a, M, Q>(
     node: AnyNodeMut<'a, M>,
     key: &Q,
-    idx: u64,
+    idx: Q::KeySize,
 ) -> Option<&'a mut M::Value>
 where
+    M: MapTrait,
     M::Key: Borrow<Q> + Chunk,
+    Q: Chunk,
 {
     match node {
         AnyNodeMut::External(stored, value) if (*stored).borrow() == key => Some(value),
         AnyNodeMut::External(..) => None,
-        AnyNodeMut::Branch { children, .. } => find_mut(children[key.chunk(idx, M::SHIFT) as usize].as_any_mut(), key, idx + M::SHIFT as u64),
+        AnyNodeMut::Branch { children, .. } => find_mut(children[key.chunk(idx, M::SHIFT) as usize].as_any_mut(), key, idx + M::SHIFT.into()),
         AnyNodeMut::Nothing => None,
     }
 }
@@ -1409,7 +1411,7 @@ fn insert<'a, M: MapTrait>(
     start_node: &'a mut TrieNode<M>,
     key: M::Key,
     value: M::Value,
-    idx: u64,
+    idx: <<M as MapTrait>::Key as Chunk>::KeySize,
 ) -> (&'a mut M::Value, Option<M::Value>) where M::Key: Chunk {
     // We branch twice to avoid having to do the `replace` when we don't need to;
     // this is much faster, especially for keys that have long shared prefixes.
@@ -1431,7 +1433,7 @@ fn insert<'a, M: MapTrait>(
                 &mut x.children[key.chunk(idx, M::SHIFT) as usize],
                 key,
                 value,
-                idx + M::SHIFT as u64,
+                idx + M::SHIFT.into(),
             );
         }
         External(ref stored_key, _) if stored_key == &key => {
@@ -1453,14 +1455,14 @@ fn insert<'a, M: MapTrait>(
                             &mut new_node.children[stored_key.chunk(idx, M::SHIFT) as usize],
                             stored_key,
                             stored_value,
-                            idx + M::SHIFT as u64,
+                            idx + M::SHIFT.into(),
                         );
                         return insert(
                             &mut new_node.count,
                             &mut new_node.children[key.chunk(idx, M::SHIFT) as usize],
                             key,
                             value,
-                            idx + M::SHIFT as u64,
+                            idx + M::SHIFT.into(),
                         );
                     }
                     _ => unreachable!(),
@@ -1483,7 +1485,7 @@ fn remove<M: MapTrait, Q: Chunk>(
     count: &mut usize,
     child: &mut TrieNode<M>,
     key: &Q,
-    idx: u64,
+    idx: Q::KeySize,
 ) -> Option<M::Value>
 where
     M::Key: Borrow<Q> + Chunk,
@@ -1496,7 +1498,7 @@ where
         External(..) => (None, false),
         Internal(ref mut x) => {
             let x = &mut **x;
-            let ret = remove(&mut x.count, &mut x.children[key.chunk(idx, M::SHIFT) as usize], key, idx + M::SHIFT as u64);
+            let ret = remove(&mut x.count, &mut x.children[key.chunk(idx.try_into().ok()?.try_into().ok()?, M::SHIFT) as usize], key, idx + M::SHIFT.into());
             (ret, x.count == 0)
         }
         Nothing => (None, false),
