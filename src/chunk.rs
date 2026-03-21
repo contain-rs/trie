@@ -1,3 +1,7 @@
+use std::ops::Deref;
+
+use crate::map_trait::{MapTrait, RootNode};
+
 /// Allows us to extract bytes or parts of a byte (meaning, up to 8 bits
 /// at a time).
 ///
@@ -5,6 +9,7 @@
 /// since we always need it in practice.
 pub trait Chunk: PartialEq {
     const VARSIZED: bool;
+    type Root<M: MapTrait, T: RootNode<M>, I: RootNode<M>>: RootNode<M>;
     const CONST_LEN: i64;
 
     fn chunk(&self, idx: u64, len: u8) -> u8;
@@ -13,6 +18,7 @@ pub trait Chunk: PartialEq {
 
 impl Chunk for Vec<u8> {
     const VARSIZED: bool = true;
+    type Root<M: MapTrait, T: RootNode<M>, I: RootNode<M>> = T;
     const CONST_LEN: i64 = -1;
 
     fn chunk(&self, idx: u64, len: u8) -> u8 {
@@ -26,6 +32,7 @@ impl Chunk for Vec<u8> {
 
 impl<const N: usize> Chunk for [u8; N] {
     const VARSIZED: bool = false;
+    type Root<M: MapTrait, T: RootNode<M>, I: RootNode<M>> = I;
     const CONST_LEN: i64 = N as i64 * 8;
 
     fn chunk(&self, idx: u64, len: u8) -> u8 {
@@ -39,12 +46,13 @@ impl<const N: usize> Chunk for [u8; N] {
 
 impl Chunk for [u8] {
     const VARSIZED: bool = true;
+    type Root<M: MapTrait, T: RootNode<M>, I: RootNode<M>> = T;
     const CONST_LEN: i64 = -1;
 
     fn chunk(&self, idx: u64, len: u8) -> u8 {
         debug_assert!(len <= 8);
-        let first = self[idx / 8] >> (idx % 8);
-        let second = self.get(idx / 8 + 1).copied().unwrap_or(0) << (idx % 8);
+        let first = self[(idx / 8) as usize] >> (idx % 8);
+        let second = self.get((idx / 8 + 1) as usize).copied().unwrap_or(0) << (idx % 8);
         let mask = (1 << len) - 1;
         (first | second) & mask
     }
@@ -56,6 +64,7 @@ impl Chunk for [u8] {
 
 impl Chunk for String {
     const VARSIZED: bool = true;
+    type Root<M: MapTrait, T: RootNode<M>, I: RootNode<M>> = T;
     const CONST_LEN: i64 = -1;
 
     fn chunk(&self, idx: u64, len: u8) -> u8 {
@@ -69,6 +78,7 @@ impl Chunk for String {
 
 impl Chunk for str {
     const VARSIZED: bool = true;
+    type Root<M: MapTrait, T: RootNode<M>, I: RootNode<M>> = T;
     const CONST_LEN: i64 = -1;
 
     fn chunk(&self, idx: u64, len: u8) -> u8 {
@@ -82,6 +92,7 @@ impl Chunk for str {
 
 impl Chunk for usize {
     const VARSIZED: bool = false;
+    type Root<M: MapTrait, T: RootNode<M>, I: RootNode<M>> = I;
     const CONST_LEN: i64 = usize::BITS as i64;
 
     fn chunk(&self, idx: u64, len: u8) -> u8 {
@@ -95,9 +106,10 @@ impl Chunk for usize {
 
 impl Chunk for u8 {
     const VARSIZED: bool = false;
+    type Root<M: MapTrait, T: RootNode<M>, I: RootNode<M>> = I;
     const CONST_LEN: i64 = 8;
     fn chunk(&self, idx: u64, len: u8) -> u8 {
-        [self].chunk(idx, len)
+        [*self].chunk(idx, len)
     }
 
     fn bits(&self) -> u64 {
@@ -107,6 +119,7 @@ impl Chunk for u8 {
 
 impl Chunk for u32 {
     const VARSIZED: bool = false;
+    type Root<M: MapTrait, T: RootNode<M>, I: RootNode<M>> = I;
     const CONST_LEN: i64 = 32;
 
     fn chunk(&self, idx: u64, len: u8) -> u8 {
@@ -120,6 +133,7 @@ impl Chunk for u32 {
 
 impl Chunk for i32 {
     const VARSIZED: bool = false;
+    type Root<M: MapTrait, T: RootNode<M>, I: RootNode<M>> = I;
     const CONST_LEN: i64 = 32;
 
     fn chunk(&self, idx: u64, len: u8) -> u8 {
@@ -133,6 +147,7 @@ impl Chunk for i32 {
 
 impl Chunk for u64 {
     const VARSIZED: bool = false;
+    type Root<M: MapTrait, T: RootNode<M>, I: RootNode<M>> = I;
     const CONST_LEN: i64 = 64;
 
     fn chunk(&self, idx: u64, len: u8) -> u8 {
@@ -146,6 +161,7 @@ impl Chunk for u64 {
 
 impl Chunk for i64 {
     const VARSIZED: bool = false;
+    type Root<M: MapTrait, T: RootNode<M>, I: RootNode<M>> = I;
     const CONST_LEN: i64 = 64;
 
     fn chunk(&self, idx: u64, len: u8) -> u8 {
@@ -160,6 +176,7 @@ impl Chunk for i64 {
 #[cfg(feature = "bit-vec")]
 impl Chunk for bit_vec::BitVec {
     const VARSIZED: bool = true;
+    type Root<M: MapTrait, T: RootNode<M>, I: RootNode<M>> = T;
     const CONST_LEN: i64 = -1;
 
     fn chunk(&self, idx: u64, len: u8) -> u8 {

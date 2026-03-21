@@ -17,6 +17,8 @@ edition = "2024"
 rust-version = "1.85"
 
 [features]
+default = []
+extra = []
 
 [dependencies]
 bit-vec = { version = "0.8", optional = true }
