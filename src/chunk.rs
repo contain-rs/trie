@@ -1,17 +1,25 @@
+use std::hash::Hash;
 use std::ops::{Add, AddAssign, Deref};
 
-use crate::map_trait::{MapTrait, RootNode};
+use crate::map_trait::MapTrait;
+use crate::root_node::RootNode;
 
 /// Allows us to extract bytes or parts of a byte (meaning, up to 8 bits
 /// at a time).
 ///
 /// Note: the `PartialEq` bound is included as a convenience,
 /// since we always need it in practice.
-pub trait Chunk: PartialEq {
+pub trait Chunk: PartialEq + PartialOrd + Hash + Eq + Ord {
     const VARSIZED: bool;
     type Root<M: MapTrait, T: RootNode<M>, I: RootNode<M>>: RootNode<M>;
     const CONST_LEN: i64;
-    type KeySize: TryFrom<u64> + TryInto<u64> + TryFrom<u8> + Copy + From<u8> + Add<Self::KeySize, Output = Self::KeySize> + AddAssign<Self::KeySize> = usize;
+    type KeySize: TryFrom<u64>
+        + TryInto<u64>
+        + TryFrom<u8>
+        + Copy
+        + From<u8>
+        + Add<Self::KeySize, Output = Self::KeySize>
+        + AddAssign<Self::KeySize> = usize;
 
     fn chunk(&self, idx: Self::KeySize, len: u8) -> u8;
     fn bits(&self) -> Self::KeySize;

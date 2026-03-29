@@ -10,7 +10,12 @@ pub struct InternalNode<M: MapTrait> {
     pub(crate) children: M::Children<TrieNode<M>>,
 }
 
-impl<M: MapTrait> Clone for InternalNode<M> where M::Key: Clone, M::Value: Clone {
+impl<M: MapTrait> Clone for InternalNode<M>
+where
+    M::Key: Clone,
+    M::Value: Clone,
+    M::MaybeInner: Clone,
+{
     fn clone(&self) -> Self {
         Self {
             count: self.count,
@@ -24,64 +29,29 @@ impl<M: MapTrait> Clone for InternalNode<M> where M::Key: Clone, M::Value: Clone
 // The root of the Map is also one of these variants.
 pub enum TrieNode<M: MapTrait> {
     Internal(Box<InternalNode<M>>),
-    External(M::Key, M::Value),
+    External(M::MaybeInner),
     Nothing,
 }
 
-impl<M: MapTrait> Clone for TrieNode<M> where M::Key: Clone, M::Value: Clone {
+impl<M: MapTrait> Clone for TrieNode<M>
+where
+    M::Key: Clone,
+    M::Value: Clone,
+    M::MaybeInner: Clone,
+{
     fn clone(&self) -> Self {
         match self {
-            TrieNode::External(k, v) => TrieNode::External(k.clone(), v.clone()),
+            TrieNode::External(maybe_inner) => TrieNode::External(maybe_inner.clone()),
             TrieNode::Internal(b) => TrieNode::Internal((*b).clone()),
             TrieNode::Nothing => TrieNode::Nothing,
         }
     }
 }
 
-pub(crate) enum AnyNode<M: MapTrait> {
-    Internal(Box<InternalNode<M>>),
-    External(M::Key, M::Value),
-    Branch {
-        count: usize,
-        children: M::Children<TrieNode<M>>,
-    },
-    Nothing,
-}
-
-pub(crate) enum AnyNodeRef<'a, M: MapTrait> {
-    External(&'a M::Key, &'a M::Value),
-    Branch {
-        count: usize,
-        children: &'a [TrieNode<M>],
-    },
-    Nothing,
-}
-
-// pub(crate) enum TrieNodeRef<'a, M: MapTrait> {
-//     External(&'a M::Key, &'a M::Value),
-//     Internal()
-// }
-
-pub(crate) enum AnyNodeMut<'a, M: MapTrait> {
-    External(&'a mut M::Key, &'a mut M::Value),
-    Branch {
-        count: usize,
-        children: &'a mut [TrieNode<M>],
-    },
-    Nothing,
-}
-
-pub(crate) enum EitherNode<'a, M: MapTrait> {
-    Trie(&'a mut TrieNode<M>),
-    Internal(&'a mut InternalNode<M>),
-}
-
-pub(crate) enum EitherNodeRef<'a, M: MapTrait> {
-    Trie(&'a TrieNode<M>),
-    Internal(&'a InternalNode<M>),
-}
-
-impl<M> InternalNode<M> where M: MapTrait {
+impl<M> InternalNode<M>
+where
+    M: MapTrait,
+{
     #[inline]
     pub(crate) fn new() -> Self {
         InternalNode {

@@ -11,20 +11,21 @@
 //! An ordered map based on a trie.
 
 use crate::Chunk;
+use crate::inner::{Entry, Inner, Occupied, Vacant};
 use crate::map_trait::{Children, MapTrait};
-use crate::map_trait::{Root, RootChoice};
-use crate::map_trait::RootNode;
 
-use crate::node::{AnyNode, EitherNodeRef};
-use crate::node::AnyNodeMut;
-use crate::node::AnyNodeRef;
-use crate::node::EitherNode;
 use crate::node::InternalNode;
+use crate::root_node::AnyNodeMut;
+use crate::root_node::AnyNodeRef;
+use crate::root_node::EitherNode;
+use crate::root_node::{AnyNode, EitherNodeRef};
 // pub use self::Entry::*;
 use crate::node::TrieNode::{self, *};
+use crate::root_node::RootNode;
 
 use std::borrow::Borrow;
 use std::cmp::Ordering;
+use std::collections::btree_map::OccupiedEntry;
 use std::fmt::{self, Debug};
 use std::hash::{Hash, Hasher};
 use std::iter;
@@ -81,12 +82,17 @@ use std::slice;
 /// map.clear();
 /// assert!(map.is_empty());
 /// ```
-pub struct Map<M> where M: MapTrait {
+pub struct Map<M>
+where
+    M: MapTrait,
+{
     root: M::Root,
     length: usize,
 }
 
-impl<M: MapTrait<Key: Clone, Value: Clone, Children<TrieNode<M>>: Clone>> Clone for Map<M> {
+impl<M: MapTrait<Key: Clone, Value: Clone, Children<TrieNode<M>>: Clone, MaybeInner: Clone>> Clone
+    for Map<M>
+{
     fn clone(&self) -> Self {
         Map {
             length: self.length,
@@ -124,7 +130,11 @@ impl<M: MapTrait<Value: Eq>> Eq for Map<M> {}
 // }
 
 #[cfg(feature = "extra")]
-impl<K, V, P> Default for Map<K, V, P> where K: Chunk, P: PerfHint<K, V> {
+impl<K, V, P> Default for Map<K, V, P>
+where
+    K: Chunk,
+    P: PerfHint<K, V>,
+{
     #[inline]
     fn default() -> Map<K, V, P> {
         Map::new()
@@ -177,14 +187,14 @@ impl<M: MapTrait> Map<M> {
 
     /// Gets an iterator visiting all keys in ascending order by the keys.
     /// The iterator's element type is `usize`.
-#[cfg(feature = "extra")]
+    #[cfg(feature = "extra")]
     pub fn keys(&self) -> Keys<'_, K, V> {
         Keys(self.iter())
     }
 
     /// Gets an iterator visiting all values in ascending order by the keys.
     /// The iterator's element type is `&'r T`.
-#[cfg(feature = "extra")]
+    #[cfg(feature = "extra")]
     pub fn values(&self) -> Values<'_, K, V> {
         Values(self.iter())
     }
@@ -205,10 +215,11 @@ impl<M: MapTrait> Map<M> {
         // Instead of pushing root.children directly (root was always Internal),
         // we wrap the root node in a slice iterator via std::slice::from_ref.
         let slice_iter = match self.root.as_either_ref() {
-            EitherNodeRef::Internal(&InternalNode { count: _, ref children }) => {
-                children.as_slice().iter()
-            }
-            EitherNodeRef::Trie(trie_node) => slice::from_ref(trie_node).iter()
+            EitherNodeRef::Internal(&InternalNode {
+                count: _,
+                ref children,
+            }) => children.as_slice().iter(),
+            EitherNodeRef::Trie(trie_node) => slice::from_ref(trie_node).iter(),
         };
         iter.stack.push(slice_iter);
         iter.remaining = self.length;
@@ -231,15 +242,15 @@ impl<M: MapTrait> Map<M> {
     /// assert_eq!(map.get(&2), Some(&-2));
     /// assert_eq!(map.get(&3), Some(&-3));
     /// ```
-#[cfg(feature = "extra")]
+    #[cfg(feature = "extra")]
     pub fn iter_mut(&mut self) -> IterMut<'_, K, V> {
         let mut iter = unsafe { IterMut::new() };
-        iter.stack.push(std::slice::from_mut(&mut self.root).iter_mut());
+        iter.stack
+            .push(std::slice::from_mut(&mut self.root).iter_mut());
         iter.remaining = self.length;
         iter
     }
 }
-
 
 impl<M: MapTrait> Map<M> {
     /// Return the number of elements in the map.
@@ -302,7 +313,7 @@ impl<M: MapTrait> Map<M> {
     pub fn get<Q>(&self, key: &Q) -> Option<&M::Value>
     where
         M::Key: Borrow<Q>,
-        Q: Chunk,
+        Q: Chunk + Eq + Hash + Ord,
     {
         // Root is now a TrieNode: start traversal from it directly at idx 0.
         let mut node = self.root.into_any_ref();
@@ -311,15 +322,13 @@ impl<M: MapTrait> Map<M> {
         loop {
             match node {
                 AnyNodeRef::Branch { children, .. } => {
-                    node = children[key.chunk(idx.try_into().ok()?.try_into().ok()?, M::SHIFT) as usize].into_any_ref();
+                    node = children
+                        [key.chunk(idx.try_into().ok()?.try_into().ok()?, M::SHIFT) as usize]
+                        .into_any_ref();
                     idx += M::SHIFT.try_into().ok().unwrap();
                 }
-                AnyNodeRef::External(k, v) => {
-                    if k.borrow() == key {
-                        return Some(v);
-                    } else {
-                        return None;
-                    }
+                AnyNodeRef::External(external) => {
+                    return external.get(key);
                 }
                 AnyNodeRef::Nothing => return None,
             }
@@ -340,7 +349,7 @@ impl<M: MapTrait> Map<M> {
     pub fn contains_key<Q>(&self, key: &Q) -> bool
     where
         M::Key: Borrow<Q>,
-        Q: Chunk,
+        Q: Chunk + Eq + Hash + Ord,
     {
         self.get(key).is_some()
     }
@@ -387,12 +396,20 @@ impl<M: MapTrait> Map<M> {
         // the real element count is self.length.
         let mut root_count: usize = 0;
         let (_, old_val) = match self.root.as_either() {
-            EitherNode::Trie(node) => {
-                insert(&mut root_count, node, key, value, 0u8.try_into().ok().unwrap())
-            }
-            EitherNode::Internal(internal) => {
-                insert(&mut internal.count, &mut internal.children[key.chunk(0u8.try_into().ok().unwrap(), M::SHIFT) as usize], key, value, M::SHIFT.try_into().ok().unwrap())
-            }
+            EitherNode::Trie(node) => insert(
+                &mut root_count,
+                node,
+                key,
+                value,
+                0u8.try_into().ok().unwrap(),
+            ),
+            EitherNode::Internal(internal) => insert(
+                &mut internal.count,
+                &mut internal.children[key.chunk(0u8.try_into().ok().unwrap(), M::SHIFT) as usize],
+                key,
+                value,
+                M::SHIFT.try_into().ok().unwrap(),
+            ),
         };
         if old_val.is_none() {
             self.length += 1;
@@ -418,12 +435,13 @@ impl<M: MapTrait> Map<M> {
     {
         let mut root_count: usize = 0;
         let ret = match self.root.as_either() {
-            EitherNode::Trie(node) => {
-                remove(&mut root_count, node, key, 0u8.into())
-            }
-            EitherNode::Internal(internal) => {
-                remove(&mut internal.count, &mut internal.children[key.chunk(0u8.into(), M::SHIFT) as usize], key, M::SHIFT.into())
-            }
+            EitherNode::Trie(node) => remove(&mut root_count, node, key, 0u8.into()),
+            EitherNode::Internal(internal) => remove(
+                &mut internal.count,
+                &mut internal.children[key.chunk(0u8.into(), M::SHIFT) as usize],
+                key,
+                M::SHIFT.into(),
+            ),
         };
         if ret.is_some() {
             self.length -= 1;
@@ -1337,7 +1355,7 @@ impl<M: MapTrait> Map<M> {
 impl<'a, Q, M> ops::Index<&'a Q> for Map<M>
 where
     M::Key: Borrow<Q> + Chunk,
-    Q: Chunk + 'a,
+    Q: Chunk + Eq + Ord + Hash + 'a,
     M: MapTrait,
 {
     type Output = M::Value;
@@ -1350,7 +1368,7 @@ where
 impl<'a, Q, M> ops::IndexMut<&'a Q> for Map<M>
 where
     M::Key: Borrow<Q>,
-    Q: Chunk + 'a,
+    Q: Chunk + Eq + Ord + Hash + 'a,
     M: MapTrait,
 {
     #[inline]
@@ -1379,20 +1397,19 @@ where
 // }
 
 // // TODO: make the function non-recursive
-fn find_mut<'a, M, Q>(
-    node: AnyNodeMut<'a, M>,
-    key: &Q,
-    idx: Q::KeySize,
-) -> Option<&'a mut M::Value>
+fn find_mut<'a, M, Q>(node: AnyNodeMut<'a, M>, key: &Q, idx: Q::KeySize) -> Option<&'a mut M::Value>
 where
     M: MapTrait,
     M::Key: Borrow<Q> + Chunk,
     Q: Chunk,
 {
     match node {
-        AnyNodeMut::External(stored, value) if (*stored).borrow() == key => Some(value),
-        AnyNodeMut::External(..) => None,
-        AnyNodeMut::Branch { children, .. } => find_mut(children[key.chunk(idx, M::SHIFT) as usize].as_any_mut(), key, idx + M::SHIFT.into()),
+        AnyNodeMut::External(maybe_inner) => maybe_inner.get_mut(key),
+        AnyNodeMut::Branch { children, .. } => find_mut(
+            children[key.chunk(idx, M::SHIFT) as usize].as_any_mut(),
+            key,
+            idx + M::SHIFT.into(),
+        ),
         AnyNodeMut::Nothing => None,
     }
 }
@@ -1412,17 +1429,18 @@ fn insert<'a, M: MapTrait>(
     key: M::Key,
     value: M::Value,
     idx: <<M as MapTrait>::Key as Chunk>::KeySize,
-) -> (&'a mut M::Value, Option<M::Value>) where M::Key: Chunk {
+) -> (&'a mut M::Value, Option<M::Value>) {
     // We branch twice to avoid having to do the `replace` when we don't need to;
     // this is much faster, especially for keys that have long shared prefixes.
 
-    let mut hack = false;
-    match *start_node {
+    let hack;
+
+    let key = match *start_node {
         Nothing => {
             *count += 1;
-            *start_node = External(key, value);
+            *start_node = External(M::MaybeInner::new(key, value));
             match *start_node {
-                External(_, ref mut value_ref) => return (value_ref, None),
+                External(ref mut external) => return (external.values_mut().next().unwrap(), None),
                 _ => unreachable!(),
             }
         }
@@ -1436,45 +1454,79 @@ fn insert<'a, M: MapTrait>(
                 idx + M::SHIFT.into(),
             );
         }
-        External(ref stored_key, _) if stored_key == &key => {
-            hack = true;
+        External(ref mut maybe_inner) => {
+            match maybe_inner.entry(key) {
+                Entry::Occupied(occupied) => {
+                    hack = true;
+                    occupied.into_key()
+                    // unimplemented!()
+                }
+                // TODO
+                Entry::Vacant(vacant) if vacant.should_split() => {
+                    hack = false;
+                    vacant.into_key()
+                }
+                Entry::Vacant(mut vacant) => {
+                    hack = true;
+                    vacant.into_key()
+                }
+            }
         }
-        _ => {}
-    }
+    };
 
     if !hack {
-        // Conflict: an External node with a different key.
-        // Replace it with a new Internal node and re-insert both values beneath it.
         match mem::replace(start_node, Internal(Box::new(InternalNode::new()))) {
-            External(stored_key, stored_value) => {
-                match *start_node {
-                    Internal(ref mut new_node) => {
-                        let new_node = &mut **new_node;
-                        insert(
-                            &mut new_node.count,
-                            &mut new_node.children[stored_key.chunk(idx, M::SHIFT) as usize],
-                            stored_key,
-                            stored_value,
-                            idx + M::SHIFT.into(),
-                        );
-                        return insert(
-                            &mut new_node.count,
-                            &mut new_node.children[key.chunk(idx, M::SHIFT) as usize],
-                            key,
-                            value,
-                            idx + M::SHIFT.into(),
-                        );
-                    }
-                    _ => unreachable!(),
+            External(inner) => {
+                for (k, v) in inner {
+                    insert(count, start_node, k, v, idx);
                 }
+                return insert(count, start_node, key, value, idx);
             }
             _ => unreachable!(),
         }
     }
 
-    if let External(_, ref mut stored_value) = *start_node {
-        let old_value = mem::replace(stored_value, value);
-        return (stored_value, Some(old_value));
+    // if !hack {
+    //     // Conflict: an External node with a different key.
+    //     // Replace it with a new Internal node and re-insert both values beneath it.
+    //     match mem::replace(start_node, Internal(Box::new(InternalNode::new()))) {
+    //         External(stored_key, stored_value) => {
+    //             match *start_node {
+    //                 Internal(ref mut new_node) => {
+    //                     let new_node = &mut **new_node;
+    //                     insert(
+    //                         &mut new_node.count,
+    //                         &mut new_node.children[stored_key.chunk(idx, M::SHIFT) as usize],
+    //                         stored_key,
+    //                         stored_value,
+    //                         idx + M::SHIFT.into(),
+    //                     );
+    //                     return insert(
+    //                         &mut new_node.count,
+    //                         &mut new_node.children[key.chunk(idx, M::SHIFT) as usize],
+    //                         key,
+    //                         value,
+    //                         idx + M::SHIFT.into(),
+    //                     );
+    //                 }
+    //                 _ => unreachable!(),
+    //             }
+    //         }
+    //         _ => unreachable!(),
+    //     }
+    // }
+
+    if let External(ref mut maybe_inner) = *start_node {
+        match maybe_inner.entry(key) {
+            Entry::Occupied(mut occupied) => {
+                let prev = occupied.insert(value);
+                return (occupied.into_mut(), Some(prev));
+            }
+            Entry::Vacant(vacant) => {
+                return (vacant.insert(value), None);
+            } // let old_value = mem::replace(stored_value, value);
+              // return (stored_value, Some(old_value));
+        }
     }
 
     unreachable!();
@@ -1490,23 +1542,56 @@ fn remove<M: MapTrait, Q: Chunk>(
 where
     M::Key: Borrow<Q> + Chunk,
 {
-    let (ret, this) = match *child {
-        External(ref stored, _) if stored.borrow() == key => match mem::replace(child, Nothing) {
-            External(_, value) => (Some(value), true),
-            _ => unreachable!(),
-        },
-        External(..) => (None, false),
-        Internal(ref mut x) => {
-            let x = &mut **x;
-            let ret = remove(&mut x.count, &mut x.children[key.chunk(idx.try_into().ok()?.try_into().ok()?, M::SHIFT) as usize], key, idx + M::SHIFT.into());
-            (ret, x.count == 0)
-        }
-        Nothing => (None, false),
-    };
+    // TODO optimize
+    let this;
+    let mut ret;
+    'outer: {
+        match *child {
+            External(ref mut maybe_inner) => {
+                let should_remove = maybe_inner.should_remove();
+                let mut hack = false;
+                let result = match maybe_inner.get_mut(key) {
+                    Some(occupied) if should_remove => {
+                        this = true;
+                        ret = None;
+                        break 'outer;
+                    }
+                    Some(occupied) => {
+                        this = false;
+                    }
+                    None => {
+                        return None;
+                    }
+                };
+                ret = maybe_inner.remove(key);
+                *count -= 1;
+            }
+            Internal(ref mut x) => {
+                let x = &mut **x;
+                ret = remove(
+                    &mut x.count,
+                    &mut x.children
+                        [key.chunk(idx.try_into().ok()?.try_into().ok()?, M::SHIFT) as usize],
+                    key,
+                    idx + M::SHIFT.into(),
+                );
+                this = x.count == 0;
+            }
+            Nothing => {
+                ret = None;
+                this = false;
+            }
+        };
+    }
 
     if this {
-        *child = Nothing;
         *count -= 1;
+        match mem::replace(child, Nothing) {
+            External(maybe_inner) => {
+                ret = maybe_inner.into_iter().next().map(|(k_, v)| v);
+            }
+            _ => {}
+        };
     }
     ret
 }
@@ -1778,14 +1863,12 @@ where
 //     }
 // }
 
-/// A forward iterator over a map.
-pub struct Iter<'a, M: MapTrait> {
-    stack: Vec<slice::Iter<'a, TrieNode<M>>>,
-    remaining: usize,
-}
-
 #[cfg(feature = "extra")]
-impl<'a, K, V, P> Clone for Iter<'a, K, V, P> where K: Chunk, P: PerfHint {
+impl<'a, K, V, P> Clone for Iter<'a, K, V, P>
+where
+    K: Chunk,
+    P: PerfHint,
+{
     #[cfg(target_pointer_width = "32")]
     fn clone(&self) -> Iter<'a, K, V> {
         Iter {
@@ -1865,9 +1948,17 @@ macro_rules! iterator_impl {
     ($name:ident,
      iter = $iter:ident,
      mutability = ($($mut_:tt)*)) => {
+        /// A forward iterator over a map.
+        pub struct $name<'a, M: MapTrait> {
+            maybe_inner: Option<<M::MaybeInner as Inner<M::Key, M::Value>>::$name<'a>>,
+            stack: Vec<slice::$name<'a, TrieNode<M>>>,
+            remaining: usize,
+        }
+
         impl<'a, M: MapTrait> $name<'a, M> {
             unsafe fn new() -> Self {
                 $name {
+                    maybe_inner: None,
                     remaining: 0,
                     stack: Vec::new(),
                 }
@@ -1877,6 +1968,11 @@ macro_rules! iterator_impl {
         impl<'a, M: MapTrait> Iterator for $name<'a, M> {
             type Item = (&'a M::Key, &'a $($mut_)* M::Value);
             fn next(&mut self) -> Option<Self::Item> {
+                if let &mut Some(ref mut iter) = &mut self.maybe_inner {
+                    if let Some((key, value)) = iter.next() {
+                        return Some((key, value));
+                    }
+                }
                 while let Some(iter) = self.stack.last_mut() {
                     match iter.next() {
                         None => {
@@ -1887,9 +1983,10 @@ macro_rules! iterator_impl {
                                 Internal(ref $($mut_)* node) => {
                                     self.stack.push(node.children.as_slice().$iter());
                                 }
-                                External(ref key, ref $($mut_)* value) => {
+                                External(ref $($mut_)* maybe_inner) => {
                                     self.remaining -= 1;
-                                    return Some((key, value));
+                                    self.maybe_inner = Some(maybe_inner.$iter());
+                                    return self.next();
                                 }
                                 Nothing => {}
                             }
@@ -1958,11 +2055,12 @@ mod test {
 
     #[cfg(feature = "extra")]
     use super::Entry::*;
-    use crate::TrieMap;
-    use crate::map_trait::{BasicTrieHint, Children, MapTrait, RootNode};
-    use crate::node::TrieNode::{self, *};
-    use crate::node::AnyNodeRef;
     use super::{InternalNode, Map};
+    use crate::TrieMap;
+    use crate::inner::Inner;
+    use crate::map_trait::{BasicTrieHint, Children, MapTrait};
+    use crate::node::TrieNode::{self, *};
+    use crate::root_node::{AnyNodeRef, RootNode};
 
     /// check_integrity now accepts a TrieNode instead of an InternalNode,
     /// because the root is a TrieNode enum.
@@ -1974,7 +2072,10 @@ mod test {
         }
     }
 
-    fn check_integrity_internal<M: MapTrait<Children<TrieNode<M>> = [TrieNode<M>; 16]>>(count: usize, children: &[TrieNode<M>]) {
+    fn check_integrity_internal<M: MapTrait<Children<TrieNode<M>> = [TrieNode<M>; 16]>>(
+        count: usize,
+        children: &[TrieNode<M>],
+    ) {
         assert!(count != 0);
 
         let mut sum = 0;
@@ -1985,7 +2086,7 @@ mod test {
                     check_integrity_internal(y.count, &y.children[..]);
                     sum += 1;
                 }
-                External(_, _) => sum += 1,
+                External(ref maybe_inner) => sum += maybe_inner.len(),
             }
         }
         assert_eq!(sum, count);
@@ -2269,8 +2370,18 @@ mod test {
             *v -= k;
         }
 
-        assert!(m_lower.lower_bound_mut(Bound::Excluded(&199)).next().is_none());
-        assert!(m_upper.upper_bound_mut(Bound::Excluded(&198)).next().is_none());
+        assert!(
+            m_lower
+                .lower_bound_mut(Bound::Excluded(&199))
+                .next()
+                .is_none()
+        );
+        assert!(
+            m_upper
+                .upper_bound_mut(Bound::Excluded(&198))
+                .next()
+                .is_none()
+        );
 
         assert!(m_lower.iter().all(|(_, &x)| x == 0));
         assert!(m_upper.iter().all(|(_, &x)| x == 0));
