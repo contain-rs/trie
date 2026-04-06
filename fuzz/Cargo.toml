@@ -1,0 +1,26 @@
+[package]
+name = "trie-fuzz"
+version = "0.1.0"
+authors = ["Dawid Ciężarkiewicz <dpc@dpc.pw>", "Peter Blackson <pioczarn@gmail.com>"]
+edition = "2021"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[features]
+afl_fuzz = ["afl"]
+honggfuzz_fuzz = ["honggfuzz"]
+
+[dependencies]
+honggfuzz = { version = "0.5", optional = true }
+afl = { version = "0.17", optional = true }
+trie = { path = ".." }
+smallvec = "1.15"
+
+[workspace]
+members = ["."]
+
+[[bin]]
+name = "trie_ops"
+path = "fuzz_targets/trie_ops.rs"

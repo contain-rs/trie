@@ -10,13 +10,24 @@
 
 //! An ordered map and set based on a trie.
 
-#![cfg_attr(feature = "nightly", feature(unboxed_closures))]
-#![cfg_attr(feature = "nightly", feature(fn_traits))]
+#![recursion_limit = "1024"]
+#![feature(associated_type_defaults)]
 
+pub use chunk::Chunk;
+pub type TrieMap<K, V> = map::Map<BasicTrieHint<K, V>>;
 pub use map::Map;
+#[cfg(feature = "extra")]
 pub use set::Set;
 
+use crate::map_trait::BasicTrieHint;
+
+pub mod chunk;
+mod inner;
 pub mod map;
+pub mod map_trait;
+pub mod node;
+mod root_node;
+#[cfg(feature = "extra")]
 pub mod set;
 
 // #[cfg(feature = "ordered_iter")]

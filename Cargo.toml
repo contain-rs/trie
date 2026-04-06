@@ -17,7 +17,11 @@ edition = "2024"
 rust-version = "1.85"
 
 [features]
-nightly = []
+default = []
+extra = []
+
+[dependencies]
+bit-vec = { version = "0.8", optional = true }
 
 [dev-dependencies]
 rand = "0.10"
