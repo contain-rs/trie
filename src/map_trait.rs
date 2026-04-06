@@ -1,9 +1,5 @@
 use std::{
-    array,
-    collections::{BTreeMap, HashMap},
-    hash::Hash,
-    marker::PhantomData,
-    ops::{Index, IndexMut},
+    array, collections::{BTreeMap, HashMap}, fmt::Debug, hash::Hash, marker::PhantomData, ops::{Index, IndexMut}
 };
 
 use crate::{
@@ -17,9 +13,9 @@ pub trait MapTrait {
     const PREFETCH: bool = true;
     const SHIFT: u8;
     type Children<T>: Children<T> = [T; 16];
-    type MaybeInner: Inner<Self::Key, Self::Value>;
-    type Key: Chunk;
-    type Value;
+    type MaybeInner: Inner<Self::Key, Self::Value> + Debug;
+    type Key: Chunk + Debug;
+    type Value: Debug;
     type Root: RootNode<Self>
     where
         Self: Sized;
@@ -50,12 +46,13 @@ pub struct BasicTrieHint<K, V>(PhantomData<(K, V)>);
 pub struct HatTrieHint<K, V>(PhantomData<(K, V)>);
 pub struct BTrieHint<K, V>(PhantomData<(K, V)>);
 
+#[derive(Debug)]
 pub struct Unit<K, V> {
     pub(crate) key: K,
     pub(crate) value: V,
 }
 
-impl<K: Chunk, V> MapTrait for BasicTrieHint<K, V> {
+impl<K: Chunk + Debug, V: Debug> MapTrait for BasicTrieHint<K, V> {
     const PREFETCH: bool = true;
     const SHIFT: u8 = 4;
     type MaybeInner = Unit<K, V>;
@@ -64,7 +61,7 @@ impl<K: Chunk, V> MapTrait for BasicTrieHint<K, V> {
     type Root = K::Root<Self, TrieNode<Self>, InternalNode<Self>>;
 }
 
-impl<K: Chunk, V> MapTrait for HatTrieHint<K, V>
+impl<K: Chunk + Debug, V: Debug> MapTrait for HatTrieHint<K, V>
 where
     K: Eq + Hash,
 {
@@ -76,7 +73,7 @@ where
     type Root = K::Root<Self, TrieNode<Self>, InternalNode<Self>>;
 }
 
-impl<K: Chunk, V> MapTrait for BTrieHint<K, V>
+impl<K: Chunk + Debug, V: Debug> MapTrait for BTrieHint<K, V>
 where
     K: Ord,
 {

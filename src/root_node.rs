@@ -187,11 +187,6 @@ pub(crate) enum AnyNodeRef<'a, M: MapTrait> {
     Nothing,
 }
 
-// pub(crate) enum TrieNodeRef<'a, M: MapTrait> {
-//     External(&'a M::Key, &'a M::Value),
-//     Internal()
-// }
-
 pub(crate) enum AnyNodeMut<'a, M: MapTrait> {
     External(&'a mut M::MaybeInner),
     Branch {
