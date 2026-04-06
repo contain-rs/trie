@@ -17,7 +17,7 @@ extern crate test;
 use rand::{RngExt, SeedableRng, rngs, seq::SliceRandom};
 use test::black_box;
 
-use trie::{map::Map, map::Occupied, map::Vacant};
+use trie::TrieMap;
 
 const MAP_SIZE: usize = 1000;
 
@@ -132,20 +132,20 @@ macro_rules! map_find_seq_bench {
     };
 }
 
-map_insert_rand_bench! {insert_rand_100,    100,    Map}
-map_insert_rand_bench! {insert_rand_10_000, 10_000, Map}
+map_insert_rand_bench! {insert_rand_100,    100,    TrieMap}
+map_insert_rand_bench! {insert_rand_10_000, 10_000, TrieMap}
 
-map_insert_seq_bench! {insert_seq_100,    100,    Map}
-map_insert_seq_bench! {insert_seq_10_000, 10_000, Map}
+map_insert_seq_bench! {insert_seq_100,    100,    TrieMap}
+map_insert_seq_bench! {insert_seq_10_000, 10_000, TrieMap}
 
-map_find_rand_bench! {find_rand_100,    100,    Map}
-map_find_rand_bench! {find_rand_10_000, 10_000, Map}
+map_find_rand_bench! {find_rand_100,    100,    TrieMap}
+map_find_rand_bench! {find_rand_10_000, 10_000, TrieMap}
 
-map_find_seq_bench! {find_seq_100,    100,    Map}
-map_find_seq_bench! {find_seq_10_000, 10_000, Map}
+map_find_seq_bench! {find_seq_100,    100,    TrieMap}
+map_find_seq_bench! {find_seq_10_000, 10_000, TrieMap}
 
-fn random_map(size: usize) -> Map<usize, usize> {
-    let mut map = Map::<usize, usize>::new();
+fn random_map(size: usize) -> TrieMap<usize, usize> {
+    let mut map = TrieMap::<usize, usize>::new();
     let mut rng = small_rng();
 
     for _ in 0..size {
@@ -178,9 +178,10 @@ pub fn iter_100000(b: &mut test::Bencher) {
     bench_iter(b, 100000);
 }
 
+#[cfg(feature = "extra")]
 #[bench]
 fn bench_lower_bound(b: &mut test::Bencher) {
-    let mut m = Map::<usize, usize>::new();
+    let mut m = TrieMap::<usize, usize>::new();
     let mut rng = small_rng();
     for _ in 0..MAP_SIZE {
         m.insert(rng.random::<u32>() as usize, rng.random::<u32>() as usize);
@@ -193,9 +194,10 @@ fn bench_lower_bound(b: &mut test::Bencher) {
     });
 }
 
+#[cfg(feature = "extra")]
 #[bench]
 fn bench_upper_bound(b: &mut test::Bencher) {
-    let mut m = Map::<usize, usize>::new();
+    let mut m = TrieMap::<usize, usize>::new();
     let mut rng = small_rng();
     for _ in 0..MAP_SIZE {
         m.insert(rng.random::<u32>() as usize, rng.random::<u32>() as usize);
@@ -209,8 +211,8 @@ fn bench_upper_bound(b: &mut test::Bencher) {
 }
 
 #[bench]
-fn bench_insert_large(b: &mut test::Bencher) {
-    let mut m = Map::<usize, [usize; 10]>::new();
+fn bench_insert_large_any(b: &mut test::Bencher) {
+    let mut m = TrieMap::<usize, [usize; 10]>::new();
     let mut rng = small_rng();
 
     b.iter(|| {
@@ -220,6 +222,7 @@ fn bench_insert_large(b: &mut test::Bencher) {
     });
 }
 
+#[cfg(feature = "extra")]
 #[bench]
 fn bench_insert_large_entry(b: &mut test::Bencher) {
     let mut m = Map::<usize, [usize; 10]>::new();
@@ -241,7 +244,7 @@ fn bench_insert_large_entry(b: &mut test::Bencher) {
 
 #[bench]
 fn bench_insert_large_low_bits(b: &mut test::Bencher) {
-    let mut m = Map::<usize, [usize; 10]>::new();
+    let mut m = TrieMap::<usize, [usize; 10]>::new();
     let mut rng = small_rng();
 
     b.iter(|| {
@@ -254,7 +257,7 @@ fn bench_insert_large_low_bits(b: &mut test::Bencher) {
 
 #[bench]
 fn bench_insert_small(b: &mut test::Bencher) {
-    let mut m = Map::<usize, ()>::new();
+    let mut m = TrieMap::<usize, ()>::new();
     let mut rng = small_rng();
 
     b.iter(|| {
@@ -266,7 +269,7 @@ fn bench_insert_small(b: &mut test::Bencher) {
 
 #[bench]
 fn bench_insert_small_low_bits(b: &mut test::Bencher) {
-    let mut m = Map::<usize, ()>::new();
+    let mut m = TrieMap::<usize, ()>::new();
     let mut rng = small_rng();
 
     b.iter(|| {
@@ -277,6 +280,7 @@ fn bench_insert_small_low_bits(b: &mut test::Bencher) {
     });
 }
 
+#[cfg(feature = "extra")]
 #[bench]
 fn bench_get(b: &mut test::Bencher) {
     let map = random_map(MAP_SIZE);
@@ -288,6 +292,7 @@ fn bench_get(b: &mut test::Bencher) {
     });
 }
 
+#[cfg(feature = "extra")]
 #[bench]
 fn bench_get_entry(b: &mut test::Bencher) {
     let mut map = random_map(MAP_SIZE);
@@ -301,6 +306,7 @@ fn bench_get_entry(b: &mut test::Bencher) {
     });
 }
 
+#[cfg(feature = "extra")]
 #[bench]
 fn bench_remove(b: &mut test::Bencher) {
     b.iter(|| {
@@ -312,6 +318,7 @@ fn bench_remove(b: &mut test::Bencher) {
     });
 }
 
+#[cfg(feature = "extra")]
 #[bench]
 fn bench_remove_entry(b: &mut test::Bencher) {
     b.iter(|| {

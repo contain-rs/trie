@@ -26,7 +26,7 @@ use crate::root_node::RootNode;
 use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::collections::btree_map::OccupiedEntry;
-use std::fmt::{self, Debug};
+use std::fmt::{self, Binary, Debug};
 use std::hash::{Hash, Hasher};
 use std::iter;
 use std::marker::PhantomData;
@@ -1446,6 +1446,8 @@ fn insert<'a, M: MapTrait>(
         }
         Internal(ref mut x) => {
             let x = &mut **x;
+            assert!(idx < key.bits(), "idx = {} < key.bits() = {}", idx, key.bits());
+
             return insert(
                 &mut x.count,
                 &mut x.children[key.chunk(idx, M::SHIFT) as usize],
@@ -1459,14 +1461,12 @@ fn insert<'a, M: MapTrait>(
                 Entry::Occupied(occupied) => {
                     hack = true;
                     occupied.into_key()
-                    // unimplemented!()
                 }
-                // TODO
                 Entry::Vacant(vacant) if vacant.should_split() => {
                     hack = false;
                     vacant.into_key()
                 }
-                Entry::Vacant(mut vacant) => {
+                Entry::Vacant(vacant) => {
                     hack = true;
                     vacant.into_key()
                 }
@@ -1486,36 +1486,6 @@ fn insert<'a, M: MapTrait>(
         }
     }
 
-    // if !hack {
-    //     // Conflict: an External node with a different key.
-    //     // Replace it with a new Internal node and re-insert both values beneath it.
-    //     match mem::replace(start_node, Internal(Box::new(InternalNode::new()))) {
-    //         External(stored_key, stored_value) => {
-    //             match *start_node {
-    //                 Internal(ref mut new_node) => {
-    //                     let new_node = &mut **new_node;
-    //                     insert(
-    //                         &mut new_node.count,
-    //                         &mut new_node.children[stored_key.chunk(idx, M::SHIFT) as usize],
-    //                         stored_key,
-    //                         stored_value,
-    //                         idx + M::SHIFT.into(),
-    //                     );
-    //                     return insert(
-    //                         &mut new_node.count,
-    //                         &mut new_node.children[key.chunk(idx, M::SHIFT) as usize],
-    //                         key,
-    //                         value,
-    //                         idx + M::SHIFT.into(),
-    //                     );
-    //                 }
-    //                 _ => unreachable!(),
-    //             }
-    //         }
-    //         _ => unreachable!(),
-    //     }
-    // }
-
     if let External(ref mut maybe_inner) = *start_node {
         match maybe_inner.entry(key) {
             Entry::Occupied(mut occupied) => {
@@ -1524,8 +1494,7 @@ fn insert<'a, M: MapTrait>(
             }
             Entry::Vacant(vacant) => {
                 return (vacant.insert(value), None);
-            } // let old_value = mem::replace(stored_value, value);
-              // return (stored_value, Some(old_value));
+            }
         }
     }
 
@@ -2090,6 +2059,14 @@ mod test {
             }
         }
         assert_eq!(sum, count);
+    }
+
+    #[test]
+    fn test_insert_from_bench() {
+        let mut m: TrieMap<u32, _> = Map::new();
+        m.insert(0xad6b27f7, true);
+        m.insert(0xad6f27f7, false);
+        black_box(&m);
     }
 
     #[test]

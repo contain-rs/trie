@@ -1,3 +1,4 @@
+use std::fmt;
 use std::hash::Hash;
 use std::ops::{Add, AddAssign, Deref};
 
@@ -19,7 +20,7 @@ pub trait Chunk: PartialEq + PartialOrd + Hash + Eq + Ord {
         + Copy
         + From<u8>
         + Add<Self::KeySize, Output = Self::KeySize>
-        + AddAssign<Self::KeySize> = usize;
+        + AddAssign<Self::KeySize> + Ord + fmt::Display = usize;
 
     fn chunk(&self, idx: Self::KeySize, len: u8) -> u8;
     fn bits(&self) -> Self::KeySize;
@@ -61,7 +62,7 @@ impl Chunk for [u8] {
     fn chunk(&self, idx: usize, len: u8) -> u8 {
         debug_assert!(len <= 8);
         let first = self[idx / 8] >> (idx % 8);
-        let second = self.get(idx / 8 + 1).copied().unwrap_or(0) << (idx % 8);
+        let second = (self.get(idx / 8 + 1).map(|&elem| elem as u16).unwrap_or(0) << (8 - idx % 8)) as u8;
         let mask = (1 << len) - 1;
         (first | second) & mask
     }
@@ -106,7 +107,7 @@ impl Chunk for usize {
     type KeySize = u8;
 
     fn chunk(&self, idx: u8, len: u8) -> u8 {
-        self.to_be_bytes().chunk(idx as usize, len)
+        self.to_le_bytes().chunk(idx as usize, len)
     }
 
     fn bits(&self) -> u8 {
@@ -136,7 +137,7 @@ impl Chunk for u32 {
     type KeySize = u8;
 
     fn chunk(&self, idx: u8, len: u8) -> u8 {
-        self.to_be_bytes().chunk(idx as usize, len)
+        self.to_le_bytes().chunk(idx as usize, len)
     }
 
     fn bits(&self) -> u8 {
@@ -151,7 +152,7 @@ impl Chunk for i32 {
     type KeySize = u8;
 
     fn chunk(&self, idx: u8, len: u8) -> u8 {
-        self.to_be_bytes().chunk(idx as usize, len)
+        self.to_le_bytes().chunk(idx as usize, len)
     }
 
     fn bits(&self) -> u8 {
@@ -166,7 +167,7 @@ impl Chunk for u64 {
     type KeySize = u8;
 
     fn chunk(&self, idx: u8, len: u8) -> u8 {
-        self.to_be_bytes().chunk(idx as usize, len)
+        self.to_le_bytes().chunk(idx as usize, len)
     }
 
     fn bits(&self) -> u8 {
@@ -181,7 +182,7 @@ impl Chunk for i64 {
     type KeySize = u8;
 
     fn chunk(&self, idx: u8, len: u8) -> u8 {
-        self.to_be_bytes().chunk(idx as usize, len)
+        self.to_le_bytes().chunk(idx as usize, len)
     }
 
     fn bits(&self) -> u8 {
