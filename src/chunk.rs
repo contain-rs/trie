@@ -2,7 +2,7 @@ use std::fmt;
 use std::hash::Hash;
 use std::ops::{Add, AddAssign, Deref};
 
-use crate::map_trait::MapTrait;
+use crate::map_trait::{MapTrait, MaybeValue};
 use crate::root_node::RootNode;
 
 /// Allows us to extract bytes or parts of a byte (meaning, up to 8 bits
@@ -13,6 +13,7 @@ use crate::root_node::RootNode;
 pub trait Chunk: PartialEq + PartialOrd + Hash + Eq + Ord {
     const VARSIZED: bool;
     type Root<M: MapTrait, T: RootNode<M>, I: RootNode<M>>: RootNode<M>;
+    type MaybeValue<M: MapTrait, S: MaybeValue<M>, N: MaybeValue<M>>: MaybeValue<M>;
     const CONST_LEN: i64;
     type KeySize: TryFrom<u64>
         + TryInto<u64>
@@ -29,6 +30,7 @@ pub trait Chunk: PartialEq + PartialOrd + Hash + Eq + Ord {
 impl Chunk for Vec<u8> {
     const VARSIZED: bool = true;
     type Root<M: MapTrait, T: RootNode<M>, I: RootNode<M>> = T;
+    type MaybeValue<M: MapTrait, S: MaybeValue<M>, N: MaybeValue<M>> = S;
     const CONST_LEN: i64 = -1;
 
     fn chunk(&self, idx: usize, len: u8) -> u8 {
@@ -43,6 +45,7 @@ impl Chunk for Vec<u8> {
 impl<const N: usize> Chunk for [u8; N] {
     const VARSIZED: bool = false;
     type Root<M: MapTrait, T: RootNode<M>, I: RootNode<M>> = I;
+    type MaybeValue<M: MapTrait, S: MaybeValue<M>, Non: MaybeValue<M>> = Non;
     const CONST_LEN: i64 = N as i64 * 8;
 
     fn chunk(&self, idx: usize, len: u8) -> u8 {
@@ -57,6 +60,7 @@ impl<const N: usize> Chunk for [u8; N] {
 impl Chunk for [u8] {
     const VARSIZED: bool = true;
     type Root<M: MapTrait, T: RootNode<M>, I: RootNode<M>> = T;
+    type MaybeValue<M: MapTrait, S: MaybeValue<M>, N: MaybeValue<M>> = S;
     const CONST_LEN: i64 = -1;
 
     fn chunk(&self, idx: usize, len: u8) -> u8 {
@@ -75,6 +79,7 @@ impl Chunk for [u8] {
 impl Chunk for String {
     const VARSIZED: bool = true;
     type Root<M: MapTrait, T: RootNode<M>, I: RootNode<M>> = T;
+    type MaybeValue<M: MapTrait, S: MaybeValue<M>, N: MaybeValue<M>> = S;
     const CONST_LEN: i64 = -1;
 
     fn chunk(&self, idx: usize, len: u8) -> u8 {
@@ -89,6 +94,7 @@ impl Chunk for String {
 impl Chunk for str {
     const VARSIZED: bool = true;
     type Root<M: MapTrait, T: RootNode<M>, I: RootNode<M>> = T;
+    type MaybeValue<M: MapTrait, S: MaybeValue<M>, N: MaybeValue<M>> = S;
     const CONST_LEN: i64 = -1;
 
     fn chunk(&self, idx: usize, len: u8) -> u8 {
@@ -103,6 +109,7 @@ impl Chunk for str {
 impl Chunk for usize {
     const VARSIZED: bool = false;
     type Root<M: MapTrait, T: RootNode<M>, I: RootNode<M>> = I;
+    type MaybeValue<M: MapTrait, S: MaybeValue<M>, N: MaybeValue<M>> = N;
     const CONST_LEN: i64 = usize::BITS as i64;
     type KeySize = u8;
 
@@ -118,6 +125,7 @@ impl Chunk for usize {
 impl Chunk for u8 {
     const VARSIZED: bool = false;
     type Root<M: MapTrait, T: RootNode<M>, I: RootNode<M>> = I;
+    type MaybeValue<M: MapTrait, S: MaybeValue<M>, N: MaybeValue<M>> = N;
     const CONST_LEN: i64 = 8;
     type KeySize = u8;
 
@@ -133,6 +141,7 @@ impl Chunk for u8 {
 impl Chunk for u32 {
     const VARSIZED: bool = false;
     type Root<M: MapTrait, T: RootNode<M>, I: RootNode<M>> = I;
+    type MaybeValue<M: MapTrait, S: MaybeValue<M>, N: MaybeValue<M>> = N;
     const CONST_LEN: i64 = 32;
     type KeySize = u8;
 
@@ -148,6 +157,7 @@ impl Chunk for u32 {
 impl Chunk for i32 {
     const VARSIZED: bool = false;
     type Root<M: MapTrait, T: RootNode<M>, I: RootNode<M>> = I;
+    type MaybeValue<M: MapTrait, S: MaybeValue<M>, N: MaybeValue<M>> = N;
     const CONST_LEN: i64 = 32;
     type KeySize = u8;
 
@@ -163,6 +173,7 @@ impl Chunk for i32 {
 impl Chunk for u64 {
     const VARSIZED: bool = false;
     type Root<M: MapTrait, T: RootNode<M>, I: RootNode<M>> = I;
+    type MaybeValue<M: MapTrait, S: MaybeValue<M>, N: MaybeValue<M>> = N;
     const CONST_LEN: i64 = 64;
     type KeySize = u8;
 
@@ -178,6 +189,7 @@ impl Chunk for u64 {
 impl Chunk for i64 {
     const VARSIZED: bool = false;
     type Root<M: MapTrait, T: RootNode<M>, I: RootNode<M>> = I;
+    type MaybeValue<M: MapTrait, S: MaybeValue<M>, N: MaybeValue<M>> = N;
     const CONST_LEN: i64 = 64;
     type KeySize = u8;
 
@@ -194,6 +206,7 @@ impl Chunk for i64 {
 impl Chunk for bit_vec::BitVec {
     const VARSIZED: bool = true;
     type Root<M: MapTrait, T: RootNode<M>, I: RootNode<M>> = T;
+    type MaybeValue<M: MapTrait, S: MaybeValue<M>, N: MaybeValue<M>> = S;
     const CONST_LEN: i64 = -1;
 
     fn chunk(&self, idx: u64, len: u8) -> u8 {

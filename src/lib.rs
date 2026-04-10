@@ -14,11 +14,12 @@
 #![feature(associated_type_defaults)]
 
 pub use chunk::Chunk;
-pub type TrieMap<K, V> = map::Map<BasicTrieHint<K, V>>;
+pub type TrieMap<K, V> = map::Map<BasicTrieHint<K, V, NullCount>>;
 pub use map::Map;
 #[cfg(feature = "extra")]
 pub use set::Set;
 
+use crate::map_trait::NullCount;
 use crate::map_trait::BasicTrieHint;
 
 pub mod chunk;
@@ -29,6 +30,8 @@ pub mod node;
 mod root_node;
 #[cfg(feature = "extra")]
 pub mod set;
+#[cfg(test)]
+mod tests;
 
 // #[cfg(feature = "ordered_iter")]
 // mod ordered_iter;

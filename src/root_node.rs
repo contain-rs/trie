@@ -1,8 +1,7 @@
-use std::marker::PhantomData;
+use std::{marker::PhantomData, mem::MaybeUninit};
 
 use crate::{
-    map_trait::{Children, MapTrait},
-    node::{InternalNode, TrieNode},
+    inner::Inner, map_trait::{Children, MapTrait, MaybeValue}, node::{InternalNode, TrieNode}
 };
 
 impl<M> RootNode<M> for TrieNode<M>
@@ -25,27 +24,32 @@ where
     where
         M::Key: Clone,
         M::Value: Clone,
-        M::Children<TrieNode<M>>: Clone,
-        M::MaybeInner: Clone,
     {
         match any {
-            AnyNodeRef::Branch { count, children } => Self::Internal(Box::new(InternalNode {
+            AnyNodeRef::Branch { count, skip, value, children } => Self::Internal(Box::new(InternalNode {
                 count,
+                value: value.cloned().into(),
+                skip: skip.map_or(0, |(n, _)| n),
+                maybe_key: if let Some((_, key)) = skip { MaybeUninit::new(key.clone()) } else { MaybeUninit::uninit() },
                 children: M::Children::from_fn(|i| children[i].clone()),
             })),
-            AnyNodeRef::External(external) => Self::External(external.clone()),
+            AnyNodeRef::External(external) => Self::External(external.iter().map(|(k, v)| (k.clone(), v.clone())).collect()),
             AnyNodeRef::Nothing => Self::Nothing,
         }
     }
 
     fn into_any_ref(&self) -> AnyNodeRef<M> {
-        match self {
-            Self::Internal(bx) => AnyNodeRef::Branch {
-                count: bx.count,
-                children: bx.children.as_slice(),
-            },
-            Self::External(external) => AnyNodeRef::External(external),
-            Self::Nothing => AnyNodeRef::Nothing,
+        unsafe {
+            match self {
+                Self::Internal(bx) => AnyNodeRef::Branch {
+                    count: bx.count,
+                    value: bx.value.as_ref(),
+                    skip: if bx.skip == 0 { None } else { Some((bx.skip, bx.maybe_key.assume_init_ref())) },
+                    children: bx.children.as_slice(),
+                },
+                Self::External(external) => AnyNodeRef::External(external),
+                Self::Nothing => AnyNodeRef::Nothing,
+            }
         }
     }
 
@@ -75,7 +79,10 @@ where
 {
     fn nothing() -> Self {
         InternalNode {
-            count: 0,
+            count: Default::default(),
+            value: None.into(),
+            skip: 0,
+            maybe_key: MaybeUninit::uninit(),
             children: Children::from_fn(|_| TrieNode::Nothing),
         }
     }
@@ -88,9 +95,13 @@ where
     }
 
     fn into_any_ref(&self) -> AnyNodeRef<M> {
-        AnyNodeRef::Branch {
-            count: self.count,
-            children: self.children.as_slice(),
+        unsafe {
+            AnyNodeRef::Branch {
+                count: self.count,
+                value: self.value.as_ref(),
+                skip: if self.skip == 0 { None } else { Some((self.skip, self.maybe_key.assume_init_ref())) },
+                children: self.children.as_slice(),
+            }
         }
     }
 
@@ -98,12 +109,13 @@ where
     where
         M::Key: Clone,
         M::Value: Clone,
-        M::Children<TrieNode<M>>: Clone,
-        M::MaybeInner: Clone,
     {
         match any {
-            AnyNodeRef::Branch { count, children } => Self {
+            AnyNodeRef::Branch { count, skip, value, children } => Self {
                 count,
+                value: value.cloned().into(),
+                skip: skip.map_or(0, |(n, _)| n),
+                maybe_key: if let Some((_n, key)) = skip { MaybeUninit::new(key.clone()) } else { MaybeUninit::uninit() },
                 children: M::Children::from_fn(|i| children[i].clone()),
             },
             AnyNodeRef::External(_external) => unreachable!(),
@@ -149,9 +161,7 @@ where
     fn from_any_ref(any: AnyNodeRef<M>) -> Self
     where
         M::Key: Clone,
-        M::Value: Clone,
-        M::Children<TrieNode<M>>: Clone,
-        M::MaybeInner: Clone;
+        M::Value: Clone;
 }
 
 impl<M> RootChoice<M> for Root<true, M>
@@ -172,7 +182,7 @@ pub(crate) enum AnyNode<M: MapTrait> {
     Internal(Box<InternalNode<M>>),
     External(M::MaybeInner),
     Branch {
-        count: usize,
+        count: M::Count,
         children: M::Children<TrieNode<M>>,
     },
     Nothing,
@@ -181,7 +191,9 @@ pub(crate) enum AnyNode<M: MapTrait> {
 pub(crate) enum AnyNodeRef<'a, M: MapTrait> {
     External(&'a M::MaybeInner),
     Branch {
-        count: usize,
+        count: M::Count,
+        value: Option<&'a M::Value>,
+        skip: Option<(usize, &'a M::Key)>,
         children: &'a [TrieNode<M>],
     },
     Nothing,
@@ -190,7 +202,7 @@ pub(crate) enum AnyNodeRef<'a, M: MapTrait> {
 pub(crate) enum AnyNodeMut<'a, M: MapTrait> {
     External(&'a mut M::MaybeInner),
     Branch {
-        count: usize,
+        count: M::Count,
         children: &'a mut [TrieNode<M>],
     },
     Nothing,

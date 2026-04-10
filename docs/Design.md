@@ -19,4 +19,4 @@ moving parts for performance
 - prefetching
 - concurrent or not concurrent
 - immutable or mutable
-- 
+- adaptive

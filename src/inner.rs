@@ -6,7 +6,7 @@ use std::{borrow::Borrow, collections::HashMap};
 use std::{iter, mem, ptr};
 
 use crate::Chunk;
-use crate::map_trait::Unit;
+use crate::map_trait::{MapTrait, Unit};
 
 pub(crate) enum Entry<Occupied, Vacant> {
     Occupied(Occupied),
@@ -26,7 +26,7 @@ pub trait Vacant<'a, K, V> {
     fn into_key(self) -> K;
 }
 
-pub trait Inner<K, V>: IntoIterator<Item = (K, V)> {
+pub trait Inner<K, V>: IntoIterator<Item = (K, V)> + FromIterator<(K, V)> {
     type Occupied<'a>: Occupied<'a, K, V>
     where
         Self: 'a;
@@ -52,7 +52,7 @@ pub trait Inner<K, V>: IntoIterator<Item = (K, V)> {
     fn values_mut<'a>(&'a mut self) -> impl Iterator<Item = &mut V>
     where
         V: 'a;
-    fn should_remove(&self) -> bool;
+    fn should_remove<M: MapTrait<MaybeInner = Self>>(&self) -> bool;
     fn remove<Q>(&mut self, key: &Q) -> Option<V>
     where
         K: Borrow<Q>,
@@ -158,7 +158,7 @@ where
         self.values_mut()
     }
 
-    fn should_remove(&self) -> bool {
+    fn should_remove<M: MapTrait<MaybeInner = Self>>(&self) -> bool {
         self.len() <= 1
     }
 
@@ -293,7 +293,7 @@ where
         }
     }
 
-    fn should_remove(&self) -> bool {
+    fn should_remove<M: MapTrait<MaybeInner = Self>>(&self) -> bool {
         self.len() <= 1
     }
 
@@ -472,7 +472,7 @@ impl<K, V> Inner<K, V> for Unit<K, V> {
         }
     }
 
-    fn should_remove(&self) -> bool {
+    fn should_remove<M: MapTrait<MaybeInner = Self>>(&self) -> bool {
         true
     }
 
@@ -499,5 +499,15 @@ impl<K, V> Inner<K, V> for Unit<K, V> {
 
     fn len(&self) -> usize {
         1
+    }
+}
+
+impl<K, V> FromIterator<(K, V)> for Unit<K, V> {
+    fn from_iter<T: IntoIterator<Item = (K, V)>>(iter: T) -> Self {
+        let mut iter = iter.into_iter();
+        let next = iter.next().unwrap();
+        let result = Unit { key: next.0, value: next.1 };
+        assert!(iter.next().is_none());
+        result
     }
 }

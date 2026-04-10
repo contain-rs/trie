@@ -12,7 +12,7 @@
 
 use crate::Chunk;
 use crate::inner::{Entry, Inner, Occupied, Vacant};
-use crate::map_trait::{Children, MapTrait};
+use crate::map_trait::{Children, MapTrait, MaybeValue};
 
 use crate::node::InternalNode;
 use crate::root_node::AnyNodeMut;
@@ -33,6 +33,7 @@ use std::marker::PhantomData;
 use std::mem;
 use std::ops::{self, Bound};
 use std::slice;
+use std::option;
 
 /// A map implemented as a radix trie.
 ///
@@ -86,11 +87,11 @@ pub struct Map<M>
 where
     M: MapTrait,
 {
-    root: M::Root,
-    length: usize,
+    pub(crate) root: M::Root,
+    pub(crate) length: usize,
 }
 
-impl<M: MapTrait<Key: Clone, Value: Clone, Children<TrieNode<M>>: Clone, MaybeInner: Clone>> Clone
+impl<M: MapTrait<Key: Clone, Value: Clone>> Clone
     for Map<M>
 {
     fn clone(&self) -> Self {
@@ -217,9 +218,15 @@ impl<M: MapTrait> Map<M> {
         let slice_iter = match self.root.as_either_ref() {
             EitherNodeRef::Internal(&InternalNode {
                 count: _,
+                ref value,
                 ref children,
-            }) => children.as_slice().iter(),
-            EitherNodeRef::Trie(trie_node) => slice::from_ref(trie_node).iter(),
+                ..
+            }) => {
+                (value.as_ref().into_iter(), children.as_slice().iter())
+            }
+            EitherNodeRef::Trie(trie_node) => {
+                (None.into_iter(), slice::from_ref(trie_node).iter())
+            }
         };
         iter.stack.push(slice_iter);
         iter.remaining = self.length;
@@ -394,7 +401,7 @@ impl<M: MapTrait> Map<M> {
     pub fn insert(&mut self, key: M::Key, value: M::Value) -> Option<M::Value> {
         // root_count is a scratch counter used only to satisfy insert()'s signature;
         // the real element count is self.length.
-        let mut root_count: usize = 0;
+        let mut root_count: M::Count = Default::default();
         let (_, old_val) = match self.root.as_either() {
             EitherNode::Trie(node) => insert(
                 &mut root_count,
@@ -403,13 +410,18 @@ impl<M: MapTrait> Map<M> {
                 value,
                 0u8.try_into().ok().unwrap(),
             ),
-            EitherNode::Internal(internal) => insert(
-                &mut internal.count,
-                &mut internal.children[key.chunk(0u8.try_into().ok().unwrap(), M::SHIFT) as usize],
-                key,
-                value,
-                M::SHIFT.try_into().ok().unwrap(),
-            ),
+            EitherNode::Internal(internal) => {
+                if key.bits() == 0.into() {
+                    return internal.value.replace(value);
+                }
+                insert(
+                    &mut internal.count,
+                    &mut internal.children[key.chunk(0u8.try_into().ok().unwrap(), M::SHIFT) as usize],
+                    key,
+                    value,
+                    M::SHIFT.try_into().ok().unwrap(),
+                )
+            }
         };
         if old_val.is_none() {
             self.length += 1;
@@ -433,7 +445,7 @@ impl<M: MapTrait> Map<M> {
         M::Key: Borrow<Q>,
         Q: Chunk,
     {
-        let mut root_count: usize = 0;
+        let mut root_count: M::Count = Default::default();
         let ret = match self.root.as_either() {
             EitherNode::Trie(node) => remove(&mut root_count, node, key, 0u8.into()),
             EitherNode::Internal(internal) => remove(
@@ -1424,7 +1436,7 @@ where
 ///
 /// Returns a mutable reference to the inserted value and an optional previous value.
 fn insert<'a, M: MapTrait>(
-    count: &mut usize,
+    count: &mut M::Count,
     start_node: &'a mut TrieNode<M>,
     key: M::Key,
     value: M::Value,
@@ -1446,6 +1458,11 @@ fn insert<'a, M: MapTrait>(
         }
         Internal(ref mut x) => {
             let x = &mut **x;
+            // TODO: bit-vectors and non-8-multiply lengths
+            if key.bits() == idx {
+                let old = x.value.replace(value);
+                return (x.value.as_mut().unwrap(), old);
+            }
             assert!(idx < key.bits(), "idx = {} < key.bits() = {}", idx, key.bits());
 
             return insert(
@@ -1493,6 +1510,7 @@ fn insert<'a, M: MapTrait>(
                 return (occupied.into_mut(), Some(prev));
             }
             Entry::Vacant(vacant) => {
+                *count += 1;
                 return (vacant.insert(value), None);
             }
         }
@@ -1503,7 +1521,7 @@ fn insert<'a, M: MapTrait>(
 
 // TODO: make the function non-recursive
 fn remove<M: MapTrait, Q: Chunk>(
-    count: &mut usize,
+    count: &mut M::Count,
     child: &mut TrieNode<M>,
     key: &Q,
     idx: Q::KeySize,
@@ -1517,26 +1535,28 @@ where
     'outer: {
         match *child {
             External(ref mut maybe_inner) => {
-                let should_remove = maybe_inner.should_remove();
-                let mut hack = false;
-                let result = match maybe_inner.get_mut(key) {
-                    Some(occupied) if should_remove => {
+                let should_remove = maybe_inner.should_remove::<M>();
+                match maybe_inner.get_mut(key) {
+                    Some(_) if should_remove => {
                         this = true;
                         ret = None;
                         break 'outer;
                     }
-                    Some(occupied) => {
+                    Some(_) => {
                         this = false;
                     }
                     None => {
                         return None;
                     }
-                };
+                }
                 ret = maybe_inner.remove(key);
                 *count -= 1;
             }
             Internal(ref mut x) => {
                 let x = &mut **x;
+                if key.bits() == idx {
+                    return x.value.take();
+                }
                 ret = remove(
                     &mut x.count,
                     &mut x.children
@@ -1544,7 +1564,7 @@ where
                     key,
                     idx + M::SHIFT.into(),
                 );
-                this = x.count == 0;
+                this = if let Ok(val) = x.count.try_into() { val == 0 } else { x.is_empty() };
             }
             Nothing => {
                 ret = None;
@@ -1557,7 +1577,7 @@ where
         *count -= 1;
         match mem::replace(child, Nothing) {
             External(maybe_inner) => {
-                ret = maybe_inner.into_iter().next().map(|(k_, v)| v);
+                ret = maybe_inner.into_iter().next().map(|(_k, v)| v);
             }
             _ => {}
         };
@@ -1920,7 +1940,7 @@ macro_rules! iterator_impl {
         /// A forward iterator over a map.
         pub struct $name<'a, M: MapTrait> {
             maybe_inner: Option<<M::MaybeInner as Inner<M::Key, M::Value>>::$name<'a>>,
-            stack: Vec<slice::$name<'a, TrieNode<M>>>,
+            stack: Vec<(option::IntoIter<&'a $($mut_)* M::Value>, slice::$name<'a, TrieNode<M>>)>,
             remaining: usize,
         }
 
@@ -1942,7 +1962,7 @@ macro_rules! iterator_impl {
                         return Some((key, value));
                     }
                 }
-                while let Some(iter) = self.stack.last_mut() {
+                while let Some(&mut (ref node, ref mut iter)) = self.stack.last_mut() {
                     match iter.next() {
                         None => {
                             self.stack.pop();
@@ -1950,7 +1970,7 @@ macro_rules! iterator_impl {
                         Some(child) => {
                             match *child {
                                 Internal(ref $($mut_)* node) => {
-                                    self.stack.push(node.children.as_slice().$iter());
+                                    self.stack.push((node.value.as_ref().into_iter(), node.children.as_slice().$iter()));
                                 }
                                 External(ref $($mut_)* maybe_inner) => {
                                     self.remaining -= 1;
@@ -2014,604 +2034,3 @@ iterator_impl! { Iter, iter = iter, mutability = () }
 //         self.iter_mut()
 //     }
 // }
-
-#[cfg(test)]
-mod test {
-    use std::collections::hash_map::DefaultHasher;
-    use std::hash::{Hash, Hasher};
-    use std::hint::black_box;
-    use std::ops::Bound;
-
-    #[cfg(feature = "extra")]
-    use super::Entry::*;
-    use super::{InternalNode, Map};
-    use crate::TrieMap;
-    use crate::inner::Inner;
-    use crate::map_trait::{BasicTrieHint, Children, MapTrait};
-    use crate::node::TrieNode::{self, *};
-    use crate::root_node::{AnyNodeRef, RootNode};
-
-    /// check_integrity now accepts a TrieNode instead of an InternalNode,
-    /// because the root is a TrieNode enum.
-    fn check_integrity<M: MapTrait<Children<TrieNode<M>> = [TrieNode<M>; 16]>>(node: &M::Root) {
-        match node.into_any_ref() {
-            AnyNodeRef::Branch { children, count } => check_integrity_internal(count, children),
-            // A bare External or Nothing root is valid (0 or 1 elements).
-            AnyNodeRef::External(..) | AnyNodeRef::Nothing => {}
-        }
-    }
-
-    fn check_integrity_internal<M: MapTrait<Children<TrieNode<M>> = [TrieNode<M>; 16]>>(
-        count: usize,
-        children: &[TrieNode<M>],
-    ) {
-        assert!(count != 0);
-
-        let mut sum = 0;
-        for x in children.iter() {
-            match *x {
-                Nothing => (),
-                Internal(ref y) => {
-                    check_integrity_internal(y.count, &y.children[..]);
-                    sum += 1;
-                }
-                External(ref maybe_inner) => sum += maybe_inner.len(),
-            }
-        }
-        assert_eq!(sum, count);
-    }
-
-    #[test]
-    fn test_insert_from_bench() {
-        let mut m: TrieMap<u32, _> = Map::new();
-        m.insert(0xad6b27f7, true);
-        m.insert(0xad6f27f7, false);
-        black_box(&m);
-    }
-
-    #[test]
-    fn test_find_mut() {
-        let mut m: TrieMap<_, _> = Map::new();
-        assert!(m.insert(1, 12).is_none());
-        assert!(m.insert(2, 8).is_none());
-        assert!(m.insert(5, 14).is_none());
-        let new = 100;
-        match m.get_mut(&5) {
-            None => panic!(),
-            Some(x) => *x = new,
-        }
-        assert_eq!(m.get(&5), Some(&new));
-    }
-
-    #[test]
-    fn test_find_mut_missing() {
-        let mut m: TrieMap<_, _> = Map::new();
-        assert!(m.get_mut(&0).is_none());
-        assert!(m.insert(1, 12).is_none());
-        assert!(m.get_mut(&0).is_none());
-        assert!(m.insert(2, 8).is_none());
-        assert!(m.get_mut(&0).is_none());
-    }
-
-    #[test]
-    fn test_step() {
-        let mut trie: TrieMap<_, _> = Map::new();
-        let n = 300;
-
-        for x in (1..n).step_by(2) {
-            assert!(trie.insert(x, x + 1).is_none(), "{}", x);
-            assert!(trie.contains_key(&x), "{}", x);
-            check_integrity::<BasicTrieHint<i32, _>>(&trie.root);
-        }
-
-        for x in (0..n).step_by(2) {
-            assert!(!trie.contains_key(&x));
-            assert!(trie.insert(x, x + 1).is_none());
-            check_integrity::<BasicTrieHint<i32, _>>(&trie.root);
-        }
-
-        for x in 0..n {
-            assert!(trie.contains_key(&x));
-            assert!(trie.insert(x, x + 1).is_some());
-            check_integrity::<BasicTrieHint<i32, _>>(&trie.root);
-        }
-
-        for x in (1..n).step_by(2) {
-            assert!(trie.remove(&x).is_some());
-            assert!(!trie.contains_key(&x));
-            check_integrity::<BasicTrieHint<i32, _>>(&trie.root);
-        }
-
-        for x in (0..n).step_by(2) {
-            assert!(trie.contains_key(&x));
-            assert!(trie.insert(x, x + 1).is_some());
-            check_integrity::<BasicTrieHint<i32, _>>(&trie.root);
-        }
-    }
-
-    #[cfg(feature = "extra")]
-    #[test]
-    fn test_each_reverse() {
-        let mut m = Map::new();
-
-        assert!(m.insert(3, 6).is_none());
-        assert!(m.insert(0, 0).is_none());
-        assert!(m.insert(4, 8).is_none());
-        assert!(m.insert(2, 4).is_none());
-        assert!(m.insert(1, 2).is_none());
-
-        let mut n = 5;
-        let mut vec: Vec<&i32> = vec![];
-        m.each_reverse(|k, v| {
-            n -= 1;
-            assert_eq!(*k, n);
-            vec.push(v);
-            true
-        });
-        assert_eq!(vec, [&8, &6, &4, &2, &0]);
-    }
-
-    #[cfg(feature = "extra")]
-    #[test]
-    fn test_each_reverse_break() {
-        let mut m = Map::new();
-
-        for x in (usize::MAX - 10000..usize::MAX).rev() {
-            m.insert(x, x / 2);
-        }
-
-        let mut n = usize::MAX - 1;
-        m.each_reverse(|k, v| {
-            if n == usize::MAX - 5000 {
-                false
-            } else {
-                assert!(n > usize::MAX - 5000);
-                assert_eq!(*k, n);
-                assert_eq!(*v, n / 2);
-                n -= 1;
-                true
-            }
-        });
-    }
-
-    #[test]
-    fn test_insert() {
-        let mut m: TrieMap<_, _> = Map::new();
-        assert_eq!(m.insert(1, 2), None);
-        assert_eq!(m.insert(1, 3), Some(2));
-        assert_eq!(m.insert(1, 4), Some(3));
-    }
-
-    #[test]
-    fn test_remove() {
-        let mut m: TrieMap<_, _> = Map::new();
-        m.insert(1, 2);
-        assert_eq!(m.remove(&1), Some(2));
-        assert_eq!(m.remove(&1), None);
-    }
-
-    #[cfg(feature = "extra")]
-    #[test]
-    fn test_from_iter() {
-        let xs = [(1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6)];
-
-        let map: TrieMap<usize, i32> = xs.iter().cloned().collect();
-
-        for &(k, v) in xs.iter() {
-            assert_eq!(map.get(&k), Some(&v));
-        }
-    }
-
-    #[cfg(feature = "extra")]
-    #[test]
-    fn test_keys() {
-        let vec = [(1, 'a'), (2, 'b'), (3, 'c')];
-        let map: Map<usize, _> = vec.iter().cloned().collect();
-        let keys: Vec<_> = map.keys().collect();
-        assert_eq!(keys.len(), 3);
-        assert!(keys.contains(&&1));
-        assert!(keys.contains(&&2));
-        assert!(keys.contains(&&3));
-    }
-
-    #[cfg(feature = "extra")]
-    #[test]
-    fn test_values() {
-        let vec = [(1, 'a'), (2, 'b'), (3, 'c')];
-        let map: Map<usize, _> = vec.iter().cloned().collect();
-        let values: Vec<_> = map.values().cloned().collect();
-        assert_eq!(values.len(), 3);
-        assert!(values.contains(&'a'));
-        assert!(values.contains(&'b'));
-        assert!(values.contains(&'c'));
-    }
-
-    #[cfg(feature = "extra")]
-    #[test]
-    fn test_iteration() {
-        let empty_map: Map<usize, usize> = Map::new();
-        assert_eq!(empty_map.iter().next(), None);
-
-        let first = usize::MAX - 10000;
-        let last = usize::MAX;
-
-        let mut map = Map::new();
-        for x in (first..last).rev() {
-            map.insert(x, x / 2);
-        }
-
-        let mut i = 0;
-        for (&k, &v) in map.iter() {
-            assert_eq!(k, first + i);
-            assert_eq!(v, k / 2);
-            i += 1;
-        }
-        assert_eq!(i, last - first);
-    }
-
-    #[cfg(feature = "extra")]
-    #[test]
-    fn test_mut_iter() {
-        let mut empty_map: Map<usize, usize> = Map::new();
-        assert!(empty_map.iter_mut().next().is_none());
-
-        let first = usize::MAX - 10000;
-        let last = usize::MAX;
-
-        let mut map = Map::new();
-        for x in (first..last).rev() {
-            map.insert(x, x / 2);
-        }
-
-        let mut i = 0;
-        for (&k, v) in map.iter_mut() {
-            assert_eq!(k, first + i);
-            *v -= k / 2;
-            i += 1;
-        }
-        assert_eq!(i, last - first);
-
-        assert!(map.iter().all(|(_, &v)| v == 0));
-    }
-
-    #[cfg(feature = "extra")]
-    #[test]
-    fn test_bound() {
-        let empty_map: Map<usize, usize> = Map::new();
-        assert_eq!(empty_map.lower_bound(Bound::Excluded(&0)).next(), None);
-        assert_eq!(empty_map.upper_bound(Bound::Excluded(&0)).next(), None);
-
-        let last = 999;
-        let step = 3;
-        let value = 42;
-
-        let mut map: Map<usize, usize> = Map::new();
-        for x in (0..last).step_by(step) {
-            assert!(x % step == 0);
-            map.insert(x, value);
-        }
-
-        for i in 0..last - step {
-            let mut lb = map.lower_bound(Bound::Excluded(&i));
-            let mut ub = map.upper_bound(Bound::Excluded(&i));
-            let next_key = i - i % step + step;
-            let next_pair = (&next_key, &value);
-            if i % step == 0 {
-                assert_eq!(lb.next(), Some((&i, &value)));
-            } else {
-                assert_eq!(lb.next(), Some(next_pair));
-            }
-            assert_eq!(ub.next(), Some(next_pair));
-        }
-
-        let mut lb = map.lower_bound(Bound::Excluded(&(last - step)));
-        assert_eq!(lb.next(), Some((&(last - step), &value)));
-        let mut ub = map.upper_bound(Bound::Excluded(&(last - step)));
-        assert_eq!(ub.next(), None);
-
-        for i in last - step + 1..last {
-            let mut lb = map.lower_bound(Bound::Excluded(&i));
-            assert_eq!(lb.next(), None);
-            let mut ub = map.upper_bound(Bound::Excluded(&i));
-            assert_eq!(ub.next(), None);
-        }
-    }
-
-    #[cfg(feature = "extra")]
-    #[test]
-    fn test_mut_bound() {
-        let empty_map: Map<usize, usize> = Map::new();
-        assert_eq!(empty_map.lower_bound(Bound::Excluded(&0)).next(), None);
-        assert_eq!(empty_map.upper_bound(Bound::Excluded(&0)).next(), None);
-
-        let mut m_lower = Map::new();
-        let mut m_upper = Map::new();
-        for i in 0..100 {
-            m_lower.insert(2 * i, 4 * i);
-            m_upper.insert(2 * i, 4 * i);
-        }
-
-        for i in 0..199 {
-            let mut lb_it = m_lower.lower_bound_mut(Bound::Excluded(&i));
-            let (&k, v) = lb_it.next().unwrap();
-            let lb = i + i % 2;
-            assert_eq!(lb, k);
-            *v -= k;
-        }
-
-        for i in 0..198 {
-            let mut ub_it = m_upper.upper_bound_mut(Bound::Excluded(&i));
-            let (&k, v) = ub_it.next().unwrap();
-            let ub = i + 2 - i % 2;
-            assert_eq!(ub, k);
-            *v -= k;
-        }
-
-        assert!(
-            m_lower
-                .lower_bound_mut(Bound::Excluded(&199))
-                .next()
-                .is_none()
-        );
-        assert!(
-            m_upper
-                .upper_bound_mut(Bound::Excluded(&198))
-                .next()
-                .is_none()
-        );
-
-        assert!(m_lower.iter().all(|(_, &x)| x == 0));
-        assert!(m_upper.iter().all(|(_, &x)| x == 0));
-    }
-
-    #[test]
-    fn test_clone() {
-        let mut a: TrieMap<_, _> = Map::new();
-
-        a.insert(1, 'a');
-        a.insert(2, 'b');
-        a.insert(3, 'c');
-
-        assert!(a.clone() == a);
-    }
-
-    #[test]
-    fn test_eq() {
-        let mut a: TrieMap<_, _> = Map::new();
-        let mut b = Map::new();
-
-        assert!(a == b);
-        assert!(a.insert(0, 5).is_none());
-        assert!(a != b);
-        assert!(b.insert(0, 4).is_none());
-        assert!(a != b);
-        assert!(a.insert(5, 19).is_none());
-        assert!(a != b);
-        assert!(b.insert(0, 5).is_some());
-        assert!(a != b);
-        assert!(b.insert(5, 19).is_none());
-        assert!(a == b);
-    }
-
-    #[cfg(feature = "extra")]
-    #[test]
-    fn test_lt() {
-        let mut a = Map::new();
-        let mut b = Map::new();
-
-        assert!((a >= b) && (b >= a));
-        assert!(b.insert(2, 5).is_none());
-        assert!(a < b);
-        assert!(a.insert(2, 7).is_none());
-        assert!((a >= b) && b < a);
-        assert!(b.insert(1, 0).is_none());
-        assert!(b < a);
-        assert!(a.insert(0, 6).is_none());
-        assert!(a < b);
-        assert!(a.insert(6, 2).is_none());
-        assert!(a < b && (b >= a));
-    }
-
-    #[cfg(feature = "extra")]
-    #[test]
-    fn test_ord() {
-        let mut a = Map::new();
-        let mut b = Map::new();
-
-        assert!(a == b);
-        assert!(a.insert(1, 1).is_none());
-        assert!(a > b && a >= b);
-        assert!(b < a && b <= a);
-        assert!(b.insert(2, 2).is_none());
-        assert!(b > a && b >= a);
-        assert!(a < b && a <= b);
-    }
-
-    #[cfg(feature = "extra")]
-    #[test]
-    fn test_hash() {
-        fn hash<T: Hash>(t: &T) -> u64 {
-            let mut s = DefaultHasher::new();
-            t.hash(&mut s);
-            s.finish()
-        }
-
-        let mut x = Map::new();
-        let mut y = Map::new();
-
-        assert!(hash(&x) == hash(&y));
-        x.insert(1, 'a');
-        x.insert(2, 'b');
-        x.insert(3, 'c');
-
-        y.insert(3, 'c');
-        y.insert(2, 'b');
-        y.insert(1, 'a');
-
-        assert!(hash(&x) == hash(&y));
-    }
-
-    #[cfg(feature = "extra")]
-    #[test]
-    fn test_debug() {
-        let mut map = Map::new();
-        let empty: Map<usize, char> = Map::new();
-
-        map.insert(1, 'a');
-        map.insert(2, 'b');
-
-        assert_eq!(format!("{:?}", map), "{1: 'a', 2: 'b'}");
-        assert_eq!(format!("{:?}", empty), "{}");
-    }
-
-    #[cfg(feature = "extra")]
-    #[test]
-    fn test_index() {
-        let mut map = Map::new();
-
-        map.insert(1, 2);
-        map.insert(2, 1);
-        map.insert(3, 4);
-
-        assert_eq!(map[&2], 1);
-    }
-
-    #[cfg(feature = "extra")]
-    #[test]
-    #[should_panic]
-    fn test_index_nonexistent() {
-        let mut map = Map::new();
-
-        map.insert(1, 2);
-        map.insert(2, 1);
-        map.insert(3, 4);
-
-        black_box(map[&4]);
-    }
-
-    const SQUARES_UPPER_LIM: usize = 128;
-
-    #[cfg(feature = "extra")]
-    fn squares_map() -> Map<usize, usize> {
-        let mut map = Map::new();
-        for i in 0..SQUARES_UPPER_LIM {
-            map.insert(i, i * i);
-        }
-        map
-    }
-
-    #[cfg(feature = "extra")]
-    #[test]
-    fn test_entry_get() {
-        let mut map = squares_map();
-
-        for i in 0..SQUARES_UPPER_LIM {
-            match map.entry(i) {
-                Occupied(slot) => assert_eq!(slot.get(), &(i * i)),
-                Vacant(_) => panic!("Key not found."),
-            }
-        }
-        check_integrity(&map.root);
-    }
-
-    #[cfg(feature = "extra")]
-    #[test]
-    fn test_entry_get_mut() {
-        let mut map = squares_map();
-
-        for i in 0..SQUARES_UPPER_LIM {
-            match map.entry(i) {
-                Occupied(mut e) => {
-                    *e.get_mut() = i * i * i;
-                }
-                Vacant(_) => panic!("Key not found."),
-            }
-            assert_eq!(map.get(&i).unwrap(), &(i * i * i));
-        }
-
-        check_integrity(&map.root);
-    }
-
-    #[cfg(feature = "extra")]
-    #[test]
-    fn test_entry_into_mut() {
-        let mut map = Map::new();
-        map.insert(3, 6);
-
-        let value_ref = match map.entry(3) {
-            Occupied(e) => e.into_mut(),
-            Vacant(_) => panic!("Entry not found."),
-        };
-
-        assert_eq!(*value_ref, 6);
-    }
-
-    #[cfg(feature = "extra")]
-    #[test]
-    fn test_entry_take() {
-        let mut map = squares_map();
-        assert_eq!(map.len(), SQUARES_UPPER_LIM);
-
-        for i in (1..SQUARES_UPPER_LIM).step_by(2) {
-            match map.entry(i) {
-                Occupied(e) => assert_eq!(e.remove(), i * i),
-                Vacant(_) => panic!("Key not found."),
-            }
-        }
-
-        check_integrity(&map.root);
-
-        for i in (0..SQUARES_UPPER_LIM).step_by(2) {
-            assert_eq!(map.get(&i).unwrap(), &(i * i));
-        }
-
-        assert_eq!(map.len(), SQUARES_UPPER_LIM / 2);
-    }
-
-    #[cfg(feature = "extra")]
-    #[test]
-    fn test_occupied_entry_set() {
-        let mut map = squares_map();
-
-        for i in 0..SQUARES_UPPER_LIM {
-            match map.entry(i) {
-                Occupied(mut e) => assert_eq!(e.insert(i * i * i), i * i),
-                Vacant(_) => panic!("Key not found."),
-            }
-            assert_eq!(map.get(&i).unwrap(), &(i * i * i));
-        }
-        check_integrity(&map.root);
-    }
-
-    #[cfg(feature = "extra")]
-    #[test]
-    fn test_vacant_entry_set() {
-        let mut map = Map::new();
-
-        for i in 0..SQUARES_UPPER_LIM {
-            match map.entry(i) {
-                Vacant(e) => {
-                    let inserted_val = e.insert(i * i);
-                    assert_eq!(*inserted_val, i * i);
-                    *inserted_val = i * i * i;
-                }
-                _ => panic!("Non-existent key found."),
-            }
-            assert_eq!(map.get(&i).unwrap(), &(i * i * i));
-        }
-
-        check_integrity(&map.root);
-        assert_eq!(map.len(), SQUARES_UPPER_LIM);
-    }
-
-    #[cfg(feature = "extra")]
-    #[test]
-    fn test_single_key() {
-        let mut map = Map::new();
-        map.insert(1, 2);
-
-        if let Occupied(e) = map.entry(1) {
-            e.remove();
-        }
-    }
-}
